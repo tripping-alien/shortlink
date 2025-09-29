@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
 import json
+import os
 
 # --- Configuration ---
 LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
@@ -160,7 +161,6 @@ async def create_short_link(url_item: URLItem, request: Request):
 
     short_code = to_bijective_base6(new_id)
     short_url = f"{request.base_url}{short_code}"
-    return {"short_url": short_url, "long_url": url_item.long_url}
 
     # Save the new state to disk
     save_state()
@@ -196,4 +196,6 @@ async def redirect_to_long_url(short_code: str):
 
 if __name__ == "__main__":
     load_state()  # Load existing state on server start
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Render provides the PORT environment variable. Default to 8000 for local dev.
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

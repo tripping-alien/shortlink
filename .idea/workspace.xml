@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="release 2.0.0">
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="init">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/script.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,12 +25,12 @@
     &quot;assignee&quot;: &quot;tripping-alien&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/tripping-alien/bijective_base6_calc.git&quot;,
-    &quot;accountId&quot;: &quot;6a497e38-ef53-46fc-8593-fc5483a451e1&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/tripping-alien/shortlink.git",
+    "accountId": "6a497e38-ef53-46fc-8593-fc5483a451e1"
   }
-}</component>
+}]]></component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/../../../../Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.13_3.13.2032.0_x64__qbz5n2kfra8p0/Lib/asyncio/queues.py" root0="SKIP_INSPECTION" />
   </component>
@@ -176,14 +179,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00296" summary="commit">
-      <option name="closed" value="true" />
-      <created>1758507788837</created>
-      <option name="number" value="00296" />
-      <option name="presentableId" value="LOCAL‎-00296" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1758507788837</updated>
     </task>
     <task id="LOCAL‎-00297" summary="commit">
       <option name="closed" value="true" />
@@ -569,7 +564,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759135641645</updated>
     </task>
-    <option name="localTasksCounter" value="345" />
+    <task id="LOCAL‎-00345" summary="init">
+      <option name="closed" value="true" />
+      <created>1759136870579</created>
+      <option name="number" value="00345" />
+      <option name="presentableId" value="LOCAL‎-00345" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759136870580</updated>
+    </task>
+    <option name="localTasksCounter" value="346" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -600,7 +603,8 @@
     <MESSAGE value="commit" />
     <MESSAGE value="study" />
     <MESSAGE value="release 2.0.0" />
-    <option name="LAST_COMMIT_MESSAGE" value="release 2.0.0" />
+    <MESSAGE value="init" />
+    <option name="LAST_COMMIT_MESSAGE" value="init" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/PythonProject$.coverage" NAME=" Coverage Results" MODIFIED="1758447187993" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

@@ -1,208 +1,37 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- SEO & Core Meta Tags -->
-    <title data-i18n="pageTitle">Bijective Base-6 Calculator & Explorer</title>
-    <meta name="description" content="An interactive educational tool to calculate and explore the bijective base-6 number system, which has no zero." data-i18n-content="pageDescription">
-    <link rel="canonical" href="https://base6.art/" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://base6.art/">
-    <meta property="og:title" content="Bijective Base-6 Calculator & Explorer" data-i18n-property="og:title">
-    <meta property="og:description" content="An interactive educational tool to calculate and explore the bijective base-6 number system, which has no zero." data-i18n-property="og:description">
-    <meta property="og:image" content="https://base6.art/assets/screenshot.jpg">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://base6_art/">
-    <meta property="twitter:title" content="Bijective Base-6 Calculator & Explorer" data-i18n-property="twitter:title">
-    <meta property="twitter:description" content="An interactive educational tool to calculate and explore the bijective base-6 number system, which has no zero." data-i18n-property="twitter:description">
-    <meta property="twitter:image" content="https://base6.art/assets/screenshot.jpg">
-
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7/css/flag-icons.min.css"/>
+    <title>Bijective URL Shortener</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 600px; }
+        .result-box { background-color: #e9ecef; padding: 1rem; border-radius: 0.25rem; display: none; }
+        .result-box a { word-break: break-all; }
+    </style>
 </head>
 <body>
-    <canvas id="background-animation"></canvas>
-
-    <button id="settings-btn" class="btn settings-btn" type="button" data-bs-toggle="modal" data-bs-target="#settingsModal" aria-label="Settings">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/></svg>
-    </button>
-    
-    <div class="container my-4">
-        <header class="text-center mb-5">
-            <h1 class="display-4" data-i18n="mainTitle"></h1>
+    <div class="container mt-5">
+        <header class="text-center mb-4">
+            <h1 class="display-5">🔗 Bijective Shorty</h1>
+            <p class="lead">A URL shortener with TTL and ID reuse, powered by bijective math.</p>
         </header>
 
-        <ul class="nav nav-tabs nav-fill" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="calculator-tab" data-bs-toggle="tab" data-bs-target="#tab-calculator" type="button" role="tab" data-i18n="tabCalculator"></button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="study-tab" data-bs-toggle="tab" data-bs-target="#tab-study" type="button" role="tab" data-i18n="tabStudy"></button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tables-tab" data-bs-toggle="tab" data-bs-target="#tab-tables" type="button" role="tab" data-i18n="tabTables"></button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="practice-tab" data-bs-toggle="tab" data-bs-target="#tab-practice" type="button" role="tab" data-i18n="tabPractice"></button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active p-4" id="tab-calculator" role="tabpanel">
-                <div class="row g-5">
-                    <div class="col-lg-6">
-                        <section>
-                            <h2 data-i18n="liveConverterTitle"></h2>
-                            <p data-i18n="liveConverterDesc"></p>
-                            <div class="mb-4">
-                                <label for="decimal-input" class="form-label" data-i18n="decimalInputLabel"></label>
-                                <input type="tel" class="form-control" id="decimal-input" data-i18n-placeholder="decimalInputPlaceholder">
-                            </div>
-                            <div id="conversion-results"></div>
-                        </section>
-                    </div>
-                    <div class="col-lg-6">
-                        <section>
-                            <h2 data-i18n="calculatorTitle"></h2>
-                            <p data-i18n="calculatorDesc"></p>
-                            <div class="row g-2 mb-3">
-                                <div class="col-sm-6"><input type="tel" class="form-control" id="num1" data-i18n-placeholder="num1Placeholder"></div>
-                                <div class="col-sm-6"><input type="tel" class="form-control" id="num2" data-i18n-placeholder="num2Placeholder"></div>
-                            </div>
-                            <div class="d-grid">
-                                <button id="calculate-all-btn" class="btn btn-primary" data-i18n="calculateBtn"></button>
-                            </div>
-                        </section>
-                    </div>
-                </div>
-                <section id="result-area" class="mt-4" style="display: none;">
-                    <div id="ops-results-grid" class="row row-cols-1 row-cols-md-2 g-3"></div>
-                    <div id="error-display" class="mt-3 text-center"></div>
-                </section>
+        <form id="shorten-form">
+            <div class="input-group mb-3">
+                <input type="url" id="long-url-input" class="form-control form-control-lg" placeholder="Enter a long URL to shorten..." required>
+                <button class="btn btn-primary" type="submit">Shorten</button>
             </div>
+        </form>
 
-            <div class="tab-pane fade p-4" id="tab-practice" role="tabpanel">
-                <section id="quiz-section">
-                    <h2 data-i18n="practiceTitle"></h2>
-                    <p data-i18n="practiceDesc"></p>
-                    <div class="d-flex justify-content-center gap-3 mb-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="difficulty" id="difficulty-easy" value="easy" checked>
-                            <label class="form-check-label" for="difficulty-easy" data-i18n="difficultyEasy"></label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="difficulty" id="difficulty-medium" value="medium">
-                            <label class="form-check-label" for="difficulty-medium" data-i18n="difficultyMedium"></label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="difficulty" id="difficulty-hard" value="hard">
-                            <label class="form-check-label" for="difficulty-hard" data-i18n="difficultyHard"></label>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-center gap-3 mb-4">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="quiz-type-conversions" checked>
-                            <label class="form-check-label" for="quiz-type-conversions" data-i18n="quizModeConversions"></label>
-                        </div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="quiz-type-arithmetic" checked>
-                            <label class="form-check-label" for="quiz-type-arithmetic" data-i18n="quizModeArithmetic"></label>
-                        </div>
-                    </div>
-                    <div id="quiz-container" class="text-center"></div>
-                </section>
-            </div>
-
-            <div class="tab-pane fade p-4" id="tab-study" role="tabpanel" aria-labelledby="study-tab">
-                <section>
-                    <h2 data-i18n="prosConsTitle"></h2>
-                    <div class="row g-4">
-                        <div class="col-lg-6">
-                            <h3 class="text-success" data-i18n="prosTitle"></h3>
-                            <ul class="list-group list-group-flush" data-i18n-list="prosList"></ul>
-                        </div>
-                        <div class="col-lg-6">
-                            <h3 class="text-danger" data-i18n="consTitle"></h3>
-                            <ul class="list-group list-group-flush" data-i18n-list="consList"></ul>
-                        </div>
-                    </div>
-                </section>
-                <hr class="my-5">
-                <section class="mb-5">
-                    <h3 data-i18n="studyAdditionTitle"></h3>
-                    <p data-i18n="studyAdditionDesc"></p>
-                    <div class="example-box" data-i18n-html="studyAdditionExample"></div>
-                </section>
-                <section>
-                    <h3 data-i18n="studySubtractionTitle"></h3>
-                    <p data-i18n="studySubtractionDesc"></p>
-                    <div class="example-box" data-i18n-html="studySubtractionExample"></div>
-                </section>
-                <hr class="my-5">
-                <section>
-                    <h3 data-i18n="studyMultiplicationTitle"></h3>
-                    <p data-i18n="studyMultiplicationDesc"></p>
-                    <div class="example-box" data-i18n-html="studyMultiplicationExample"></div>
-                </section>
-            </div>
-
-            <div class="tab-pane fade p-4" id="tab-tables" role="tabpanel">
-                <section class="mb-5">
-                    <h2 data-i18n="additionTableTitle"></h2>
-                    <div id="addition-table-container" class="table-responsive"></div>
-                </section>
-                <section>
-                    <h2 data-i18n="multiplicationTableTitle"></h2>
-                    <div id="multiplication-table-container" class="table-responsive"></div>
-                </section>
-            </div>
-        </div>
-
-        <footer class="text-center py-4 mt-5">
-            <p class="mb-0">
-                <span data-i18n="githubLink"></span> <a href="https://github.com/tripping-alien/bijective_base6_calc" target="_blank">GitHub</a>. 
-                <span data-i18n="licenseLink"></span> <a href="https://github.com/tripping-alien/bijective_base6_calc/blob/main/LICENSE" target="_blank">MIT License</a>.
-            </p>
-        </footer>
-    </div>
-
-    <!-- Settings Modal -->
-    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="settingsModalLabel" data-i18n="settingsTitle">Settings</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-4">
-                        <label class="form-label" data-i18n="themeLabel">Theme</label>
-                        <div class="form-check form-switch fs-5">
-                            <input class="form-check-input" type="checkbox" role="switch" id="theme-switch-modal">
-                            <label class="form-check-label" for="theme-switch-modal" id="theme-switch-label">Dark Mode</label>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="form-label" data-i18n="languageLabel">Language</label>
-                        <div id="language-list-modal" class="list-group"></div>
-                    </div>
-                </div>
-            </div>
+        <div id="result-box" class="result-box mt-4">
+            <p class="mb-1">Your short link (expires in 24 hours):</p>
+            <a href="#" id="short-url-link" target="_blank"></a>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/script.js"></script>
-    <script src="/static/animation.js" defer></script>
+    <script src="script.js"></script>
 </body>
 </html>

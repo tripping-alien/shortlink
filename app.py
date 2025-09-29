@@ -1,22 +1,25 @@
-
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from datetime import datetime, timedelta
 import uvicorn
-import os
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, FileResponse, Response
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from starlette.responses import PlainTextResponse
-from datetime import date
 
-app = FastAPI()
+# --- Configuration ---
+LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/assets", StaticFiles(directory="assets"), name="assets")
-templates = Jinja2Templates(directory="templates")
+# --- In-Memory "Database" ---
+# In a real application, you would replace this with a proper database
+# like SQLite, PostgreSQL, or a NoSQL database like Redis.
+url_database = {}
+id_counter = 0
+freed_ids = []  # A pool of expired/reusable IDs
 
-# This function is kept ONLY for generating the reference tables on the server.
+
+# --- Bijective Base-6 Logic ---
 def to_bijective_base6(n: int) -> str:
-    if n <= 0: return "(N/A)"
+    if n <= 0:
+        raise ValueError("Input must be a positive integer")
     chars = "123456"
     result = []
     while n > 0:
@@ -24,59 +27,88 @@ def to_bijective_base6(n: int) -> str:
         result.append(chars[remainder])
     return "".join(reversed(result))
 
-@app.get("/")
-async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/robots.txt", response_class=PlainTextResponse)
-def robots():
-    return """# For all crawlers
-User-agent: *
-Disallow:
+def from_bijective_base6(s: str) -> int:
+    if not s or not s.isalnum():
+        raise ValueError("Invalid short code format")
+    n = 0
+    for char in s:
+        n = n * 6 + "123456".index(char) + 1
+    return n
 
-# Yandex-specific directive for the main mirror
-Host: https://base6.art
 
-# Sitemap location
-Sitemap: https://base6.art/sitemap.xml
-"""
+# --- API Models ---
+class URLItem(BaseModel):
+    long_url: str
 
-@app.get("/sitemap.xml")
-def sitemap():
-    base_url = "https://base6.art"
-    supported_langs = ["en", "ru", "de", "fr", "he", "ar", "zh", "ja"]  # Keep this in sync with your frontend
-    today = date.today().isoformat()
-    
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
-    xml_content += '  <url>\n'
-    xml_content += f'    <loc>{base_url}/</loc>\n'
-    xml_content += f'    <lastmod>{today}</lastmod>\n'
-    xml_content += '    <changefreq>monthly</changefreq>\n'
-    xml_content += '    <priority>1.0</priority>\n'
-    # Add x-default for users whose language is not supported
-    xml_content += f'    <xhtml:link rel="alternate" hreflang="x-default" href="{base_url}/?lang=en"/>\n'
-    for lang in supported_langs:
-        xml_content += f'    <xhtml:link rel="alternate" hreflang="{lang}" href="{base_url}/?lang={lang}"/>\n'
-    xml_content += '  </url>\n'
-    xml_content += '</urlset>'
-    
-    return Response(content=xml_content, media_type="application/xml")
 
-@app.get("/locales/{lang}.json")
-async def get_locale(lang: str):
-    file_path = os.path.join("locales", f"{lang}.json")
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    return {"error": "Language not found"}, 404
+# --- FastAPI Application ---
+app = FastAPI(
+    title="Bijective-Shorty API",
+    description="A simple URL shortener using bijective base-6 encoding with TTL and ID reuse."
+)
 
-@app.get("/get-tables")
-async def get_tables():
-    table_size = 24
-    header = [to_bijective_base6(i) for i in range(1, table_size + 1)]
-    add_table = [[to_bijective_base6(i + j) for j in range(1, table_size + 1)] for i in range(1, table_size + 1)]
-    mul_table = [[to_bijective_base6(i * j) for j in range(1, table_size + 1)] for i in range(1, table_size + 1)]
-    return {"header": header, "addition": add_table, "multiplication": mul_table}
+# CORS Middleware to allow the frontend to communicate with the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, restrict this to your frontend's domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.post("/shorten", summary="Create a new short link")
+async def create_short_link(url_item: URLItem, request: Request):
+    """
+    Creates a new short link. It will first try to reuse an expired ID.
+    If no IDs are available for reuse, it will create a new one.
+    """
+    global id_counter, url_database, freed_ids
+
+    if freed_ids:
+        # Reuse an old ID if available
+        new_id = freed_ids.pop(0)
+    else:
+        # Otherwise, create a new one
+        id_counter += 1
+        new_id = id_counter
+
+    url_database[new_id] = {
+        "long_url": url_item.long_url,
+        "created_at": datetime.utcnow()
+    }
+
+    short_code = to_bijective_base6(new_id)
+    short_url = f"{request.base_url}{short_code}"
+    return {"short_url": short_url, "long_url": url_item.long_url}
+
+
+@app.get("/{short_code}", summary="Redirect to the original URL")
+async def redirect_to_long_url(short_code: str):
+    """
+    Redirects to the original URL if the short link exists and has not expired.
+    If the link is expired, it is cleaned up and its ID is made available for reuse.
+    """
+    try:
+        url_id = from_bijective_base6(short_code)
+
+        record = url_database.get(url_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Short link not found")
+
+        # Check if the link has expired
+        if datetime.utcnow() > record["created_at"] + timedelta(seconds=LINK_TTL_SECONDS):
+            # Clean up the expired link
+            del url_database[url_id]
+            freed_ids.append(url_id)
+            raise HTTPException(status_code=404, detail="Short link has expired")
+
+        return RedirectResponse(url=record["long_url"])
+
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Invalid short code format")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

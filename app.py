@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl, field_validator
 from datetime import datetime, timedelta, date
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -86,10 +86,22 @@ def from_bijective_base6(s: str) -> int:
 
 # --- API Models ---
 class URLItem(BaseModel):
-    long_url: str
+    long_url: HttpUrl
     challenge_answer: int
     num1: int
     num2: int
+
+    @field_validator('long_url')
+    @classmethod
+    def check_domain(cls, v: HttpUrl):
+        """
+        Ensures the URL is not pointing to a local or private address.
+        """
+        if v.host in ('localhost', '127.0.0.1'):
+            raise ValueError('Shortening localhost URLs is not permitted.')
+        if not v.host or '.' not in v.host:
+            raise ValueError('The provided URL must have a valid domain name.')
+        return v
 
 
 # --- Lifespan Events for Startup and Shutdown ---

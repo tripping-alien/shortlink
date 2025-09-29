@@ -1,15 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
-    <title>Bijective URL Shortener</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <div class="container mt-5">
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+     <!-- SEO & Core Meta Tags -->
+     <title>Bijective Shorty - A URL Shortener</title>
+     <meta name="description" content="A simple, high-performance URL shortener using bijective base-6 math, with link expiration and ID reuse.">
+     <link rel="canonical" href="https://base6.art/" />
+     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+
+     <!-- Open Graph / Facebook -->
+     <meta property="og:type" content="website">
+     <meta property="og:url" content="https://base6.art/">
+     <meta property="og:title" content="Bijective Shorty - A URL Shortener">
+     <meta property="og:description" content="A simple, high-performance URL shortener using bijective base-6 math, with link expiration and ID reuse.">
+
+     <!-- Twitter -->
+     <meta property="twitter:card" content="summary">
+     <meta property="twitter:url" content="https://base6.art/">
+     <meta property="twitter:title" content="Bijective Shorty - A URL Shortener">
+     <meta property="twitter:description" content="A simple, high-performance URL shortener using bijective base-6 math, with link expiration and ID reuse.">
+
+     <!-- Stylesheets -->
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+     <link rel="stylesheet" href="/static/style.css">
+ </head>
+ <body>
+     <canvas id="background-animation"></canvas>
+     <div class="container mt-5">
+         <header class="text-center mb-4">
+             <h1 class="display-5">🔗 Bijective Shorty</h1>
+             <p class="lead">A URL shortener with TTL and ID reuse, powered by bijective math.</p>
+         </header>
+
+     <script src="/static/script.js"></script>
+     <script src="/static/animation.js"></script>
+         </div>
+ <div class="container mt-5">
         <header class="text-center mb-4">
             <h1 class="display-5">🔗 Bijective Shorty</h1>
             <p class="lead">A URL shortener with TTL and ID reuse, powered by bijective math.</p>
@@ -26,8 +54,15 @@
             <p class="mb-1">Short link generated (expires in 24 hours):</p>
             <a href="#" id="short-url-link" target="_blank"></a>
         </div>
-    </div>
 
-    <script src="/static/script.js"></script>
-</body>
-</html>
+        <footer class="text-center mt-5 pt-4">
+            <p>
+                An open source project. Source code available on <a href="https://github.com/tripping-alien/shortlink" target="_blank">GitHub</a>.
+            </p>
+            <p>
+                Released under the <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank">MIT License</a>.
+            </p>
+        </footer>
+    </div>
+     </body>
+ </html>

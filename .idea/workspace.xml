@@ -4,10 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="init">
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v1.0">
+      <change afterPath="$PROJECT_DIR$/static/animation.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/script.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -178,22 +181,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00298" summary="commit">
-      <option name="closed" value="true" />
-      <created>1758508064834</created>
-      <option name="number" value="00298" />
-      <option name="presentableId" value="LOCAL‎-00298" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1758508064834</updated>
-    </task>
-    <task id="LOCAL‎-00299" summary="commit">
-      <option name="closed" value="true" />
-      <created>1758508423114</created>
-      <option name="number" value="00299" />
-      <option name="presentableId" value="LOCAL‎-00299" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1758508423114</updated>
     </task>
     <task id="LOCAL‎-00300" summary="commit">
       <option name="closed" value="true" />
@@ -571,14 +558,29 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759137120149</updated>
     </task>
-    <option name="localTasksCounter" value="347" />
+    <task id="LOCAL‎-00347" summary="init">
+      <option name="closed" value="true" />
+      <created>1759137352922</created>
+      <option name="number" value="00347" />
+      <option name="presentableId" value="LOCAL‎-00347" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759137352923</updated>
+    </task>
+    <task id="LOCAL‎-00348" summary="v1.0">
+      <option name="closed" value="true" />
+      <created>1759137443004</created>
+      <option name="number" value="00348" />
+      <option name="presentableId" value="LOCAL‎-00348" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759137443004</updated>
+    </task>
+    <option name="localTasksCounter" value="349" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="design" />
     <MESSAGE value="rc" />
     <MESSAGE value="dev" />
     <MESSAGE value="stable" />
@@ -603,7 +605,8 @@
     <MESSAGE value="study" />
     <MESSAGE value="release 2.0.0" />
     <MESSAGE value="init" />
-    <option name="LAST_COMMIT_MESSAGE" value="init" />
+    <MESSAGE value="v1.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="v1.0" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/PythonProject$.coverage" NAME=" Coverage Results" MODIFIED="1758447187993" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

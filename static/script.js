@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortUrlLink = document.getElementById('short-url-link');
 
     // Configure the API endpoint
-    const API_ENDPOINT = 'http://localhost:8000/shorten';
+    const API_ENDPOINT = '/shorten'; // Use relative path
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();

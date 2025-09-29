@@ -1,14 +1,16 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
+import json
 
 # --- Configuration ---
 LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
+DB_FILE = "db.json"
 
 # --- In-Memory "Database" ---
 # In a real application, you would replace this with a proper database
@@ -16,6 +18,45 @@ LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
 url_database = {}
 id_counter = 0
 freed_ids = []  # A pool of expired/reusable IDs
+
+# --- Persistence Logic ---
+def save_state():
+    """Saves the current state to a JSON file."""
+    # Convert datetime objects to strings for JSON serialization
+    serializable_db = {
+        url_id: {
+            "long_url": data["long_url"],
+            "created_at": data["created_at"].isoformat()
+        }
+        for url_id, data in url_database.items()
+    }
+    state = {
+        "url_database": serializable_db,
+        "id_counter": id_counter,
+        "freed_ids": freed_ids
+    }
+    with open(DB_FILE, "w") as f:
+        json.dump(state, f, indent=4)
+
+def load_state():
+    """Loads the state from a JSON file on startup."""
+    global url_database, id_counter, freed_ids
+    try:
+        with open(DB_FILE, "r") as f:
+            state = json.load(f)
+            # Convert string timestamps back to datetime objects
+            url_database = {
+                int(url_id): {
+                    "long_url": data["long_url"],
+                    "created_at": datetime.fromisoformat(data["created_at"])
+                }
+                for url_id, data in state.get("url_database", {}).items()
+            }
+            id_counter = state.get("id_counter", 0)
+            freed_ids = state.get("freed_ids", [])
+    except FileNotFoundError:
+        # If the file doesn't exist, start with a fresh state
+        pass
 
 
 # --- Bijective Base-6 Logic ---
@@ -69,6 +110,33 @@ async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt():
+    content = """User-agent: *
+Allow: /
+Sitemap: https://base6.art/sitemap.xml
+"""
+    return Response(content=content, media_type="text/plain")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap():
+    today = date.today().isoformat()
+    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://base6.art/</loc>
+    <lastmod>{today}</lastmod>
+  </url>
+</urlset>"""
+    return Response(content=xml_content, media_type="application/xml")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
+
+
 @app.post("/shorten", summary="Create a new short link")
 async def create_short_link(url_item: URLItem, request: Request):
     """
@@ -94,6 +162,10 @@ async def create_short_link(url_item: URLItem, request: Request):
     short_url = f"{request.base_url}{short_code}"
     return {"short_url": short_url, "long_url": url_item.long_url}
 
+    # Save the new state to disk
+    save_state()
+    return {"short_url": short_url, "long_url": url_item.long_url}
+
 
 @app.get("/{short_code}", summary="Redirect to the original URL")
 async def redirect_to_long_url(short_code: str):
@@ -113,6 +185,7 @@ async def redirect_to_long_url(short_code: str):
             # Clean up the expired link
             del url_database[url_id]
             freed_ids.append(url_id)
+            save_state()  # Save state after cleaning up
             raise HTTPException(status_code=404, detail="Short link has expired")
 
         return RedirectResponse(url=record["long_url"])
@@ -122,4 +195,5 @@ async def redirect_to_long_url(short_code: str):
 
 
 if __name__ == "__main__":
+    load_state()  # Load existing state on server start
     uvicorn.run(app, host="0.0.0.0", port=8000)

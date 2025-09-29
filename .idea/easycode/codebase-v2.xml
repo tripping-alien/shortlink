@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.obiscr.chatgpt.settings.EasyCodeState">
+    <option name="projectFiles" value="$PROJECT_DIR$/locales/ar.json;C:/Users/synec/PycharmProjects/PythonProject/locales/de.json;C:/Users/synec/PycharmProjects/PythonProject/locales/en.json;C:/Users/synec/PycharmProjects/PythonProject/locales/es.json;C:/Users/synec/PycharmProjects/PythonProject/locales/fr.json;C:/Users/synec/PycharmProjects/PythonProject/locales/he.json;C:/Users/synec/PycharmProjects/PythonProject/locales/ja.json;C:/Users/synec/PycharmProjects/PythonProject/locales/ru.json;C:/Users/synec/PycharmProjects/PythonProject/locales/zh.json;C:/Users/synec/PycharmProjects/PythonProject/static/animation.js;C:/Users/synec/PycharmProjects/PythonProject/static/script.js;C:/Users/synec/PycharmProjects/PythonProject/static/style.css;C:/Users/synec/PycharmProjects/PythonProject/templates/index.html;C:/Users/synec/PycharmProjects/PythonProject/app.py;C:/Users/synec/PycharmProjects/PythonProject/README.md;C:/Users/synec/PycharmProjects/PythonProject/test_app.py" />
+  </component>
+</project>

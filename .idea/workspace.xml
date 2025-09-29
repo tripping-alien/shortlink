@@ -1,0 +1,608 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="release 2.0.0">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="PUSH_AUTO_UPDATE" value="true" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;tripping-alien&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/tripping-alien/bijective_base6_calc.git&quot;,
+    &quot;accountId&quot;: &quot;6a497e38-ef53-46fc-8593-fc5483a451e1&quot;
+  }
+}</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/../../../../Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.13_3.13.2032.0_x64__qbz5n2kfra8p0/Lib/asyncio/queues.py" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="32L3I01R3JRg1ygiJTSJlPlpd6O" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python tests.Python tests in test_app.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.desktop_app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.telegram_ai.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.android.studio.ml.bot.mainConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunManager" selected="Python tests.Python tests in test_app.py">
+    <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="PythonProject" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/app.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="desktop_app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="PythonProject" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/desktop_app.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="telegram_ai" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="PythonProject" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/telegram_ai.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Python tests in test_app.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="PythonProject" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/test_app.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python tests.Python tests in test_app.py" />
+        <item itemvalue="Python.telegram_ai" />
+        <item itemvalue="Python.desktop_app" />
+        <item itemvalue="Python.app" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-b3d66beaba9a-c6efb3732140-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.26199.168" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="" />
+      <created>1757185942094</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1757185942094</updated>
+      <workItem from="1758425240653" duration="1916000" />
+      <workItem from="1758427334375" duration="9393000" />
+      <workItem from="1758437221260" duration="10450000" />
+    </task>
+    <task id="LOCAL‎-00296" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758507788837</created>
+      <option name="number" value="00296" />
+      <option name="presentableId" value="LOCAL‎-00296" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758507788837</updated>
+    </task>
+    <task id="LOCAL‎-00297" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758507931552</created>
+      <option name="number" value="00297" />
+      <option name="presentableId" value="LOCAL‎-00297" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758507931552</updated>
+    </task>
+    <task id="LOCAL‎-00298" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758508064834</created>
+      <option name="number" value="00298" />
+      <option name="presentableId" value="LOCAL‎-00298" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758508064834</updated>
+    </task>
+    <task id="LOCAL‎-00299" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758508423114</created>
+      <option name="number" value="00299" />
+      <option name="presentableId" value="LOCAL‎-00299" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758508423114</updated>
+    </task>
+    <task id="LOCAL‎-00300" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758508442088</created>
+      <option name="number" value="00300" />
+      <option name="presentableId" value="LOCAL‎-00300" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758508442088</updated>
+    </task>
+    <task id="LOCAL‎-00301" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758508625729</created>
+      <option name="number" value="00301" />
+      <option name="presentableId" value="LOCAL‎-00301" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758508625729</updated>
+    </task>
+    <task id="LOCAL‎-00302" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758508858940</created>
+      <option name="number" value="00302" />
+      <option name="presentableId" value="LOCAL‎-00302" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758508858940</updated>
+    </task>
+    <task id="LOCAL‎-00303" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758509084467</created>
+      <option name="number" value="00303" />
+      <option name="presentableId" value="LOCAL‎-00303" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758509084467</updated>
+    </task>
+    <task id="LOCAL‎-00304" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758509256224</created>
+      <option name="number" value="00304" />
+      <option name="presentableId" value="LOCAL‎-00304" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758509256224</updated>
+    </task>
+    <task id="LOCAL‎-00305" summary="release">
+      <option name="closed" value="true" />
+      <created>1758509422406</created>
+      <option name="number" value="00305" />
+      <option name="presentableId" value="LOCAL‎-00305" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758509422406</updated>
+    </task>
+    <task id="LOCAL‎-00306" summary="release">
+      <option name="closed" value="true" />
+      <created>1758509612601</created>
+      <option name="number" value="00306" />
+      <option name="presentableId" value="LOCAL‎-00306" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758509612601</updated>
+    </task>
+    <task id="LOCAL‎-00307" summary="release">
+      <option name="closed" value="true" />
+      <created>1758510162193</created>
+      <option name="number" value="00307" />
+      <option name="presentableId" value="LOCAL‎-00307" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758510162193</updated>
+    </task>
+    <task id="LOCAL‎-00308" summary="release">
+      <option name="closed" value="true" />
+      <created>1758510254840</created>
+      <option name="number" value="00308" />
+      <option name="presentableId" value="LOCAL‎-00308" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758510254841</updated>
+    </task>
+    <task id="LOCAL‎-00309" summary="release">
+      <option name="closed" value="true" />
+      <created>1758510362865</created>
+      <option name="number" value="00309" />
+      <option name="presentableId" value="LOCAL‎-00309" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758510362865</updated>
+    </task>
+    <task id="LOCAL‎-00310" summary="release">
+      <option name="closed" value="true" />
+      <created>1758510524909</created>
+      <option name="number" value="00310" />
+      <option name="presentableId" value="LOCAL‎-00310" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758510524909</updated>
+    </task>
+    <task id="LOCAL‎-00311" summary="release">
+      <option name="closed" value="true" />
+      <created>1758510936140</created>
+      <option name="number" value="00311" />
+      <option name="presentableId" value="LOCAL‎-00311" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758510936140</updated>
+    </task>
+    <task id="LOCAL‎-00312" summary="release">
+      <option name="closed" value="true" />
+      <created>1758511555627</created>
+      <option name="number" value="00312" />
+      <option name="presentableId" value="LOCAL‎-00312" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758511555627</updated>
+    </task>
+    <task id="LOCAL‎-00313" summary="release">
+      <option name="closed" value="true" />
+      <created>1758511647548</created>
+      <option name="number" value="00313" />
+      <option name="presentableId" value="LOCAL‎-00313" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758511647548</updated>
+    </task>
+    <task id="LOCAL‎-00314" summary="release">
+      <option name="closed" value="true" />
+      <created>1758511827694</created>
+      <option name="number" value="00314" />
+      <option name="presentableId" value="LOCAL‎-00314" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758511827694</updated>
+    </task>
+    <task id="LOCAL‎-00315" summary="release">
+      <option name="closed" value="true" />
+      <created>1758511853340</created>
+      <option name="number" value="00315" />
+      <option name="presentableId" value="LOCAL‎-00315" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758511853341</updated>
+    </task>
+    <task id="LOCAL‎-00316" summary="release">
+      <option name="closed" value="true" />
+      <created>1758512225071</created>
+      <option name="number" value="00316" />
+      <option name="presentableId" value="LOCAL‎-00316" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758512225071</updated>
+    </task>
+    <task id="LOCAL‎-00317" summary="release">
+      <option name="closed" value="true" />
+      <created>1758512246257</created>
+      <option name="number" value="00317" />
+      <option name="presentableId" value="LOCAL‎-00317" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758512246257</updated>
+    </task>
+    <task id="LOCAL‎-00318" summary="release">
+      <option name="closed" value="true" />
+      <created>1758512523141</created>
+      <option name="number" value="00318" />
+      <option name="presentableId" value="LOCAL‎-00318" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758512523141</updated>
+    </task>
+    <task id="LOCAL‎-00319" summary="release">
+      <option name="closed" value="true" />
+      <created>1758512664047</created>
+      <option name="number" value="00319" />
+      <option name="presentableId" value="LOCAL‎-00319" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758512664047</updated>
+    </task>
+    <task id="LOCAL‎-00320" summary="settings">
+      <option name="closed" value="true" />
+      <created>1758512853120</created>
+      <option name="number" value="00320" />
+      <option name="presentableId" value="LOCAL‎-00320" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758512853120</updated>
+    </task>
+    <task id="LOCAL‎-00321" summary="settings">
+      <option name="closed" value="true" />
+      <created>1758513012182</created>
+      <option name="number" value="00321" />
+      <option name="presentableId" value="LOCAL‎-00321" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513012182</updated>
+    </task>
+    <task id="LOCAL‎-00322" summary="json crashes">
+      <option name="closed" value="true" />
+      <created>1758513165977</created>
+      <option name="number" value="00322" />
+      <option name="presentableId" value="LOCAL‎-00322" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513165977</updated>
+    </task>
+    <task id="LOCAL‎-00323" summary="json crashes">
+      <option name="closed" value="true" />
+      <created>1758513303166</created>
+      <option name="number" value="00323" />
+      <option name="presentableId" value="LOCAL‎-00323" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513303166</updated>
+    </task>
+    <task id="LOCAL‎-00324" summary="json crashes">
+      <option name="closed" value="true" />
+      <created>1758513397246</created>
+      <option name="number" value="00324" />
+      <option name="presentableId" value="LOCAL‎-00324" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513397246</updated>
+    </task>
+    <task id="LOCAL‎-00325" summary="fixes">
+      <option name="closed" value="true" />
+      <created>1758513526678</created>
+      <option name="number" value="00325" />
+      <option name="presentableId" value="LOCAL‎-00325" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513526678</updated>
+    </task>
+    <task id="LOCAL‎-00326" summary="heb">
+      <option name="closed" value="true" />
+      <created>1758513704191</created>
+      <option name="number" value="00326" />
+      <option name="presentableId" value="LOCAL‎-00326" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513704191</updated>
+    </task>
+    <task id="LOCAL‎-00327" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758513784859</created>
+      <option name="number" value="00327" />
+      <option name="presentableId" value="LOCAL‎-00327" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513784859</updated>
+    </task>
+    <task id="LOCAL‎-00328" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758513986749</created>
+      <option name="number" value="00328" />
+      <option name="presentableId" value="LOCAL‎-00328" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758513986749</updated>
+    </task>
+    <task id="LOCAL‎-00329" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758514252126</created>
+      <option name="number" value="00329" />
+      <option name="presentableId" value="LOCAL‎-00329" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758514252126</updated>
+    </task>
+    <task id="LOCAL‎-00330" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758514317906</created>
+      <option name="number" value="00330" />
+      <option name="presentableId" value="LOCAL‎-00330" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758514317906</updated>
+    </task>
+    <task id="LOCAL‎-00331" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758514448008</created>
+      <option name="number" value="00331" />
+      <option name="presentableId" value="LOCAL‎-00331" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758514448008</updated>
+    </task>
+    <task id="LOCAL‎-00332" summary="commit">
+      <option name="closed" value="true" />
+      <created>1758514477952</created>
+      <option name="number" value="00332" />
+      <option name="presentableId" value="LOCAL‎-00332" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758514477952</updated>
+    </task>
+    <task id="LOCAL‎-00333" summary="study">
+      <option name="closed" value="true" />
+      <created>1758514537976</created>
+      <option name="number" value="00333" />
+      <option name="presentableId" value="LOCAL‎-00333" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758514537976</updated>
+    </task>
+    <task id="LOCAL‎-00334" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1758514820407</created>
+      <option name="number" value="00334" />
+      <option name="presentableId" value="LOCAL‎-00334" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758514820407</updated>
+    </task>
+    <task id="LOCAL‎-00335" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1758515044339</created>
+      <option name="number" value="00335" />
+      <option name="presentableId" value="LOCAL‎-00335" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758515044339</updated>
+    </task>
+    <task id="LOCAL‎-00336" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1758515246987</created>
+      <option name="number" value="00336" />
+      <option name="presentableId" value="LOCAL‎-00336" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758515246987</updated>
+    </task>
+    <task id="LOCAL‎-00337" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1758526324096</created>
+      <option name="number" value="00337" />
+      <option name="presentableId" value="LOCAL‎-00337" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1758526324096</updated>
+    </task>
+    <task id="LOCAL‎-00338" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1759134321871</created>
+      <option name="number" value="00338" />
+      <option name="presentableId" value="LOCAL‎-00338" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759134321871</updated>
+    </task>
+    <task id="LOCAL‎-00339" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1759134487238</created>
+      <option name="number" value="00339" />
+      <option name="presentableId" value="LOCAL‎-00339" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759134487238</updated>
+    </task>
+    <task id="LOCAL‎-00340" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1759134602208</created>
+      <option name="number" value="00340" />
+      <option name="presentableId" value="LOCAL‎-00340" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759134602208</updated>
+    </task>
+    <task id="LOCAL‎-00341" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1759134842872</created>
+      <option name="number" value="00341" />
+      <option name="presentableId" value="LOCAL‎-00341" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759134842874</updated>
+    </task>
+    <task id="LOCAL‎-00342" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1759135162551</created>
+      <option name="number" value="00342" />
+      <option name="presentableId" value="LOCAL‎-00342" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759135162551</updated>
+    </task>
+    <task id="LOCAL‎-00343" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1759135584684</created>
+      <option name="number" value="00343" />
+      <option name="presentableId" value="LOCAL‎-00343" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759135584684</updated>
+    </task>
+    <task id="LOCAL‎-00344" summary="release 2.0.0">
+      <option name="closed" value="true" />
+      <created>1759135641644</created>
+      <option name="number" value="00344" />
+      <option name="presentableId" value="LOCAL‎-00344" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759135641645</updated>
+    </task>
+    <option name="localTasksCounter" value="345" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="design" />
+    <MESSAGE value="rc" />
+    <MESSAGE value="dev" />
+    <MESSAGE value="stable" />
+    <MESSAGE value="stable!" />
+    <MESSAGE value="bg" />
+    <MESSAGE value="checkbox" />
+    <MESSAGE value="רליז" />
+    <MESSAGE value="עובד" />
+    <MESSAGE value="תרגום" />
+    <MESSAGE value="main" />
+    <MESSAGE value="tel" />
+    <MESSAGE value="themes" />
+    <MESSAGE value="lang" />
+    <MESSAGE value="lang/themees/tabs" />
+    <MESSAGE value="lang/themes/tabs" />
+    <MESSAGE value="release" />
+    <MESSAGE value="settings" />
+    <MESSAGE value="json crashes" />
+    <MESSAGE value="fixes" />
+    <MESSAGE value="heb" />
+    <MESSAGE value="commit" />
+    <MESSAGE value="study" />
+    <MESSAGE value="release 2.0.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="release 2.0.0" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/PythonProject$.coverage" NAME=" Coverage Results" MODIFIED="1758447187993" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+  </component>
+</project>

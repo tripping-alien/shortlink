@@ -1,28 +1,64 @@
 # Bijective-Shorty: A URL Shortener with TTL and ID Reuse
+[!Live Demo](https://shortlink-3rab.onrender.com/)
+[!License: MIT](https://opensource.org/licenses/MIT)
 
-A simple, high-performance URL shortener built with Python, FastAPI, and the mathematical concept of bijective base-6 numeration. This project serves as a practical, real-world example of how zero-less number systems can be used to create compact, unambiguous, and predictable short codes.
+A simple, high-performance URL shortener built with Python and FastAPI, demonstrating the power of **bijective base-6 numeration**. This project serves as a practical, real-world example of how zero-less number systems can be used to create compact, unambiguous, and predictable short codes.
 
-This version includes advanced features like a Time-To-Live (TTL) for all links and a mechanism to reuse the IDs of expired links, ensuring the service remains efficient and short codes stay as short as possible over time.
+!Application Screenshot
 
-## How It Works
+## ✨ Features
 
-The core of this project is the bijective base-6 system combined with a smart ID management strategy:
+-   **Bijective ID Generation**: Creates the shortest possible URL-safe codes without collisions.
+-   **Link Expiration (TTL)**: All links automatically expire after 24 hours to keep the database clean.
+-   **ID Reuse**: Efficiently reuses the IDs of expired links to keep new codes short.
+-   **Persistent Storage**: Uses a file-based JSON database that persists across server restarts.
+-   **Bot Verification**: A simple math challenge protects the service from automated abuse.
+-   **Production-Ready**: Includes a health check endpoint and is configured for easy deployment on platforms like Render.
 
-1.  **ID Pool:** The system maintains a pool of IDs from links that have expired.
-2.  **ID Assignment:** When a new URL is submitted, the system first attempts to assign it an ID from the reusable pool. If the pool is empty, it generates a new, auto-incrementing ID.
-3.  **TTL:** Every new link is created with a 24-hour Time-To-Live (TTL).
-4.  **Bijective Conversion:** The assigned integer ID is converted into its bijective base-6 representation (e.g., ID `7` becomes `11`, ID `43` becomes `111`). This becomes the short URL path.
-5.  **Expiration Check:** When a short link is accessed, the system checks if it has expired. If it has, the link is deleted, its ID is returned to the reusable pool, and the user is shown an error.
+## 🛠️ Tech Stack
 
-This method guarantees no collisions, keeps codes short, and manages resources effectively.
+!Python
+!FastAPI
+!JavaScript
+!HTML5
+!CSS3
 
-## Tech Stack
-
--   **Backend**: Python 3.8+ with FastAPI
--   **Frontend**: Vanilla HTML, CSS, and JavaScript
--   **Server**: Uvicorn
-
-## Running Locally
+## 🚀 Running Locally
 
 1.  **Clone the repository:**
-    
+    ```sh
+    git clone https://github.com/tripping-alien/shortlink.git
+    cd shortlink
+    ```
+
+2.  **Set up and run the backend:**
+    ```sh
+    # From the project root directory
+    python -m venv .venv
+    # Activate the virtual environment (use .\venv\Scripts\Activate.ps1 on Windows)
+    source .venv/bin/activate
+    pip install -r requirements.txt
+    uvicorn app:app --reload
+    ```
+
+3.  **Access the application:**
+    -   Open your web browser and navigate to `http://localhost:8000`.
+
+## ☁️ Deployment on Render
+
+This project is configured for easy deployment on a platform like Render.
+
+1.  **Create a new Web Service** on Render and connect it to your GitHub repository.
+2.  **Set the Start Command** to:
+    ```
+    uvicorn app:app --host 0.0.0.0 --port $PORT
+    ```
+3.  **Add a Persistent Disk** to store the `db.json` file.
+    -   **Name**: `data-disk`
+    -   **Mount Path**: `/data`
+    -   This will automatically create the `RENDER_DISK_PATH` environment variable that the application uses.
+4.  **Update the Health Check Path** in your service settings to `/health`.
+
+## License
+
+This project is open source and released under the MIT License.

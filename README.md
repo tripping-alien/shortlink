@@ -1,10 +1,9 @@
 # Bijective-Shorty: A URL Shortener with TTL and ID Reuse
-[!Live Demo](https://shortlink-3rab.onrender.com/)
-[!License: MIT](https://opensource.org/licenses/MIT)
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Online-brightgreen?style=for-the-badge)](https://shortlink-3rab.onrender.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 A simple, high-performance URL shortener built with Python and FastAPI, demonstrating the power of **bijective base-6 numeration**. This project serves as a practical, real-world example of how zero-less number systems can be used to create compact, unambiguous, and predictable short codes.
-
-!Application Screenshot
 
 ## ✨ Features
 

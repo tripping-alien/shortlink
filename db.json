@@ -1,10 +1,14 @@
 {
     "url_database": {
         "1": {
+            "long_url": "https://test",
+            "created_at": "2025-09-29T10:01:48.267813"
+        },
+        "2": {
             "long_url": "https://google.com",
-            "created_at": "2025-09-29T09:56:21.805661"
+            "created_at": "2025-09-29T10:03:30.171690"
         }
     },
-    "id_counter": 1,
+    "id_counter": 2,
     "freed_ids": []
 }

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from datetime import datetime, timedelta, date
 from fastapi.staticfiles import StaticFiles
@@ -91,10 +92,20 @@ class URLItem(BaseModel):
     num2: int
 
 
+# --- Lifespan Events for Startup and Shutdown ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the state from disk when the application starts
+    load_state()
+    yield
+    # Save the state to disk when the application shuts down
+    save_state()
+
 # --- FastAPI Application ---
 app = FastAPI(
     title="Bijective-Shorty API",
-    description="A simple URL shortener using bijective base-6 encoding with TTL and ID reuse."
+    description="A simple URL shortener using bijective base-6 encoding with TTL and ID reuse.",
+    lifespan=lifespan
 )
 
 # Mount static files and templates
@@ -215,8 +226,7 @@ async def redirect_to_long_url(short_code: str):
         raise HTTPException(status_code=404, detail="Invalid short code format")
 
 
+# This block is useful for local development but not strictly needed for Render deployment
 if __name__ == "__main__":
-    load_state()  # Load existing state on server start
-    # Render provides the PORT environment variable. Default to 8000 for local dev.
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True)

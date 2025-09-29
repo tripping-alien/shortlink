@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import uvicorn
 
 # --- Configuration ---
@@ -48,6 +50,10 @@ app = FastAPI(
     description="A simple URL shortener using bijective base-6 encoding with TTL and ID reuse."
 )
 
+# Mount static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
 # CORS Middleware to allow the frontend to communicate with the API
 app.add_middleware(
     CORSMiddleware,
@@ -58,9 +64,9 @@ app.add_middleware(
 )
 
 
-@app.get("/", summary="API Root")
-async def read_root():
-    return {"message": "Welcome to Bijective-Shorty API. Use /shorten to create links or /{short_code} to redirect."}
+@app.get("/", response_class=HTMLResponse, summary="Serve Frontend UI")
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/shorten", summary="Create a new short link")

@@ -1,90 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+
 :root {
-    /* Light Theme - Metallic Purple/Grey */
-    --bg-color: #e9ecef; /* Light grey background */
-    --section-bg-color: #ffffff;
-    --text-color: #0d1117;
-    --text-color-muted: #586069;
-    --header-color: #0d1117;
-    --border-color: #d0d7de;
-    --accent-color: #6f42c1; /* Purple */
-    --final-answer-color: #0969da; /* Blue */
-    --calc-btn-text-color: #ffffff;
-    --rain-color: var(--accent-color);
-}
-
-[data-theme="dark"] {
-    /* Dark Theme - Metallic Blue/Purple */
-    --bg-color: #0d1117;
-    --section-bg-color: #161b22;
-    --text-color: #c9d1d9;
-    --text-color-muted: #8b949e;
-    --header-color: #c9d1d9;
+    --bg-color: #0a0a0a;
+    --text-color: #e6e6e6;
+    --accent-color: #00ff41; /* Terminal Green */
     --border-color: #30363d;
-    --accent-color: #8884ff; /* Metallic Purple */
-    --final-answer-color: #58a6ff; /* Metallic Blue */
-    --calc-btn-text-color: #ffffff;
-    --rain-color: var(--final-answer-color);
+    --input-bg: #1c1c1c;
 }
 
-/* --- Base & Animation --- */
-body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Roboto', sans-serif; }
-#background-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.5; }
-.container { z-index: 1; position: relative; }
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+}
 
-/* --- Header, Footer --- */
-header h1 { color: var(--header-color); font-weight: 500; }
-footer { color: var(--text-color-muted) !important; }
-footer a, section a { color: var(--accent-color); }
+.container {
+    max-width: 600px;
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+}
 
-/* --- Theme & Language Switchers --- */
-.settings-btn { position: fixed; top: 20px; left: 20px; width: 45px; height: 45px; background-color: var(--section-bg-color); border: 1px solid var(--border-color); border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 1.4em; z-index: 1000; color: var(--text-color); }
-.settings-btn:hover { background-color: var(--bg-color); }
-.modal-content { background-color: var(--bg-color); border-color: var(--border-color); }
-.modal-header { border-bottom-color: var(--border-color); }
-.list-group-item.language-option { background-color: var(--section-bg-color); border-color: var(--border-color); color: var(--text-color); cursor: pointer; }
-.list-group-item.language-option:hover { background-color: var(--accent-color); color: var(--calc-btn-text-color); }
-.list-group-item.language-option.active { background-color: var(--final-answer-color); color: var(--calc-btn-text-color); border-color: var(--final-answer-color); }
+.display-5 {
+    color: var(--accent-color);
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+}
 
-/* --- Bootstrap Component Theming --- */
-.nav-tabs { border-bottom-color: var(--border-color); }
-.nav-tabs .nav-link { color: var(--text-color-muted); border-bottom-color: transparent; }
-.nav-tabs .nav-link.active { background-color: transparent; color: var(--accent-color); border-color: transparent transparent var(--accent-color); }
-.tab-content { background-color: var(--section-bg-color); border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 .25rem .25rem; }
-section { background-color: transparent !important; padding: 2rem; }
-.form-control { background-color: var(--input-bg-color); color: var(--text-color); border-color: var(--border-color); font-family: var(--font-mono); }
+.lead {
+    color: #a0a0a0;
+}
+
+.form-control {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    font-family: 'Fira Code', monospace;
+}
+
 .form-control:focus {
+    background-color: var(--bg-color);
+    color: var(--text-color);
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 0.2rem rgba(136, 132, 255, 0.25); /* Universal fallback for color-mix() */
-}
-.btn-primary { background-color: var(--accent-color); border-color: var(--accent-color); color: var(--calc-btn-text-color); font-weight: bold; }
-
-/* --- Custom Components & Text --- */
-h2 { color: var(--accent-color); font-family: var(--font-mono); }
-code { background-color: rgba(128, 128, 128, 0.1); color: var(--accent-color); padding: .2em .4em; border-radius: .25rem; }
-.op-result-item { background-color: var(--bg-color); padding: 15px; border-radius: .25rem; border: 1px solid var(--border-color); text-align: center; }
-.op-problem { font-family: var(--font-mono); color: var(--text-color-muted); }
-.op-answer { font-family: var(--font-mono); font-size: 1.6em; font-weight: bold; color: var(--final-answer-color); }
-.table-responsive { border: 1px solid var(--border-color); border-radius: .25rem; }
-.example-box { background-color: var(--bg-color); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-color); padding: 1rem; border-radius: .25rem; }
-
-/* ==========================================================================
-   RTL (Right-to-Left) Support
-   ========================================================================== */
-[dir="rtl"] .nav-tabs {
-    justify-content: flex-end !important;
+    box-shadow: 0 0 0 0.25rem rgba(0, 255, 65, 0.25);
 }
 
-[dir="rtl"] .settings-btn {
-    left: auto;
-    right: 20px;
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--bg-color);
+    font-weight: bold;
+    transition: background-color 0.2s, box-shadow 0.2s;
 }
 
-[dir="rtl"] .example-box {
-    border-left: 1px solid var(--border-color);
-    border-right: 3px solid var(--accent-color);
+.btn-primary:hover {
+    background-color: #00e639;
+    border-color: #00e639;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
 }
 
-[dir="rtl"] .modal-header .btn-close {
-    margin-left: 0;
-    margin-right: auto;
+.result-box {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 0.25rem;
+    display: none;
+}
+
+.result-box a {
+    color: var(--accent-color);
+    word-break: break-all;
+    text-decoration: none;
+}
+
+.result-box a:hover {
+    text-decoration: underline;
 }

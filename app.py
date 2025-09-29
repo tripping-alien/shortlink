@@ -58,6 +58,11 @@ app.add_middleware(
 )
 
 
+@app.get("/", summary="API Root")
+async def read_root():
+    return {"message": "Welcome to Bijective-Shorty API. Use /shorten to create links or /{short_code} to redirect."}
+
+
 @app.post("/shorten", summary="Create a new short link")
 async def create_short_link(url_item: URLItem, request: Request):
     """

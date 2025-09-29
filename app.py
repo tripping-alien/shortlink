@@ -11,7 +11,8 @@ import os
 
 # --- Configuration ---
 LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
-DB_FILE = "db.json"
+# Use Render's persistent disk path. Default to local file for development.
+DB_FILE = os.path.join(os.environ.get('RENDER_DISK_PATH', '.'), 'db.json')
 
 # --- In-Memory "Database" ---
 # In a real application, you would replace this with a proper database
@@ -109,6 +110,11 @@ app.add_middleware(
 @app.get("/", response_class=HTMLResponse, summary="Serve Frontend UI")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/health", summary="Health Check")
+async def health_check():
+    return Response(status_code=200)
 
 
 @app.get("/robots.txt", include_in_schema=False)

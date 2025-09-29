@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 import uvicorn
 import json
 import os
+import random
 
 # --- Configuration ---
 LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
@@ -56,8 +57,8 @@ def load_state():
             }
             id_counter = state.get("id_counter", 0)
             freed_ids = state.get("freed_ids", [])
-    except FileNotFoundError:
-        # If the file doesn't exist, start with a fresh state
+    except (FileNotFoundError, json.JSONDecodeError):
+        # If the file doesn't exist or is empty, start with a fresh state
         pass
 
 
@@ -85,6 +86,9 @@ def from_bijective_base6(s: str) -> int:
 # --- API Models ---
 class URLItem(BaseModel):
     long_url: str
+    challenge_answer: int
+    num1: int
+    num2: int
 
 
 # --- FastAPI Application ---
@@ -139,6 +143,13 @@ async def sitemap():
     return Response(content=xml_content, media_type="application/xml")
 
 
+@app.get("/challenge", summary="Get a new bot verification challenge")
+async def get_challenge():
+    num1 = random.randint(1, 10)
+    num2 = random.randint(1, 10)
+    return {"num1": num1, "num2": num2, "question": f"What is {num1} + {num2}?"}
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return Response(status_code=204)
@@ -150,6 +161,10 @@ async def create_short_link(url_item: URLItem, request: Request):
     Creates a new short link. It will first try to reuse an expired ID.
     If no IDs are available for reuse, it will create a new one.
     """
+    # Stateless bot verification
+    if url_item.challenge_answer != (url_item.num1 + url_item.num2):
+        raise HTTPException(status_code=400, detail="Bot verification failed. Incorrect answer.")
+
     global id_counter, url_database, freed_ids
 
     if freed_ids:

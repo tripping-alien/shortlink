@@ -29,7 +29,7 @@ def save_state():
     # Convert datetime objects to strings for JSON serialization
     serializable_db = {
         url_id: {
-            "long_url": data["long_url"],
+            "long_url": str(data["long_url"]),  # Convert HttpUrl to string before saving
             "created_at": data["created_at"].isoformat()
         }
         for url_id, data in url_database.items()

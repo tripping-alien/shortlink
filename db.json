@@ -7,8 +7,16 @@
         "2": {
             "long_url": "http://google.com/",
             "created_at": "2025-09-29T10:06:51.816173"
+        },
+        "3": {
+            "long_url": "http://google.c/",
+            "created_at": "2025-09-29T10:07:23.981974"
+        },
+        "4": {
+            "long_url": "http://google./",
+            "created_at": "2025-09-29T10:07:30.775601"
         }
     },
-    "id_counter": 2,
+    "id_counter": 4,
     "freed_ids": []
 }

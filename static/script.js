@@ -43,7 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({ detail: "An unknown error occurred." }));
+                // FastAPI validation errors return a 'detail' array of objects.
+                if (Array.isArray(errorData.detail)) {
+                    // Extract the first, most relevant error message.
+                    const firstError = errorData.detail[0];
+                    throw new Error(firstError.msg || 'Invalid input.');
+                }
+                // Handle other structured errors or simple string details.
                 throw new Error(errorData.detail || 'Failed to create short link.');
             }
 

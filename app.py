@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
 import json
+import asyncio
 import os
 import random
 
@@ -22,6 +23,7 @@ DB_FILE = os.path.join(os.environ.get('RENDER_DISK_PATH', '.'), 'db.json')
 url_database = {}
 id_counter = 0
 freed_ids = []  # A pool of expired/reusable IDs
+db_lock = asyncio.Lock() # To prevent race conditions during state modification
 
 # --- Persistence Logic ---
 def save_state():
@@ -39,6 +41,7 @@ def save_state():
         "id_counter": id_counter,
         "freed_ids": freed_ids
     }
+    # This function is now synchronous, so we don't need async file I/O
     with open(DB_FILE, "w") as f:
         json.dump(state, f, indent=4)
 
@@ -104,14 +107,44 @@ class URLItem(BaseModel):
         return v
 
 
+# --- Background Cleanup Task ---
+async def cleanup_expired_links():
+    """Periodically scans the database and removes expired links."""
+    global url_database, freed_ids
+    now = datetime.utcnow()
+    expired_ids = []
+
+    # It's safe to iterate without a lock because we are not modifying during iteration
+    for url_id, record in url_database.items():
+        if now > record["created_at"] + timedelta(seconds=LINK_TTL_SECONDS):
+            expired_ids.append(url_id)
+
+    if expired_ids:
+        async with db_lock:
+            for url_id in expired_ids:
+                # Check if the record still exists before deleting
+                if url_id in url_database:
+                    del url_database[url_id]
+                    freed_ids.append(url_id)
+            save_state()
+        print(f"Cleaned up {len(expired_ids)} expired links.")
+
+async def run_cleanup_task():
+    """Runs the cleanup task in a loop."""
+    while True:
+        await asyncio.sleep(3600)  # Run every hour
+        await cleanup_expired_links()
+
 # --- Lifespan Events for Startup and Shutdown ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the state from disk when the application starts
     load_state()
+    cleanup_task = asyncio.create_task(run_cleanup_task())
     yield
     # Save the state to disk when the application shuts down
     save_state()
+    cleanup_task.cancel()
 
 # --- FastAPI Application ---
 app = FastAPI(
@@ -188,27 +221,28 @@ async def create_short_link(url_item: URLItem, request: Request):
     if url_item.challenge_answer != (url_item.num1 + url_item.num2):
         raise HTTPException(status_code=400, detail="Bot verification failed. Incorrect answer.")
 
-    global id_counter, url_database, freed_ids
+    async with db_lock:
+        global id_counter, url_database, freed_ids
 
-    if freed_ids:
-        # Reuse an old ID if available
-        new_id = freed_ids.pop(0)
-    else:
-        # Otherwise, create a new one
-        id_counter += 1
-        new_id = id_counter
+        if freed_ids:
+            # Reuse an old ID if available
+            new_id = freed_ids.pop(0)
+        else:
+            # Otherwise, create a new one
+            id_counter += 1
+            new_id = id_counter
 
-    url_database[new_id] = {
-        "long_url": url_item.long_url,
-        "created_at": datetime.utcnow()
-    }
+        url_database[new_id] = {
+            "long_url": url_item.long_url,
+            "created_at": datetime.utcnow()
+        }
 
-    short_code = to_bijective_base6(new_id)
-    short_url = f"{request.base_url}{short_code}"
+        short_code = to_bijective_base6(new_id)
+        short_url = f"{request.base_url}{short_code}"
 
-    # Save the new state to disk
-    save_state()
-    return {"short_url": short_url, "long_url": url_item.long_url}
+        # Save the new state to disk
+        save_state()
+        return {"short_url": short_url, "long_url": url_item.long_url}
 
 
 @app.get("/{short_code}", summary="Redirect to the original URL")
@@ -226,10 +260,12 @@ async def redirect_to_long_url(short_code: str):
 
         # Check if the link has expired
         if datetime.utcnow() > record["created_at"] + timedelta(seconds=LINK_TTL_SECONDS):
-            # Clean up the expired link
-            del url_database[url_id]
-            freed_ids.append(url_id)
-            save_state()  # Save state after cleaning up
+            # Clean up the expired link (passive check)
+            async with db_lock:
+                if url_id in url_database: # Check again in case the background task just removed it
+                    del url_database[url_id]
+                    freed_ids.append(url_id)
+                    save_state()
             raise HTTPException(status_code=404, detail="Short link has expired")
 
         return RedirectResponse(url=record["long_url"])

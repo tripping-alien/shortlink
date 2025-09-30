@@ -116,7 +116,12 @@ async def cleanup_expired_links():
 
     # It's safe to iterate without a lock because we are not modifying during iteration
     for url_id, record in url_database.items():
-        if now > record["created_at"] + timedelta(seconds=LINK_TTL_SECONDS):
+        # A link is considered invalid if it's older than the TTL
+        # OR if its creation timestamp is in the future (indicating corrupt data).
+        is_expired = now > record["created_at"] + timedelta(seconds=LINK_TTL_SECONDS)
+        is_invalid_date = record["created_at"] > now
+
+        if is_expired or is_invalid_date:
             expired_ids.append(url_id)
 
     if expired_ids:
@@ -127,13 +132,13 @@ async def cleanup_expired_links():
                     del url_database[url_id]
                     freed_ids.append(url_id)
             save_state()
-        print(f"Cleaned up {len(expired_ids)} expired links.")
+        print(f"Cleaned up {len(expired_ids)} expired or invalid links.")
 
 async def run_cleanup_task():
     """Runs the cleanup task in a loop."""
     while True:
-        await asyncio.sleep(3600)  # Run every hour
         await cleanup_expired_links()
+        await asyncio.sleep(3600)  # Run every hour
 
 # --- Lifespan Events for Startup and Shutdown ---
 @asynccontextmanager

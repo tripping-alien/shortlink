@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultBox = document.getElementById('result-box');
     const shortUrlLink = document.getElementById('short-url-link');
 
-    const verificationGroup = document.getElementById('verification-group');
     const verificationLabel = document.getElementById('verification-label');
     const verificationInput = document.getElementById('verification-input');
     let currentChallenge = {};
@@ -19,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(CHALLENGE_ENDPOINT);
             currentChallenge = await response.json();
             verificationLabel.textContent = currentChallenge.question;
-            verificationGroup.style.display = 'block';
+            verificationLabel.style.display = 'block';
+            verificationInput.style.display = 'block';
         } catch (error) {
             console.error('Failed to fetch verification challenge:', error);
         }

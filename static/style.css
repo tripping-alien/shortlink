@@ -59,6 +59,7 @@ header {
 .input-group {
     display: flex;
     gap: 0.5rem;
+    align-items: center; /* This is the key change */
     margin-bottom: 1rem;
 }
 

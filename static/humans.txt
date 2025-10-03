@@ -1,0 +1,12 @@
+/* TEAM */
+Creator: Your Name
+Contact: your-email@example.com
+GitHub: https://github.com/tripping-alien/shortlink
+
+/* THANKS */
+Inspiration: Bijective Functions
+
+/* SITE */
+Standards: HTML5, CSS3, JavaScript, WebGL
+Components: FastAPI, Uvicorn, Pydantic
+Software: Python

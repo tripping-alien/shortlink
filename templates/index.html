@@ -3,46 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
-    <title>Bijective URL Shortener</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+
+    <!-- =====================================================================
+         1. CORE SEO & BROWSER METADATA
+    ====================================================================== -->
+    <title>Bijective-Shorty | Fast, Simple, and Efficient URL Shortener</title>
+    <meta name="description" content="A high-performance URL shortener using bijective functions to create the shortest possible, collision-free links. Features link expiration, ID reuse, and bot protection.">
+    <meta name="keywords" content="url shortener, link shortener, bijective function, short url, custom url, fastapi, python">
+    <meta name="author" content="Andrey Lopukhov">
+    <link rel="canonical" href="https://shortlinks.art">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+
+    <!-- =====================================================================
+         2. SEARCH ENGINE VERIFICATION (Fill with your codes)
+    ====================================================================== -->
+    <!-- Google Search Console -->
+    <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE">
+    <!-- Yandex Webmaster -->
+    <meta name="yandex-verification" content="YOUR_YANDEX_VERIFICATION_CODE">
+
+    <!-- =====================================================================
+         3. OPEN GRAPH (for Facebook, LinkedIn, etc.)
+    ====================================================================== -->
+    <meta property="og:title" content="Bijective-Shorty | Fast, Simple, and Efficient URL Shortener">
+    <meta property="og:description" content="Create short, clean, and temporary links with this high-performance URL shortener.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://shortlinks.art/">
+    <meta property="og:image" content="https://via.placeholder.com/1200x630.png/0a0a0a/00ff41?text=Bijective-Shorty">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Bijective-Shorty">
+
+    <!-- =====================================================================
+         4. TWITTER CARD (for Twitter/X)
+    ====================================================================== -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bijective-Shorty | Fast, Simple, and Efficient URL Shortener">
+    <meta name="twitter:description" content="Create short, clean, and temporary links with this high-performance URL shortener.">
+    <meta name="twitter:image" content="https://via.placeholder.com/1200x675.png/0a0a0a/00ff41?text=Bijective-Shorty">
+    <!-- <meta name="twitter:site" content="@YourTwitterHandle"> -->
+    <!-- <meta name="twitter:creator" content="@YourTwitterHandle"> -->
+
+    <!-- =====================================================================
+         5. STRUCTURED DATA (JSON-LD for Rich Snippets)
+    ====================================================================== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Bijective-Shorty",
+      "applicationCategory": "Utilities",
+      "operatingSystem": "Web",
+      "url": "https://shortlinks.art/",
+      "abstract": "A high-performance URL shortener using bijective functions to create the shortest possible, collision-free links.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <!-- Link to your CSS and other files -->
+    <link rel="stylesheet" href="/static/style.css"> <!-- Assuming style.css exists -->
+    <link rel="author" href="/static/humans.txt">
 </head>
 <body>
     <canvas id="background-animation"></canvas>
-    <div class="container mt-5">
-        <header class="text-center mb-4">
-            <h1 class="display-5">🔗 Bijective Shorty</h1>
-            <p class="lead">A URL shortener with TTL and ID reuse, powered by bijective math.</p>
+
+    <main class="container">
+        <header>
+            <h1>Bijective-Shorty</h1>
+            <p>Fast, Simple, and Efficient URL Shortening</p>
         </header>
 
         <form id="shorten-form">
-            <div class="input-group mb-3">
-                <input type="url" id="long-url-input" class="form-control form-control-lg" placeholder="Enter a long URL to shorten..." required>
-                <button class="btn btn-primary" type="submit">Shorten</button>
+            <div class="input-group">
+                <input type="url" id="long-url-input" placeholder="Enter a long URL to shorten..." required>
+                <button type="submit">Shorten</button>
             </div>
-            <div id="verification-group" class="mb-3" style="display: none;">
-                <label for="verification-input" id="verification-label" class="form-label"></label>
-                <input type="number" id="verification-input" class="form-control" placeholder="Your answer..." required>
+            <div id="verification-group" style="display: none;">
+                <label id="verification-label" for="verification-input">Verification</label>
+                <input type="number" id="verification-input" placeholder="Answer" required>
             </div>
         </form>
 
-        <div id="result-box" class="result-box mt-4">
-            <p class="mb-1">Short link generated (expires in 24 hours):</p>
+        <div id="result-box" style="display: none;">
+            <p>Your short link:</p>
             <a href="#" id="short-url-link" target="_blank"></a>
         </div>
+    </main>
 
-        <footer class="text-center mt-5 pt-4">
-            <p>
-                An open source project. Source code available on <a href="https://github.com/tripping-alien/shortlink" target="_blank">GitHub</a>.
-            </p>
-            <p>
-                Released under the <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank">MIT License</a>.
-            </p>
-        </footer>
-    </div>
-
-    <script src="/static/script.js"></script>
     <script src="/static/animation.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 </html>

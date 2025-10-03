@@ -211,11 +211,6 @@ async def get_challenge():
     return {"num1": num1, "num2": num2, "question": f"What is {num1} + {num2}?"}
 
 
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    return Response(status_code=204)
-
-
 @app.post("/shorten", summary="Create a new short link")
 async def create_short_link(url_item: URLItem, request: Request):
     """

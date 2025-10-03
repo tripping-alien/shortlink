@@ -128,9 +128,16 @@ header {
 }
 
 footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--border-color);
     color: #a0a0a0;
     font-size: 0.9em;
+    text-align: center;
+}
+
+footer p {
+    margin: 0;
 }
 
 footer a {

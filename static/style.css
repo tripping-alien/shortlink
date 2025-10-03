@@ -60,7 +60,7 @@ header {
     display: grid;
     grid-template-columns: 1fr auto; /* Flexible input, auto-sized button */
     gap: 0.5rem;
-    align-items: center;
+    align-items: center; /* This is the key change */
     margin-bottom: 1rem;
 }
 

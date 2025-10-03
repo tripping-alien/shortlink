@@ -73,22 +73,22 @@
 
     <main class="container">
         <header>
-            <h1>Bijective-Shorty</h1>
-            <p>Fast, Simple, and Efficient URL Shortening</p>
+            <h1 class="display-5">Bijective-Shorty</h1>
+            <p class="lead">Fast, Simple, and Efficient URL Shortening</p>
         </header>
 
         <form id="shorten-form">
             <div class="input-group">
-                <input type="url" id="long-url-input" placeholder="Enter a long URL to shorten..." required>
-                <button type="submit">Shorten</button>
+                <input type="url" id="long-url-input" class="form-control" placeholder="Enter a long URL to shorten..." required>
+                <button type="submit" class="btn-primary">Shorten</button>
             </div>
             <div id="verification-group" style="display: none;">
                 <label id="verification-label" for="verification-input">Verification</label>
-                <input type="number" id="verification-input" placeholder="Answer" required>
+                <input type="number" id="verification-input" class="form-control" placeholder="Answer" required>
             </div>
         </form>
 
-        <div id="result-box" style="display: none;">
+        <div id="result-box" class="result-box" style="display: none;">
             <p>Your short link:</p>
             <a href="#" id="short-url-link" target="_blank"></a>
         </div>

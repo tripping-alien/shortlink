@@ -11,6 +11,7 @@ import json
 import asyncio
 import os
 import random
+from enum import Enum
 
 # --- Configuration ---
 LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
@@ -32,7 +33,7 @@ def save_state():
     serializable_db = {
         url_id: {
             "long_url": str(data["long_url"]),  # Convert HttpUrl to string before saving
-            "created_at": data["created_at"].isoformat()
+            "expires_at": data["expires_at"].isoformat() if data["expires_at"] else None
         }
         for url_id, data in url_database.items()
     }
@@ -55,7 +56,7 @@ def load_state():
             url_database = {
                 int(url_id): {
                     "long_url": data["long_url"],
-                    "created_at": datetime.fromisoformat(data["created_at"])
+                    "expires_at": datetime.fromisoformat(data["expires_at"]) if data["expires_at"] else None
                 }
                 for url_id, data in state.get("url_database", {}).items()
             }
@@ -87,12 +88,26 @@ def from_bijective_base6(s: str) -> int:
     return n
 
 
+# --- TTL Options ---
+class TTL(str, Enum):
+    ONE_HOUR = "1h"
+    ONE_DAY = "1d"
+    ONE_WEEK = "1w"
+    NEVER = "never"
+
+TTL_MAP = {
+    TTL.ONE_HOUR: timedelta(hours=1),
+    TTL.ONE_DAY: timedelta(days=1),
+    TTL.ONE_WEEK: timedelta(weeks=1),
+}
+
 # --- API Models ---
 class URLItem(BaseModel):
     long_url: HttpUrl
     challenge_answer: int
     num1: int
     num2: int
+    ttl: TTL = TTL.ONE_DAY # Default to 1 day
 
     @field_validator('long_url')
     @classmethod
@@ -116,11 +131,11 @@ async def cleanup_expired_links():
 
     # It's safe to iterate without a lock because we are not modifying during iteration
     for url_id, record in url_database.items():
-        # A link is considered invalid if it's older than the TTL
-        # OR if its creation timestamp is in the future (indicating corrupt data).
-        is_expired = now > record["created_at"] + timedelta(seconds=LINK_TTL_SECONDS)
-        is_invalid_date = record["created_at"] > now
-
+        # Skip links that never expire
+        if record["expires_at"] is None:
+            continue
+        is_expired = now > record["expires_at"]
+        is_invalid_date = record["expires_at"] < now - timedelta(weeks=52) # Heuristic for invalid past dates
         if is_expired or is_invalid_date:
             expired_ids.append(url_id)
 
@@ -184,8 +199,11 @@ async def health_check():
 
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
-    content = """User-agent: *
+    content = f"""User-agent: *
 Allow: /
+Disallow: /shorten
+Disallow: /challenge
+
 Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
@@ -231,10 +249,16 @@ async def create_short_link(url_item: URLItem, request: Request):
             # Otherwise, create a new one
             id_counter += 1
             new_id = id_counter
+        
+        # Calculate the expiration datetime
+        if url_item.ttl == TTL.NEVER:
+            expires_at = None
+        else:
+            expires_at = datetime.utcnow() + TTL_MAP[url_item.ttl]
 
         url_database[new_id] = {
             "long_url": url_item.long_url,
-            "created_at": datetime.utcnow()
+            "expires_at": expires_at
         }
 
         short_code = to_bijective_base6(new_id)
@@ -258,8 +282,8 @@ async def redirect_to_long_url(short_code: str):
         if not record:
             raise HTTPException(status_code=404, detail="Short link not found")
 
-        # Check if the link has expired
-        if datetime.utcnow() > record["created_at"] + timedelta(seconds=LINK_TTL_SECONDS):
+        # Check if the link has an expiration date and if it has passed
+        if record["expires_at"] and datetime.utcnow() > record["expires_at"]:
             # Clean up the expired link (passive check)
             async with db_lock:
                 if url_id in url_database: # Check again in case the background task just removed it

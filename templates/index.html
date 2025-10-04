@@ -71,18 +71,33 @@
 
         <form id="shorten-form" class="form-grid">
             <input type="url" id="long-url-input" class="form-control" placeholder="Enter a long URL to shorten..." required>
-            <button type="submit" class="btn-primary">Shorten</button>
+            <button type="submit" class="btn-primary" id="submit-button">
+                <span class="button-text">Shorten</span>
+                <span class="spinner" style="display: none;"></span>
+            </button>
             <label id="verification-label" for="verification-input" style="display: none;">Verification</label>
             <input type="number" id="verification-input" class="form-control form-control-full" placeholder="Answer" required style="display: none;">
         </form>
 
         <div class="form-info">
-            <p>Links are private and automatically expire after 24 hours.</p>
+            <p id="ttl-info-text">Link is private and will automatically expire in 24 Hours.</p>
+            <div class="ttl-selector">
+                <label for="ttl-select">Link expires in:</label>
+                <select id="ttl-select" class="form-control">
+                    <option value="1h">1 Hour</option>
+                    <option value="1d" selected>24 Hours</option>
+                    <option value="1w">1 Week</option>
+                    <option value="never">Never</option>
+                </select>
+            </div>
         </div>
 
         <div id="result-box" class="result-box" style="display: none;">
             <p>Your short link:</p>
-            <a href="#" id="short-url-link" target="_blank"></a>
+            <div class="result-content">
+                <a href="#" id="short-url-link" target="_blank"></a>
+                <button id="copy-button" class="btn-secondary">Copy</button>
+            </div>
         </div>
 
         <footer>

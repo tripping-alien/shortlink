@@ -186,7 +186,7 @@ async def health_check():
 async def robots_txt():
     content = """User-agent: *
 Allow: /
-Sitemap: https://base6.art/sitemap.xml
+Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
 
@@ -197,7 +197,7 @@ async def sitemap():
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://base6.art/</loc>
+    <loc>https://shortlinks.art/</loc>
     <lastmod>{today}</lastmod>
   </url>
 </urlset>"""

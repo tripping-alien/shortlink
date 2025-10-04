@@ -204,6 +204,9 @@ Allow: /
 Disallow: /shorten
 Disallow: /challenge
 
+# Yandex-specific directive for the main mirror
+Host: https://shortlinks.art
+
 Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")

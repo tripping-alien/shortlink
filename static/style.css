@@ -104,6 +104,7 @@ header {
     color: var(--bg-color);
     font-weight: bold;
     transition: background-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
 }
 
 .btn-primary:disabled {
@@ -142,11 +143,31 @@ header {
     color: var(--text-color);
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.2s;
+    cursor: pointer;
+    position: relative; /* For animation positioning */
 }
 
 .btn-secondary:hover {
     background-color: #444c56;
+}
+
+.btn-secondary.copied {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+    animation: copied-animation 1.5s ease-out forwards;
+}
+
+@keyframes copied-animation {
+    0% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 .form-info {

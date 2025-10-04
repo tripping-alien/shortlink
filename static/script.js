@@ -109,12 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Copy to Clipboard ---
     const copyButton = document.getElementById('copy-button');
     copyButton.addEventListener('click', () => {
-        navigator.clipboard.writeText(shortUrlLink.href).then(() => {
-            const originalText = copyButton.textContent;
+        // Use textContent to ensure we copy the exact string, not a resolved URL
+        navigator.clipboard.writeText(shortUrlLink.textContent).then(() => {
+            // Add a class to trigger the animation and change text
+            copyButton.classList.add('copied');
             copyButton.textContent = 'Copied!';
+
+            // Reset the button after the animation
             setTimeout(() => {
-                copyButton.textContent = originalText;
-            }, 2000);
+                copyButton.classList.remove('copied');
+                copyButton.textContent = 'Copy';
+            }, 1500);
         }).catch(err => {
             console.error('Failed to copy text: ', err);
             alert('Failed to copy link. Please copy it manually.');

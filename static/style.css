@@ -112,6 +112,17 @@ header {
     box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
 }
 
+.form-info {
+    text-align: center;
+    color: #a0a0a0; /* Use the same muted color as the lead text */
+    font-size: 0.9em;
+    margin: 1.5rem 0; /* Give it some vertical space */
+}
+
+.form-info p {
+    margin: 0;
+}
+
 .result-box {
     margin-top: 1.5rem;
     background-color: var(--bg-color);

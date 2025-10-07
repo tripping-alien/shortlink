@@ -25,7 +25,8 @@ def init_db():
             CREATE TABLE IF NOT EXISTS links (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 long_url TEXT NOT NULL,
-                expires_at "timestamp"
+                expires_at "timestamp",
+                deletion_token TEXT NOT NULL UNIQUE
             )
         """)
         conn.commit()

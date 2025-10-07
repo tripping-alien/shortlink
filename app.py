@@ -507,8 +507,8 @@ async def create_short_link(link_data: LinkBase, request: Request):
             
         with database.get_db_connection() as conn:
             cursor = conn.execute(
-                "INSERT INTO links (long_url, expires_at) VALUES (?, ?)",
-                (str(link_data.long_url), expires_at)
+                "INSERT INTO links (long_url, expires_at, deletion_token) VALUES (?, ?, ?)",
+                (str(link_data.long_url), expires_at, deletion_token)
             )
             new_id = cursor.lastrowid
             conn.commit()
@@ -570,7 +570,7 @@ async def get_link_details(short_code: str, request: Request):
     
     def db_select():
         with database.get_db_connection() as conn:
-            return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+            return conn.execute("SELECT long_url, expires_at, deletion_token FROM links WHERE id = ?", (url_id,)).fetchone()
             
     record = await asyncio.to_thread(db_select)
     if not record:
@@ -588,6 +588,7 @@ async def get_link_details(short_code: str, request: Request):
         "short_url": f"https://shortlinks.art/{short_code}",  # Use canonical URL
         "long_url": record["long_url"],
         "expires_at": record["expires_at"],
+        "deletion_token": record["deletion_token"],
         "links": [
             {
                 "rel": "self",

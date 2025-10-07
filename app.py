@@ -17,7 +17,8 @@ from pydantic_settings import BaseSettings
 from starlette.staticfiles import StaticFiles
 
 import database
-from obfuscation import obfuscate, deobfuscate
+from obfuscation import obfuscate, deobfuscate, MAX_ID
+from encoding import to_bijective_base6, from_bijective_base6
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -84,27 +85,6 @@ def lazy_gettext(request: Request, text: str) -> str:
     """A 'lazy' version of gettext that uses the language from the request scope."""
     lang = request.scope.get("language", DEFAULT_LANGUAGE)
     return gettext(text, lang)
-
-
-# --- Bijective Base-6 Logic ---
-def to_bijective_base6(n: int) -> str:
-    if n <= 0:
-        raise ValueError("Input must be a positive integer")
-    chars = "123456"
-    result = []
-    while n > 0:
-        n, remainder = divmod(n - 1, 6)
-        result.append(chars[remainder])
-    return "".join(reversed(result))
-
-
-def from_bijective_base6(s: str) -> int:
-    if not s or not s.isalnum():
-        raise ValueError("Invalid short code format")
-    n = 0
-    for char in s:
-        n = n * 6 + "123456".index(char) + 1
-    return n
 
 
 # --- TTL Options ---
@@ -516,6 +496,11 @@ async def create_short_link(link_data: LinkBase, request: Request):
 
     try:
         new_id, expires_at, deletion_token = await asyncio.to_thread(db_insert)
+        
+        # This check is crucial to ensure the ID is within the range our obfuscation supports.
+        if new_id > MAX_ID:
+            raise HTTPException(status_code=507, detail="Insufficient Storage: The service has run out of available short link IDs.")
+            
         obfuscated_id = obfuscate(new_id)
         short_code = to_bijective_base6(obfuscated_id)
         short_url = f"{request.base_url}{short_code}"

@@ -7,7 +7,7 @@ from pydantic import BaseModel, HttpUrl, field_validator, Field
 from datetime import datetime, timedelta, date, timezone
 from fastapi.staticfiles import StaticFiles 
 from fastapi.templating import Jinja2Templates
-from . import database # Import the new database module
+import database # Import the new database module
 import uvicorn
 import asyncio
 import os
@@ -290,6 +290,19 @@ async def read_root(request: Request, lang_code: str):
     translator = get_translator(lang_code)
     return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
+@app.get(
+    "/{lang_code:str}/about",
+    response_class=HTMLResponse,
+    summary="Serve About Page",
+    tags=["UI"]
+)
+async def read_about(request: Request, lang_code: str):
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+
+    translator = get_translator(lang_code)
+    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
+
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
     today = date.today().isoformat()
@@ -303,6 +316,13 @@ async def sitemap():
     <lastmod>{today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+  </url>""")
+        # About page
+        urlset.append(f"""  <url>
+    <loc>https://shortlinks.art/{lang_code}/about/</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
   </url>""")
 
     # 2. Add an entry for each active (non-expired) short link
@@ -409,8 +429,8 @@ async def create_short_link(link_data: LinkCreate, request: Request):
 
     # Prepare the response object that matches the LinkResponse model
     response_content = {
-        "short_url": short_url,
-        "long_url": link_data.long_url,
+        "short_url": str(short_url),
+        "long_url": str(link_data.long_url),
         "expires_at": expires_at
     }
 
@@ -459,6 +479,20 @@ async def get_link_details(short_code: str, request: Request):
 
 
 app.include_router(api_router)
+
+
+@app.get(
+    "/{lang_code:str}/about",
+    response_class=HTMLResponse,
+    summary="Serve About Page",
+    tags=["UI"]
+)
+async def read_about(request: Request, lang_code: str):
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+
+    translator = get_translator(lang_code)
+    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])

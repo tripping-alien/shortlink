@@ -3,12 +3,16 @@ from fastapi.testclient import TestClient
 from datetime import datetime, timedelta, timezone
 import os
 
+# Add the project root to sys.path to resolve relative imports
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 # We must monkeypatch the database path *before* importing the app
 # This ensures that the app, upon import, uses our test database path.
-from .. import database
+import database
 database.DB_FILE = ":memory:" # Use an in-memory SQLite database for tests
 
-from ..app import app, to_bijective_base6, from_bijective_base6
+from app import app, to_bijective_base6, from_bijective_base6
 
 
 @pytest.fixture(scope="function")
@@ -34,7 +38,7 @@ def test_bijective_functions():
         6: '6',
         7: '11',
         12: '16',
-        37: '111',
+        37: '61',
         100: '244'
     }
     for num, code in test_cases.items():

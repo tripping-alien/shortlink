@@ -288,7 +288,7 @@ async def read_root(request: Request, lang_code: str):
 
     # Pass the translator function to the template context
     translator = get_translator(lang_code)
-    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
+    return templates.TemplateResponse(request, "index.html", {"_": translator, "lang_code": lang_code})
 
 @app.get(
     "/{lang_code:str}/about",
@@ -301,7 +301,7 @@ async def read_about(request: Request, lang_code: str):
         raise HTTPException(status_code=404, detail="Language not supported")
 
     translator = get_translator(lang_code)
-    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
+    return templates.TemplateResponse(request, "about.html", {"_": translator, "lang_code": lang_code})
 
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
@@ -438,7 +438,7 @@ async def create_short_link(link_data: LinkCreate, request: Request):
     response_content = {
         "short_url": str(short_url),
         "long_url": str(link_data.long_url),
-        "expires_at": expires_at
+        "expires_at": expires_at.isoformat() if expires_at else None
     }
 
     # Return 201 Created with a Location header and the response body
@@ -489,39 +489,6 @@ async def get_link_details(short_code: str, request: Request):
 
 
 app.include_router(api_router)
-
-
-@app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
-async def redirect_to_long_url(short_code: str, request: Request):
-    """
-    Redirects to the original URL if the short link exists and has not expired.
-    If the link is expired, it is cleaned up and its ID is made available for reuse.
-    This is the primary function of the service.
-    """
-    now = datetime.now(timezone.utc)
-    translator = get_translator() # Defaults to 'en' for error messages on redirect
-    try:
-        url_id = from_bijective_base6(short_code)
-
-        def db_select():
-            with database.get_db_connection() as conn:
-                return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
-
-        record = await asyncio.to_thread(db_select)
-
-        if not record:
-            raise HTTPException(status_code=404, detail=translator("Short link not found"))
-
-        # Check if the link has an expiration date and if it has passed
-        expires_at = record['expires_at']
-        if expires_at and now > expires_at:
-            # The background task will eventually remove it. For now, just deny access.
-            raise HTTPException(status_code=404, detail=translator("Short link has expired"))
-
-        return RedirectResponse(url=record['long_url'])
-
-    except ValueError:
-        raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
 
 
 # This block is useful for local development but not strictly needed for Render deployment

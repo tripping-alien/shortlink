@@ -132,7 +132,11 @@ class LinkBase(BaseModel):
         """
         Prepends 'https://' to the URL if no scheme (http:// or https://) is present.
         """
-        if isinstance(v, str) and not v.startswith(('http://', 'https://')):
+        if not isinstance(v, str):
+            return v  # It's already a Pydantic object, do nothing
+        if '.' not in v:
+            raise ValueError("Invalid URL: must contain a domain name.")
+        if not v.startswith(('http://', 'https://')):
             return 'https://' + v
         return v
 
@@ -309,13 +313,58 @@ async def read_root(request: Request, lang_code: str):
     return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 
-@app.get("/health", summary="Health Check", tags=["Monitoring"])
-async def health_check():
+@app.get(
+    "/{lang_code:str}/about",
+    response_class=HTMLResponse,
+    summary="Serve About Page",
+    tags=["UI"]
+)
+async def read_about(request: Request, lang_code: str):
+    """Serves the about page for a given language."""
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+
+    translator = get_translator(lang_code)
+    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
+
+
+@app.get("/health", response_class=HTMLResponse, summary="Health Check", tags=["Monitoring"])
+async def health_check(request: Request):
     """
-    A simple health check endpoint that returns a 200 OK status.
-    Useful for uptime monitoring services.
+    Performs a deep health check on the application and its dependencies,
+    and renders an HTML status page.
     """
-    return Response(status_code=200)
+    health_status = {
+        "status": "ok",
+        "services": {}
+    }
+    status_code = 200
+
+    # 1. Check Translation System
+    if TRANSLATIONS and len(TRANSLATIONS) > 0:
+        health_status["services"]["translations"] = "ok"
+    else:
+        health_status["services"]["translations"] = "error"
+        health_status["status"] = "error"
+        status_code = 503
+
+    # 2. Check Database Connection
+    try:
+        with database.get_db_connection() as conn:
+            conn.execute("SELECT 1")
+        health_status["services"]["database_connection"] = "ok"
+    except Exception:
+        health_status["services"]["database_connection"] = "error"
+        health_status["status"] = "error"
+        status_code = 503
+
+    context = {
+        "request": request,
+        "overall_status": health_status["status"],
+        "services": health_status["services"],
+        "timestamp": datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    }
+    return templates.TemplateResponse("health.html", context, status_code=status_code)
 
 
 @app.get("/robots.txt", include_in_schema=False)
@@ -491,6 +540,7 @@ async def get_link_details(short_code: str, request: Request):
 app.include_router(api_router)
 
 
+# This catch-all route MUST be defined last.
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
 async def redirect_to_long_url(short_code: str, request: Request):
     """

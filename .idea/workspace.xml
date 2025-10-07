@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release" />
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng">
+      <change afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements-dev.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -52,6 +57,7 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py.executor": "Debug",
+    "Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/tests/test_app.py.executor": "Run",
     "Python tests.Python tests in test_app.py.executor": "Run",
     "Python.app (1).executor": "Run",
     "Python.app.executor": "Run",
@@ -75,7 +81,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Python.app (1)">
+  <component name="RunManager" selected="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/tests/test_app.py">
     <configuration name="app (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
@@ -204,10 +210,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/tests/test_app.py" />
         <item itemvalue="Python.app (1)" />
         <item itemvalue="Python.setup" />
         <item itemvalue="Python.build_cpp" />
-        <item itemvalue="Python.app" />
         <item itemvalue="Python.app" />
       </list>
     </recent_temporary>
@@ -229,14 +235,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00396" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759866280116</created>
-      <option name="number" value="00396" />
-      <option name="presentableId" value="LOCAL‎-00396" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759866280116</updated>
     </task>
     <task id="LOCAL‎-00397" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -622,7 +620,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759877397626</updated>
     </task>
-    <option name="localTasksCounter" value="445" />
+    <task id="LOCAL‎-00445" summary="Workng">
+      <option name="closed" value="true" />
+      <created>1759877447952</created>
+      <option name="number" value="00445" />
+      <option name="presentableId" value="LOCAL‎-00445" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759877447952</updated>
+    </task>
+    <option name="localTasksCounter" value="446" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -640,7 +646,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="bg" />
     <MESSAGE value="checkbox" />
     <MESSAGE value="רליז" />
     <MESSAGE value="עובד" />
@@ -665,14 +670,15 @@
     <MESSAGE value="v1.1 Release" />
     <MESSAGE value="v1.2 Release" />
     <MESSAGE value="v2.0 Release" />
-    <option name="LAST_COMMIT_MESSAGE" value="v2.0 Release" />
+    <MESSAGE value="Workng" />
+    <option name="LAST_COMMIT_MESSAGE" value="Workng" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/app.py</url>
-          <line>139</line>
+          <line>143</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

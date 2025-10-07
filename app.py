@@ -4,11 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic_settings import BaseSettings
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, HttpUrl, field_validator, Field
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from fastapi.staticfiles import StaticFiles 
 from fastapi.templating import Jinja2Templates
+from . import database # Import the new database module
 import uvicorn
-import json
 import asyncio
 import os
 import random
@@ -19,7 +19,8 @@ import re
 class Settings(BaseSettings):
     """Manages application configuration using environment variables."""
     # Use Render's persistent disk path. Default to local file for development.
-    db_file: str = os.path.join(os.environ.get('RENDER_DISK_PATH', '.'), 'db.json')
+    # This now points to the path defined in the database module for consistency.
+    db_file: str = database.DB_FILE
     # In production, set this to your frontend's domain: "https://your-frontend.com"
     # The default ["*"] is insecure and for development only.
     cors_origins: list[str] = ["*"]
@@ -71,55 +72,6 @@ def lazy_gettext(request: Request, text: str) -> str:
     """A 'lazy' version of gettext that uses the language from the request scope."""
     lang = request.scope.get("language", DEFAULT_LANGUAGE)
     return gettext(text, lang)
-
-# --- In-Memory "Database" ---
-# In a real application, you would replace this with a proper database
-# like SQLite, PostgreSQL, or a NoSQL database like Redis.
-url_database = {}
-id_counter = 0
-freed_ids = []  # A pool of expired/reusable IDs
-db_lock = asyncio.Lock() # To prevent race conditions during state modification
-
-# --- Persistence Logic ---
-def save_state():
-    """Saves the current state to a JSON file."""
-    # Convert datetime objects to strings for JSON serialization
-    serializable_db = {
-        url_id: {
-            "long_url": str(data["long_url"]),  # Convert HttpUrl to string before saving
-            "expires_at": data["expires_at"].isoformat() if data["expires_at"] else None
-        }
-        for url_id, data in url_database.items()
-    }
-    state = {
-        "url_database": serializable_db,
-        "id_counter": id_counter,
-        "freed_ids": freed_ids
-    }
-    # This function is now synchronous, so we don't need async file I/O
-    with open(settings.db_file, "w") as f:
-        json.dump(state, f, indent=4)
-
-def load_state():
-    """Loads the state from a JSON file on startup."""
-    global url_database, id_counter, freed_ids
-    try:
-        with open(settings.db_file, "r") as f:
-            state = json.load(f)
-            # Convert string timestamps back to datetime objects
-            url_database = {
-                int(url_id): {
-                    "long_url": data["long_url"],
-                    "expires_at": datetime.fromisoformat(data["expires_at"]) if data["expires_at"] else None
-                }
-                for url_id, data in state.get("url_database", {}).items()
-            }
-            id_counter = state.get("id_counter", 0)
-            freed_ids = state.get("freed_ids", [])
-    except (FileNotFoundError, json.JSONDecodeError):
-        # If the file doesn't exist or is empty, start with a fresh state
-        pass
-
 
 # --- Bijective Base-6 Logic ---
 def to_bijective_base6(n: int) -> str:
@@ -207,29 +159,13 @@ class ErrorResponse(BaseModel):
 # --- Background Cleanup Task ---
 async def cleanup_expired_links():
     """Periodically scans the database and removes expired links."""
-    global url_database, freed_ids
-    now = datetime.utcnow()
-    expired_ids = []
-
-    # It's safe to iterate without a lock because we are not modifying during iteration
-    for url_id, record in url_database.items():
-        # Skip links that never expire
-        if record["expires_at"] is None:
-            continue
-        is_expired = now > record["expires_at"]
-        is_invalid_date = record["expires_at"] < now - timedelta(weeks=52) # Heuristic for invalid past dates
-        if is_expired or is_invalid_date:
-            expired_ids.append(url_id)
-
-    if expired_ids:
-        async with db_lock:
-            for url_id in expired_ids:
-                # Check if the record still exists before deleting
-                if url_id in url_database:
-                    del url_database[url_id]
-                    freed_ids.append(url_id)
-            save_state()
-        print(f"Cleaned up {len(expired_ids)} expired or invalid links.")
+    now = datetime.now(timezone.utc)
+    with database.get_db_connection() as conn:
+        cursor = conn.execute("DELETE FROM links WHERE expires_at IS NOT NULL AND expires_at < ?", (now,))
+        conn.commit()
+        deleted_count = cursor.rowcount
+    if deleted_count > 0:
+        print(f"Cleaned up {deleted_count} expired links.")
 
 async def run_cleanup_task():
     """Runs the cleanup task in a loop."""
@@ -241,16 +177,13 @@ async def run_cleanup_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the state from disk when the application starts
+    database.init_db()
     print("Loading translations...")
     load_translations()
-    print("Loading application state...")
-    load_state()
     print("Starting background cleanup task...")
     cleanup_task = asyncio.create_task(run_cleanup_task())
     yield
     # Save the state to disk when the application shuts down
-    print("Saving application state...")
-    save_state()
     cleanup_task.cancel()
 
 # --- FastAPI Application Setup ---
@@ -360,7 +293,7 @@ async def read_root(request: Request, lang_code: str):
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
     today = date.today().isoformat()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     urlset = []
 
     # 1. Add an entry for each supported language homepage
@@ -372,15 +305,12 @@ async def sitemap():
     <priority>1.0</priority>
   </url>""")
 
-    # 2. Add an entry for each active short link
-    # Create a copy to prevent issues with concurrent modification
-    db_copy = url_database.copy()
-    for url_id, record in db_copy.items():
-        # Skip expired links
-        if record["expires_at"] and now > record["expires_at"]:
-            continue
-        
-        short_code = to_bijective_base6(url_id)
+    # 2. Add an entry for each active (non-expired) short link
+    with database.get_db_connection() as conn:
+        active_links = conn.execute("SELECT id FROM links WHERE expires_at IS NULL OR expires_at > ?", (now,)).fetchall()
+
+    for link in active_links:
+        short_code = to_bijective_base6(link['id'])
         urlset.append(f"""  <url>
     <loc>https://shortlinks.art/{short_code}</loc>
     <changefreq>never</changefreq>
@@ -453,49 +383,43 @@ async def create_short_link(link_data: LinkCreate, request: Request):
     if link_data.challenge.challenge_answer != (link_data.challenge.num1 + link_data.challenge.num2):
         raise HTTPException(status_code=400, detail=translator("Bot verification failed. Incorrect answer."))
 
-    async with db_lock:
-        global id_counter, url_database, freed_ids
+    # Calculate the expiration datetime (store as UTC)
+    expires_at = None
+    if link_data.ttl != TTL.NEVER:
+        expires_at = datetime.now(timezone.utc) + TTL_MAP[link_data.ttl]
 
-        if freed_ids:
-            # Reuse an old ID if available
-            new_id = freed_ids.pop(0)
-        else:
-            # Otherwise, create a new one
-            id_counter += 1
-            new_id = id_counter
-        
-        # Calculate the expiration datetime
-        if link_data.ttl == TTL.NEVER:
-            expires_at = None
-        else:
-            expires_at = datetime.utcnow() + TTL_MAP[link_data.ttl]
+    new_id = None
+    try:
+        with database.get_db_connection() as conn:
+            cursor = conn.execute(
+                "INSERT INTO links (long_url, expires_at) VALUES (?, ?)",
+                (str(link_data.long_url), expires_at)
+            )
+            new_id = cursor.lastrowid
+            conn.commit()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-        url_database[new_id] = {
-            "long_url": str(link_data.long_url), # Store as string
-            "expires_at": expires_at
-        }
+    if not new_id:
+        raise HTTPException(status_code=500, detail="Failed to create link ID in database.")
 
-        short_code = to_bijective_base6(new_id)
-        # Construct the URL for the redirect, not the API path
-        short_url = f"{request.base_url}{short_code}"
-        resource_location = short_url
+    short_code = to_bijective_base6(new_id)
+    short_url = f"{request.base_url}{short_code}"
+    resource_location = short_url
 
-        # Save the new state to disk
-        save_state()
+    # Prepare the response object that matches the LinkResponse model
+    response_content = {
+        "short_url": short_url,
+        "long_url": link_data.long_url,
+        "expires_at": expires_at
+    }
 
-        # Prepare the response object that matches the LinkResponse model
-        response_content = {
-            "short_url": short_url,
-            "long_url": link_data.long_url,
-            "expires_at": expires_at
-        }
-
-        # Return 201 Created with a Location header and the response body
-        return JSONResponse(
-            status_code=201,
-            content=response_content,
-            headers={"Location": resource_location}
-        )
+    # Return 201 Created with a Location header and the response body
+    return JSONResponse(
+        status_code=201,
+        content=response_content,
+        headers={"Location": resource_location}
+    )
 
 
 @api_router.get(
@@ -509,24 +433,28 @@ async def get_link_details(short_code: str, request: Request):
     Retrieves the details of a short link, such as the original URL and its
     expiration time, without performing a redirect.
     """
+    now = datetime.now(timezone.utc)
     translator = get_translator() # Defaults to 'en' for API responses
     try:
         url_id = from_bijective_base6(short_code)
     except ValueError:
         raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
 
-    record = url_database.get(url_id)
+    with database.get_db_connection() as conn:
+        record = conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
     # Check for expiration but do not delete it here (let the background task handle it)
-    if record["expires_at"] and datetime.utcnow() > record["expires_at"]:
+    expires_at = record['expires_at']
+    if expires_at and now > expires_at:
         raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
     return {
         "short_url": f"https://shortlinks.art/{short_code}", # Use canonical URL
-        "long_url": record["long_url"],
-        "expires_at": record["expires_at"]
+        "long_url": record['long_url'],
+        "expires_at": expires_at
     }
 
 
@@ -540,25 +468,24 @@ async def redirect_to_long_url(short_code: str, request: Request):
     If the link is expired, it is cleaned up and its ID is made available for reuse.
     This is the primary function of the service.
     """
+    now = datetime.now(timezone.utc)
     translator = get_translator() # Defaults to 'en' for error messages on redirect
     try:
         url_id = from_bijective_base6(short_code)
 
-        record = url_database.get(url_id)
+        with database.get_db_connection() as conn:
+            record = conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+
         if not record:
             raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
         # Check if the link has an expiration date and if it has passed
-        if record["expires_at"] and datetime.utcnow() > record["expires_at"]:
-            # Clean up the expired link (passive check)
-            async with db_lock:
-                if url_id in url_database: # Check again in case the background task just removed it
-                    del url_database[url_id]
-                    freed_ids.append(url_id)
-                    save_state()
+        expires_at = record['expires_at']
+        if expires_at and now > expires_at:
+            # The background task will eventually remove it. For now, just deny access.
             raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
-        return RedirectResponse(url=record["long_url"])
+        return RedirectResponse(url=record['long_url'])
 
     except ValueError:
         raise HTTPException(status_code=404, detail=translator("Invalid short code format"))

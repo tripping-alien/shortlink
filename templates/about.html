@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="{{ lang_code }}" dir="{{ 'rtl' if lang_code in ['ar', 'he'] else 'ltr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _('About') }} | Bijective-Shorty</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+    <canvas id="background-animation"></canvas>
+
+    <main class="container">
+        <header>
+            <h1 class="display-5">{{ _('About Bijective-Shorty') }}</h1>
+        </header>
+
+        <section class="about-content">
+            <p>{{ _('This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack.') }}</p>
+            <p>{{ _('It uses a bijective function to convert database IDs into short, non-sequential, and predictable base-6 codes. This method is efficient and avoids the database collisions common in hash-based shorteners.') }}</p>
+            <h3>{{ _('Core Features') }}</h3>
+            <ul>
+                <li><strong>{{ _('Stateless & Fast') }}:</strong> {{ _('Generates short codes mathematically without needing to check for pre-existing hashes.') }}</li>
+                <li><strong>{{ _('Privacy-Focused') }}:</strong> {{ _('No tracking, no analytics. Just simple, fast redirects.') }}</li>
+                <li><strong>{{ _('Temporary Links') }}:</strong> {{ _('Set an expiration time for your links, from one hour to one week, or never.') }}</li>
+                <li><strong>{{ _('Internationalized') }}:</strong> {{ _('The UI is available in multiple languages.') }}</li>
+            </ul>
+        </section>
+
+        <footer>
+            <div class="footer-links">
+                <a href="/ui/{{ lang_code }}/">{{ _('Back to Home') }}</a> |
+                <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">{{ _('View on') }} GitHub</a>
+            </div>
+        </footer>
+    </main>
+
+    <script src="/static/animation.js"></script>
+</body>
+</html>

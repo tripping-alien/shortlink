@@ -1,3 +1,4 @@
+import httpx
 from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
     # The default ["*"] is insecure and for development only.
     cors_origins: list[str] = ["*"]
     cleanup_interval_seconds: int = 3600  # Run cleanup task every hour
+    recaptcha_secret_key: str = "6Lc__uErAAAAAG_6kSItnoZFzVlEw552nXqN5PHO"
 
 
 settings = Settings()
@@ -172,15 +174,9 @@ class LinkBase(BaseModel):
     ttl: TTL = Field(TTL.ONE_DAY, description="Time-to-live for the link. Determines when it will expire.")
 
 
-class Challenge(BaseModel):
-    num1: int = Field(..., example=5, description="The first number in the bot-check challenge.")
-    num2: int = Field(..., example=8, description="The second number in the bot-check challenge.")
-    challenge_answer: int = Field(..., example=13, description="The user's answer to the `num1 + num2` challenge.")
-
-
 class LinkCreate(LinkBase):
     """The request body for creating a new short link."""
-    challenge: Challenge = Field(..., description="A simple challenge-response object to prevent spam.")
+    recaptcha_token: str = Field(..., alias="g-recaptcha-response", description="The reCAPTCHA response token from the client.")
 
     @field_validator('long_url', mode='before')
     @classmethod
@@ -479,12 +475,22 @@ async def create_short_link(link_data: LinkCreate, request: Request):
     - **Bot Protection**: Requires a simple arithmetic challenge to be solved.
     - **TTL**: Links can be set to expire after a specific duration.
     """
-    # Determine language from referrer or default
-    lang = request.headers.get("Referer", f"/{DEFAULT_LANGUAGE}").split('/')[-2]
-    translator = get_translator(lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE)
-    # Stateless bot verification
-    if link_data.challenge.challenge_answer != (link_data.challenge.num1 + link_data.challenge.num2):
-        raise HTTPException(status_code=400, detail=translator("Bot verification failed. Incorrect answer."))
+    # --- reCAPTCHA Verification ---
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://www.google.com/recaptcha/api/siteverify",
+            data={
+                "secret": settings.recaptcha_secret_key,
+                "response": link_data.recaptcha_token,
+            },
+        )
+        recaptcha_data = response.json()
+
+    if not recaptcha_data.get("success"):
+        # Determine language from referrer or default for the error message
+        lang = request.headers.get("Referer", f"/{DEFAULT_LANGUAGE}").split('/')[-2]
+        translator = get_translator(lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE)
+        raise HTTPException(status_code=400, detail=translator("Bot verification failed. Please try again."))
 
     async with db_lock:
         global id_counter, url_database, freed_ids

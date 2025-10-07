@@ -16,14 +16,6 @@ import random
 from enum import Enum
 import re
 
-# --- Load Secrets ---
-secrets = {}
-try:
-    with open("secrets.json") as f:
-        secrets = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
-    print("WARNING: secrets.json not found or invalid. Using default/placeholder values.")
-
 
 # --- Configuration Management ---
 class Settings(BaseSettings):
@@ -34,8 +26,7 @@ class Settings(BaseSettings):
     # The default ["*"] is insecure and for development only.
     cors_origins: list[str] = ["*"]
     cleanup_interval_seconds: int = 3600  # Run cleanup task every hour
-    recaptcha_secret_key: str = secrets.get("recaptcha_secret_key", "MISSING_SECRET_KEY")
-    recaptcha_site_key: str = secrets.get("recaptcha_site_key", "MISSING_SITE_KEY")
+    recaptcha_secret_key: str = "6Lc__uErAAAAAG_6kSItnoZFzVlEw552nXqN5PHO"
 
 
 settings = Settings()
@@ -104,7 +95,7 @@ def save_state():
     # Convert datetime objects to strings for JSON serialization
     serializable_db = {
         url_id: {
-            "long_url": str(data["long_url"]),
+            "long_url": str(data["long_url"]),  # Convert HttpUrl to string before saving
             "expires_at": data["expires_at"].isoformat() if data["expires_at"] else None
         }
         for url_id, data in url_database.items()
@@ -364,59 +355,16 @@ async def read_root(request: Request, lang_code: str):
 
     # Pass the translator function to the template context
     translator = get_translator(lang_code)
-    context = {"request": request, "_": translator, "lang_code": lang_code, "recaptcha_site_key": settings.recaptcha_site_key}
-    return templates.TemplateResponse("index.html", context)
-
-
-@app.get(
-    "/{lang_code:str}/about",
-    response_class=HTMLResponse,
-    summary="Serve About Page",
-    tags=["UI"]
-)
-async def read_about(request: Request, lang_code: str):
-    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-        raise HTTPException(status_code=404, detail="Language not supported")
-
-    translator = get_translator(lang_code)
-    context = {"request": request, "_": translator, "lang_code": lang_code, "recaptcha_site_key": settings.recaptcha_site_key}
-    return templates.TemplateResponse("about.html", context)
+    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 
 @app.get("/health", summary="Health Check", tags=["Monitoring"])
-async def health_check(request: Request):
+async def health_check():
     """
-    Performs a deep health check on the application and its dependencies.
-
-    Returns a 200 OK status if all systems are operational.
-    Returns a 503 Service Unavailable status if a critical dependency is unhealthy.
+    A simple health check endpoint that returns a 200 OK status.
+    Useful for uptime monitoring services.
     """
-    health_status = {
-        "status": "ok",
-        "timestamp": datetime.utcnow().isoformat(),
-        "services": {}
-    }
-    status_code = 200
-
-    # 1. Check Translation System
-    if TRANSLATIONS and len(TRANSLATIONS) > 0:
-        health_status["services"]["translations"] = "ok"
-    else:
-        health_status["services"]["translations"] = "error: not loaded"
-        health_status["status"] = "error"
-        status_code = 503
-
-    # 2. Check Database (Persistence Layer)
-    # For the current JSON implementation, we check if the file is accessible.
-    db_path = os.path.dirname(settings.db_file)
-    if os.access(db_path, os.W_OK) and os.access(db_path, os.R_OK):
-        health_status["services"]["database"] = "ok"
-    else:
-        health_status["services"]["database"] = "error: file system not accessible"
-        health_status["status"] = "error"
-        status_code = 503
-
-    return JSONResponse(content=health_status, status_code=status_code)
+    return Response(status_code=200)
 
 
 @app.get("/robots.txt", include_in_schema=False)
@@ -436,6 +384,7 @@ Host: https://shortlinks.art/
 Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
+
 
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
@@ -575,9 +524,9 @@ async def create_short_link(link_data: LinkCreate, request: Request):
 
         # Prepare the response object that matches the LinkResponse model
         response_content = {
-            "short_url": str(short_url),
-            "long_url": str(link_data.long_url),
-            "expires_at": expires_at.isoformat() if expires_at else None
+            "short_url": short_url,
+            "long_url": link_data.long_url,
+            "expires_at": expires_at
         }
 
         # Return 201 Created with a Location header and the response body
@@ -621,8 +570,6 @@ async def get_link_details(short_code: str, request: Request):
 
 
 app.include_router(api_router)
-
-
 
 
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])

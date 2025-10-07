@@ -319,6 +319,6 @@
  [dir="rtl"] .form-grid .btn-primary {
      grid-column: 1;
  }
- [dir="rtl"] .form-grid .form-control {
+ [dir="rtl"] .form-grid #long-url-input {
      grid-column: 2;
  }

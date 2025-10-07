@@ -177,8 +177,8 @@ async def run_cleanup_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the state from disk when the application starts
-    # DB initialization and translation loading are now done at the module level
-    # to ensure routes are configured correctly before the app starts.
+    # Initialize the database when the application starts.
+    database.init_db()
     print("Starting background cleanup task...")
     cleanup_task = asyncio.create_task(run_cleanup_task())
     yield
@@ -219,8 +219,6 @@ app.add_middleware(
 )
 
 # Load translations and initialize the database at the module level
-load_translations()
-database.init_db()
 
 def _(text: str, **kwargs):
     """
@@ -283,6 +281,8 @@ Sitemap: https://shortlinks.art/sitemap.xml
 # Create a regex to match only the supported language codes.
 # This prevents this route from incorrectly capturing short codes.
 language_codes_regex = "|".join(TRANSLATIONS.keys())
+if not language_codes_regex: # Fallback for when translations haven't loaded yet
+    language_codes_regex = DEFAULT_LANGUAGE
 
 @app.get(
     "/{lang_code:str:regex(" + language_codes_regex + ")}",
@@ -496,6 +496,9 @@ async def get_link_details(short_code: str, request: Request):
 
 
 app.include_router(api_router)
+
+# Load translations at the module level so the regex is ready
+load_translations()
 
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
 async def redirect_to_long_url(short_code: str, request: Request):

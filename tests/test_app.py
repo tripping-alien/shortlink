@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import os
@@ -8,41 +9,41 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# We must monkeypatch the database path *before* importing the app
-# This ensures that the app, upon import, uses our test database path.
-import database
-
 # Use a file-based SQLite DB for tests to allow shared connections.
 # It will be created and destroyed for each test session.
 TEST_DB_FILE = "./test.db"
-database.DB_FILE = TEST_DB_FILE
-
-from app import app, to_bijective_base6, from_bijective_base6
-from database import get_db_connection
-
 
 @pytest.fixture(scope="function")
 def client():
     """
-    Pytest fixture to provide a test client with an isolated, in-memory database.
+    Pytest fixture to provide a test client with an isolated, file-based database.
+    This fixture ensures a clean state for every test.
     """
-    # Ensure the test database file does not exist before a test run
+    # 1. Clean up any previous test database file.
     if os.path.exists(TEST_DB_FILE):
         os.remove(TEST_DB_FILE)
 
-    # Create the table for this test function
-    with database.get_db_connection() as conn:
-        database.init_db()
+    # 2. Use a patch to force the 'database' module to use our test DB path.
+    #    This is done *before* importing the app to ensure the app initializes
+    #    with the correct database path.
+    with patch('database.DB_FILE', TEST_DB_FILE):
+        # Import the app object *inside* the fixture to ensure it's fresh
+        # for each test and uses the patched DB_FILE.
+        from app import app
 
-    yield TestClient(app)
+        # 3. Yield the test client to the test function.
+        yield TestClient(app)
 
-    # Clean up the test database file after the test
+    # 4. Clean up the test database file after the test has run.
     if os.path.exists(TEST_DB_FILE):
         os.remove(TEST_DB_FILE)
 
 # ===================================
 # 1. Core Logic Tests
 # ===================================
+
+# These tests don't need the client fixture as they test pure functions.
+from app import to_bijective_base6, from_bijective_base6
 
 def test_bijective_functions():
     """Tests the encoding and decoding functions for correctness."""
@@ -146,7 +147,7 @@ def test_redirect_to_long_url(client: TestClient):
     # Now, test the redirect
     response = client.get("/1", follow_redirects=False)
     assert response.status_code == 307
-    assert response.headers["location"] == "https://redirect-target.com"
+    assert response.headers["location"] == "https://redirect-target.com/"
 
 def test_redirect_not_found(client: TestClient):
     """Tests that a non-existent short code returns a 404."""

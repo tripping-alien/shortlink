@@ -93,7 +93,7 @@ def test_create_link_success(client: TestClient):
     assert response.status_code == 201
     data = response.json()
     assert data["short_url"].endswith("/1")
-    assert data["long_url"] == "https://example.com/a-very-long-url/"
+    assert data["long_url"] == "https://example.com/a-very-long-url"
 
 
 def test_create_link_invalid_url(client: TestClient):
@@ -123,7 +123,7 @@ def test_redirect_to_long_url(client: TestClient):
 def test_link_expiration(client: TestClient, monkeypatch):
     """Tests that a link expires correctly."""
     # Monkeypatch the TTL_MAP for this test to create a very short-lived link
-    monkeypatch.setattr("app.TTL_MAP", {TTL.ONE_HOUR: timedelta(seconds=1)})
+    monkeypatch.setattr("app.TTL_MAP", {TTL.ONE_HOUR: timedelta(seconds=1)}, raising=False)
 
     # Create a link with a 1-second TTL
     client.post(

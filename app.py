@@ -366,7 +366,6 @@ async def health_check(request: Request):
     }
     return templates.TemplateResponse("health.html", context, status_code=status_code)
 
-
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
     content = f"""User-agent: *

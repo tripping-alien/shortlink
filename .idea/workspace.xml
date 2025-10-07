@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng">
-      <change afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements-dev.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_app.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -235,14 +233,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00397" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759866417473</created>
-      <option name="number" value="00397" />
-      <option name="presentableId" value="LOCAL‎-00397" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759866417473</updated>
     </task>
     <task id="LOCAL‎-00398" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -628,7 +618,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759877447952</updated>
     </task>
-    <option name="localTasksCounter" value="446" />
+    <task id="LOCAL‎-00446" summary="Workng">
+      <option name="closed" value="true" />
+      <created>1759877908595</created>
+      <option name="number" value="00446" />
+      <option name="presentableId" value="LOCAL‎-00446" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759877908595</updated>
+    </task>
+    <option name="localTasksCounter" value="447" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

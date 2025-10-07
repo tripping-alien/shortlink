@@ -71,7 +71,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Python tests.Python tests in test_app.py">
+  <component name="RunManager" selected="Python.app">
     <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
@@ -174,8 +174,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python tests.Python tests in test_app.py" />
         <item itemvalue="Python.app" />
+        <item itemvalue="Python tests.Python tests in test_app.py" />
         <item itemvalue="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py" />
         <item itemvalue="Python.telegram_ai" />
         <item itemvalue="Python.desktop_app" />

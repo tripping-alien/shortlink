@@ -29,7 +29,7 @@ def load_translations():
                     translations[msgid] = msgstr
 
             TRANSLATIONS[lang] = translations
-            print(f"Loaded {len(translations)} translations for language: {lang}")
+            #print(f"Loaded {len(translations)} translations for language: {lang}")
 
 
 def gettext(text: str, lang: str = DEFAULT_LANGUAGE) -> str:

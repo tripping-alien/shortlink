@@ -111,9 +111,9 @@ async def run_cleanup_task():
 # --- Lifespan Events for Startup and Shutdown ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize the database when the application starts.
-    database.init_db()
-    print("Starting background cleanup task...")
+    # The lifespan now only manages the database and background tasks.
+    # Initialization is handled by the 'on_startup' event.
+    print("Lifespan: Starting background cleanup task...")
     cleanup_task = asyncio.create_task(run_cleanup_task())
     yield
     # Clean up the background task when the application shuts down
@@ -172,7 +172,6 @@ def get_translator(lang: str = DEFAULT_LANGUAGE):
         translated = gettext(text, lang)
         return translated.format(**kwargs) if kwargs else translated
     return translator
-
 
 # --- Static Route Definitions ---
 
@@ -254,6 +253,8 @@ async def sitemap():
 """
     return Response(content=xml_content, media_type="application/xml")
 
+
+# --- API and Catch-All Route Definitions ---
 
 @app.get("/challenge", summary="Get a new bot verification challenge", tags=["Utilities"])
 async def get_challenge(request: Request):
@@ -369,45 +370,16 @@ async def get_link_details(short_code: str, request: Request):
 app.include_router(api_router)
 
 
-# --- Dynamic Route Registration ---
-# This function defines and registers routes that depend on TRANSLATIONS.
-def register_dynamic_routes():
-    """Programmatically register routes that depend on the loaded translations."""
-    if not TRANSLATIONS:
-        load_translations()
+# --- Route Handler Definitions ---
+# These functions are defined here so they can be referenced by name in register_dynamic_routes.
 
-    language_codes_regex = "|".join(TRANSLATIONS.keys())
-    if not language_codes_regex:
-        language_codes_regex = DEFAULT_LANGUAGE
-
-    async def read_root(request: Request, lang_code: str):
-        if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-            raise HTTPException(status_code=404, detail="Language not supported")
-        translator = get_translator(lang_code)
-        return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
-
-    async def read_about(request: Request, lang_code: str):
-        if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-            raise HTTPException(status_code=404, detail="Language not supported")
-        translator = get_translator(lang_code)
-        return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
-
-    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})", read_root, methods=["GET"], response_class=HTMLResponse, tags=["UI"])
-    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})/about", read_about, methods=["GET"], response_class=HTMLResponse, tags=["UI"])
-
-
-# --- Final Initialization and Catch-All Route ---
-load_translations()
-register_dynamic_routes()
-
-
-@app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
 async def redirect_to_long_url(short_code: str, request: Request):
     """Redirects to the original URL if the short link exists and has not expired."""
     now = datetime.now(timezone.utc)
     translator = get_translator()
     try:
         url_id = from_bijective_base6(short_code)
+
         def db_select():
             with database.get_db_connection() as conn:
                 return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
@@ -423,6 +395,48 @@ async def redirect_to_long_url(short_code: str, request: Request):
         return RedirectResponse(url=record['long_url'])
     except ValueError:
         raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
+
+
+@app.on_event("startup")
+def on_startup():
+    """
+    This function runs once when the application starts up, before serving requests.
+    It's the canonical place for initialization logic.
+    """
+    load_translations()
+    database.init_db()
+    register_dynamic_routes()
+
+
+def register_dynamic_routes():
+    """Programmatically register routes that depend on the loaded translations."""
+    # Create a regex to match only the supported language codes.
+    language_codes_regex = "|".join(TRANSLATIONS.keys())
+    if not language_codes_regex:
+        language_codes_regex = DEFAULT_LANGUAGE
+
+    # Define the route handlers inside this function or make them accessible
+    async def read_root(request: Request, lang_code: str):
+        if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+            raise HTTPException(status_code=404, detail="Language not supported")
+        translator = get_translator(lang_code)
+        return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
+
+    async def read_about(request: Request, lang_code: str):
+        if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+            raise HTTPException(status_code=404, detail="Language not supported")
+        translator = get_translator(lang_code)
+        return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
+
+    # Register the UI routes programmatically
+    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})", read_root, methods=["GET"],
+                      response_class=HTMLResponse, tags=["UI"])
+    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})/about", read_about, methods=["GET"],
+                      response_class=HTMLResponse, tags=["UI"])
+
+    # Register the catch-all redirect route LAST to ensure it doesn't override specific routes
+    app.add_api_route("/{short_code}", redirect_to_long_url, methods=["GET"], summary="Redirect to the original URL",
+                      tags=["Redirect"])
 
 
 # This block is useful for local development but not strictly needed for Render deployment

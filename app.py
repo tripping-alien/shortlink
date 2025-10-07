@@ -316,19 +316,6 @@ async def redirect_to_default_lang(request: Request):
             lang = browser_lang
     return RedirectResponse(url=f"/{lang}")
 
-@app.get(
-    "/{lang_code:str}",
-    response_class=HTMLResponse,
-    summary="Serve Frontend UI",
-    tags=["UI"])
-async def read_root(request: Request, lang_code: str):
-    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-        raise HTTPException(status_code=404, detail="Language not supported")
-
-    # Pass the translator function to the template context
-    translator = get_translator(lang_code)
-    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
-
 @app.get("/health", summary="Health Check", tags=["Monitoring"])
 async def health_check():
     """
@@ -356,6 +343,19 @@ Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
 
+
+@app.get(
+    "/{lang_code:str}",
+    response_class=HTMLResponse,
+    summary="Serve Frontend UI",
+    tags=["UI"])
+async def read_root(request: Request, lang_code: str):
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+
+    # Pass the translator function to the template context
+    translator = get_translator(lang_code)
+    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():

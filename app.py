@@ -441,7 +441,8 @@ async def sitemap():
     active_links = await asyncio.to_thread(get_active_links)
 
     for link in active_links:
-        short_code = to_bijective_base6(link['id'])
+        obfuscated_id = obfuscate(link['id'])
+        short_code = to_bijective_base6(obfuscated_id)
         urlset.append(f"""  <url>
     <loc>{base_url}/{short_code}</loc>
     <changefreq>never</changefreq>

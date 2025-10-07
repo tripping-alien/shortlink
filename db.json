@@ -47,10 +47,22 @@
         "12": {
             "long_url": "https://redirect-target.com/",
             "expires_at": "2025-10-07T22:40:30.906517"
+        },
+        "13": {
+            "long_url": "https://example.com/a-very-long-url",
+            "expires_at": "2025-10-08T21:55:47.515892"
+        },
+        "14": {
+            "long_url": "https://example.com/",
+            "expires_at": "2025-10-08T21:55:47.864322"
+        },
+        "15": {
+            "long_url": "https://redirect-target.com/",
+            "expires_at": "2025-10-07T22:55:48.192599"
         }
     },
-    "id_counter": 13,
+    "id_counter": 16,
     "freed_ids": [
-        13
+        16
     ]
 }

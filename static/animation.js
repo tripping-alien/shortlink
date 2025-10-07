@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('background-animation');
     if (!canvas) return;
 
@@ -6,75 +6,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!gl) {
         console.warn("WebGL not supported, background animation disabled.");
         return;
-    }
-
-    // --- UI Logic & I18n ---
-    let i18n = {};
-    const langCode = document.body.lang || 'en';
-
-    async function fetchTranslations() {
-        try {
-            const response = await fetch(`/api/translations/${langCode}`);
-            if (!response.ok) throw new Error('Failed to load translations');
-            i18n = await response.json();
-        } catch (error) {
-            console.error("Could not fetch translations:", error);
-            // Fallback to English
-            i18n = {
-                expire_in_duration: "Your link is private and will automatically expire in {duration}.",
-                expire_never: "Your link is private and will never expire.",
-                copied: "Copied!",
-                copy: "Copy",
-                ttl_1_hour: "1 Hour",
-                ttl_24_hours: "24 Hours",
-                ttl_1_week: "1 Week",
-                ttl_never: "Never",
-            };
-        }
-    }
-
-    await fetchTranslations();
-
-    const ttlSelect = document.getElementById('ttl-select');
-    const ttlInfoText = document.getElementById('ttl-info-text');
-    const TTL_STORAGE_KEY = 'bijective_shorty_ttl'; // Key for localStorage
-
-    function updateTtlInfo() {
-        if (!ttlSelect || !ttlInfoText) return;
-
-        const selectedValue = ttlSelect.value;
-        let durationText = '';
-
-        if (selectedValue === '1h') {
-            durationText = i18n.ttl_1_hour;
-        } else if (selectedValue === '1d') {
-            durationText = i18n.ttl_24_hours;
-        } else if (selectedValue === '1w') {
-            durationText = i18n.ttl_1_week;
-        }
-
-        if (selectedValue === 'never') {
-            ttlInfoText.textContent = i18n.expire_never;
-        } else {
-            ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
-        }
-    }
-
-    if (ttlSelect) {
-        // 1. On page load, try to restore the TTL selection from localStorage
-        const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
-        if (savedTtl) {
-            ttlSelect.value = savedTtl;
-        }
-
-        // 2. Add a listener to save the selection whenever it changes
-        ttlSelect.addEventListener('change', () => {
-            localStorage.setItem(TTL_STORAGE_KEY, ttlSelect.value);
-            updateTtlInfo();
-        });
-
-        // 3. Initialize the info text based on the (potentially restored) selection
-        updateTtlInfo();
     }
 
     const vertexShaderSource = `

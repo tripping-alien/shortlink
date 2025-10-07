@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultBox = document.getElementById('result-box');
     const shortUrlLink = document.getElementById('short-url-link');
     const copyButton = document.getElementById('copy-button');
+    const ttlSelect = document.getElementById('ttl-select');
     const languageSwitcher = document.querySelector('.language-switcher');
 
     // --- Toast Notification Function ---
@@ -119,4 +120,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- TTL Persistence and UI Update ---
+    const TTL_STORAGE_KEY = 'bijective_shorty_ttl';
+
+    function updateTtlInfo(i18n) {
+        const ttlInfoText = document.getElementById('ttl-info-text');
+        if (!ttlSelect || !ttlInfoText) return;
+
+        const selectedValue = ttlSelect.value;
+        let durationText = '';
+
+        if (selectedValue === '1h') {
+            durationText = i18n.ttl_1_hour;
+        } else if (selectedValue === '1d') {
+            durationText = i18n.ttl_24_hours;
+        } else if (selectedValue === '1w') {
+            durationText = i18n.ttl_1_week;
+        }
+
+        if (selectedValue === 'never') {
+            ttlInfoText.textContent = i18n.expire_never;
+        } else {
+            ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
+        }
+    }
+
+    // This self-invoking async function fetches translations and initializes the TTL UI
+    (async function initTtl() {
+        if (!ttlSelect) return;
+        const langCode = document.documentElement.lang || 'en';
+        try {
+            const response = await fetch(`/api/translations/${langCode}`);
+            const i18n = await response.json();
+
+            const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
+            if (savedTtl) {
+                ttlSelect.value = savedTtl;
+            }
+
+            ttlSelect.addEventListener('change', () => {
+                localStorage.setItem(TTL_STORAGE_KEY, ttlSelect.value);
+                updateTtlInfo(i18n);
+            });
+
+            updateTtlInfo(i18n);
+        } catch (error) {
+            console.error("Failed to initialize TTL info:", error);
+        }
+    })();
 });

@@ -312,7 +312,7 @@ async def redirect_to_default_lang(request: Request):
     summary="Serve Frontend UI",
     tags=["UI"])
 async def read_root(request: Request, lang_code: str):
-    if lang_code not in TRANSLATIONS:
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
         raise HTTPException(status_code=404, detail="Language not supported")
 
     # Pass the translator function to the template context
@@ -350,14 +350,31 @@ Sitemap: https://shortlinks.art/sitemap.xml
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
     today = date.today().isoformat()
+    now = datetime.utcnow()
     urlset = []
-    # Add an entry for each supported language
+
+    # 1. Add an entry for each supported language homepage
     for lang_code in TRANSLATIONS.keys():
         urlset.append(f"""  <url>
     <loc>https://shortlinks.art/{lang_code}/</loc>
     <lastmod>{today}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <priority>1.0</priority>
+  </url>""")
+
+    # 2. Add an entry for each active short link
+    # Create a copy to prevent issues with concurrent modification
+    db_copy = url_database.copy()
+    for url_id, record in db_copy.items():
+        # Skip expired links
+        if record["expires_at"] and now > record["expires_at"]:
+            continue
+        
+        short_code = to_bijective_base6(url_id)
+        urlset.append(f"""  <url>
+    <loc>https://shortlinks.art/{short_code}</loc>
+    <changefreq>never</changefreq>
+    <priority>0.5</priority>
   </url>""")
 
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -378,6 +395,23 @@ async def get_challenge(request: Request):
     num1 = random.randint(1, 10)
     num2 = random.randint(1, 10)
     return {"num1": num1, "num2": num2, "question": translator("What is {num1} + {num2}?", num1=num1, num2=num2)}
+
+
+@api_router.get("/translations/{lang_code}", include_in_schema=False)
+async def get_translations(lang_code: str):
+    """
+    Provides a set of translated strings to the frontend JavaScript.
+    """
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+
+    translator = get_translator(lang_code)
+    return {
+        "expire_in_duration": translator("Your link is private and will automatically expire in {duration}."),
+        "expire_never": translator("Your link is private and will never expire."),
+        "copied": translator("Copied!"),
+        "copy": translator("Copy"),
+    }
 
 
 @api_router.post(

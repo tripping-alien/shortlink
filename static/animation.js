@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const canvas = document.getElementById('background-animation');
     if (!canvas) return;
 
@@ -6,6 +6,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!gl) {
         console.warn("WebGL not supported, background animation disabled.");
         return;
+    }
+
+    // --- UI Logic & I18n ---
+    let i18n = {};
+    const langCode = document.body.lang || 'en';
+
+    async function fetchTranslations() {
+        try {
+            const response = await fetch(`/api/translations/${langCode}`);
+            if (!response.ok) throw new Error('Failed to load translations');
+            i18n = await response.json();
+        } catch (error) {
+            console.error("Could not fetch translations:", error);
+            // Fallback to English
+            i18n = {
+                expire_in_duration: "Your link is private and will automatically expire in {duration}.",
+                expire_never: "Your link is private and will never expire.",
+                copied: "Copied!",
+                copy: "Copy",
+            };
+        }
+    }
+
+    await fetchTranslations();
+
+    const ttlSelect = document.getElementById('ttl-select');
+    const ttlInfoText = document.getElementById('ttl-info-text');
+
+    if (ttlSelect && ttlInfoText) {
+        ttlSelect.addEventListener('change', () => {
+            const selectedOption = ttlSelect.options[ttlSelect.selectedIndex];
+            if (selectedOption.value === 'never') {
+                ttlInfoText.textContent = i18n.expire_never;
+            } else {
+                ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', selectedOption.text);
+            }
+        });
     }
 
     const vertexShaderSource = `

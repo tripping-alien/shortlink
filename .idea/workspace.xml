@@ -5,12 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release">
+      <change afterPath="$PROJECT_DIR$/requirements-dev.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/database.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mymath.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/mymath.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytest.ini" beforeDir="false" afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/animation.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/animation.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/script.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,9 +65,13 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py.executor": "Debug",
     "Python tests.Python tests in test_app.py.executor": "Run",
+    "Python.app (1).executor": "Run",
     "Python.app.executor": "Run",
+    "Python.build_cpp.executor": "Run",
     "Python.desktop_app.executor": "Run",
+    "Python.setup.executor": "Run",
     "Python.telegram_ai.executor": "Run",
+    "Python.web (1).executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -78,7 +87,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Python.app (1)">
+  <component name="RunManager" selected="Python.setup">
     <configuration name="app (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
@@ -146,7 +155,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="telegram_ai" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="build_cpp" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -159,8 +168,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/telegram_ai.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/build_cpp.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -169,20 +177,26 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+    <configuration name="setup" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/test_app.py&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/setup.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
     <configuration name="Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/tests/test_app.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
@@ -202,11 +216,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.setup" />
         <item itemvalue="Python.app (1)" />
+        <item itemvalue="Python.build_cpp" />
         <item itemvalue="Python.app" />
         <item itemvalue="Python.app" />
-        <item itemvalue="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/tests/test_app.py" />
-        <item itemvalue="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py" />
       </list>
     </recent_temporary>
   </component>
@@ -227,30 +241,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00391" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759865294455</created>
-      <option name="number" value="00391" />
-      <option name="presentableId" value="LOCAL‎-00391" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759865294455</updated>
-    </task>
-    <task id="LOCAL‎-00392" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759865406572</created>
-      <option name="number" value="00392" />
-      <option name="presentableId" value="LOCAL‎-00392" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759865406572</updated>
-    </task>
-    <task id="LOCAL‎-00393" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759865819973</created>
-      <option name="number" value="00393" />
-      <option name="presentableId" value="LOCAL‎-00393" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759865819973</updated>
     </task>
     <task id="LOCAL‎-00394" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -620,7 +610,31 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759874808152</updated>
     </task>
-    <option name="localTasksCounter" value="440" />
+    <task id="LOCAL‎-00440" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759875637592</created>
+      <option name="number" value="00440" />
+      <option name="presentableId" value="LOCAL‎-00440" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759875637592</updated>
+    </task>
+    <task id="LOCAL‎-00441" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759875687312</created>
+      <option name="number" value="00441" />
+      <option name="presentableId" value="LOCAL‎-00441" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759875687312</updated>
+    </task>
+    <task id="LOCAL‎-00442" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759875874323</created>
+      <option name="number" value="00442" />
+      <option name="presentableId" value="LOCAL‎-00442" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759875874323</updated>
+    </task>
+    <option name="localTasksCounter" value="443" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -670,12 +684,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/app.py</url>
-          <line>189</line>
+          <line>139</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mymath.py</url>
-          <line>17</line>
+          <line>23</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>

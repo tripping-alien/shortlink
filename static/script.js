@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch('/api/links', {
+                const response = await fetch('/links', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }, // Send data as JSON
                     body: JSON.stringify(payload)
@@ -75,11 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorMessage);
                 }
 
-                // Populate and show the result box
+                // --- This is the fix: Populate and show the result box ---
                 shortUrlLink.href = data.short_url;
                 shortUrlLink.textContent = data.short_url;
                 resultBox.style.display = 'block';
-                resultBox.classList.add('fade-in-up');
+                resultBox.classList.add('fade-in-up'); // Trigger fade-in animation
                 copyButton.textContent = 'Copy';
                 copyButton.classList.remove('copied');
 

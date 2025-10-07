@@ -70,52 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
-    // --- Form Submission Handler (called by reCAPTCHA) ---
-    // This function must be in the global scope for the reCAPTCHA callback to find it.
-    window.onRecaptchaSuccess = async function(token) {
-        if (!shortenForm) return;
-
-        // Show spinner and disable button
-        buttonText.style.display = 'none';
-        spinner.style.display = 'inline-block';
-        submitButton.disabled = true;
-
-        const formData = new FormData(shortenForm);
-
-        try {
-            const response = await fetch('/api/links', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.detail || 'An unknown error occurred.');
-            }
-
-            shortUrlLink.href = data.short_url;
-            shortUrlLink.textContent = data.short_url;
-            copyButton.textContent = 'Copy'; // Reset copy button text
-            copyButton.classList.remove('copied');
-
-            playPaperAirplaneAnimation(); // Trigger the cool animation!
-
-        } catch (error) {
-            showToast(error.message);
-        } finally {
-            // Hide spinner and re-enable button
-            buttonText.style.display = 'inline-block';
-            spinner.style.display = 'none';
-            submitButton.disabled = false;
-            // Reset the reCAPTCHA widget so it can be used again
-            if (window.grecaptcha) {
-                grecaptcha.reset();
-            }
-        }
-    };
-
     // --- Copy Button Handler ---
     if (copyButton) {
         copyButton.addEventListener('click', () => {

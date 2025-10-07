@@ -1,4 +1,3 @@
-import httpx
 from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,7 +25,6 @@ class Settings(BaseSettings):
     # The default ["*"] is insecure and for development only.
     cors_origins: list[str] = ["*"]
     cleanup_interval_seconds: int = 3600  # Run cleanup task every hour
-    recaptcha_secret_key: str = "6Lc__uErAAAAAG_6kSItnoZFzVlEw552nXqN5PHO"
 
 
 settings = Settings()
@@ -176,7 +174,6 @@ class LinkBase(BaseModel):
 
 class LinkCreate(LinkBase):
     """The request body for creating a new short link."""
-    recaptcha_token: str = Field(..., alias="g-recaptcha-response", description="The reCAPTCHA response token from the client.")
 
     @field_validator('long_url', mode='before')
     @classmethod
@@ -423,19 +420,6 @@ async def sitemap():
 """
     return Response(content=xml_content, media_type="application/xml")
 
-
-@app.get("/challenge", summary="Get a new bot verification challenge", tags=["Utilities"])
-async def get_challenge(request: Request):
-    """
-    Provides a simple arithmetic challenge to be solved by the client.
-    This is a stateless mechanism to deter simple bots from spamming the link creation endpoint.
-    """
-    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))  # Fallback for direct API calls
-    num1 = random.randint(1, 10)
-    num2 = random.randint(1, 10)
-    return {"num1": num1, "num2": num2, "question": translator("What is {num1} + {num2}?", num1=num1, num2=num2)}
-
-
 @api_router.get("/translations/{lang_code}", include_in_schema=False)
 async def get_translations(lang_code: str):
     """
@@ -472,26 +456,8 @@ async def create_short_link(link_data: LinkCreate, request: Request):
     Creates a new short link from a long URL.
 
     - **ID Reuse**: It will first try to reuse an expired ID to keep codes short.
-    - **Bot Protection**: Requires a simple arithmetic challenge to be solved.
     - **TTL**: Links can be set to expire after a specific duration.
     """
-    # --- reCAPTCHA Verification ---
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://www.google.com/recaptcha/api/siteverify",
-            data={
-                "secret": settings.recaptcha_secret_key,
-                "response": link_data.recaptcha_token,
-            },
-        )
-        recaptcha_data = response.json()
-
-    if not recaptcha_data.get("success"):
-        # Determine language from referrer or default for the error message
-        lang = request.headers.get("Referer", f"/{DEFAULT_LANGUAGE}").split('/')[-2]
-        translator = get_translator(lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE)
-        raise HTTPException(status_code=400, detail=translator("Bot verification failed. Please try again."))
-
     async with db_lock:
         global id_counter, url_database, freed_ids
 

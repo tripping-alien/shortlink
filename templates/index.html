@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- reCAPTCHA Script -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
     <!-- =====================================================================
          1. CORE SEO & BROWSER METADATA
     ====================================================================== -->
@@ -84,9 +81,7 @@
         <form id="shorten-form" class="form-grid">
             <input type="url" id="long-url-input" name="long_url" class="form-control"
                    placeholder="{{ _('Enter a long URL to shorten...') }}" required>
-            <button type="submit" class="btn-primary g-recaptcha" id="submit-button"
-                    data-sitekey="{{ recaptcha_site_key }}"
-                    data-callback="onRecaptchaSuccess">
+            <button type="submit" class="btn-primary" id="submit-button">
                 <span class="button-text">{{ _('Shorten') }}</span>
                 <span class="spinner" style="display: none;"></span>
             </button>

@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import os
 
@@ -10,22 +11,33 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # We must monkeypatch the database path *before* importing the app
 # This ensures that the app, upon import, uses our test database path.
 import database
-database.DB_FILE = ":memory:" # Use an in-memory SQLite database for tests
 
-from app import app, to_bijective_base6, from_bijective_base6
+# Use a file-based SQLite DB for tests to allow shared connections.
+# It will be created and destroyed for each test session.
+TEST_DB_FILE = "./test.db"
+database.DB_FILE = TEST_DB_FILE
+
+from app import app, to_bijective_base6, from_bijective_base6, get_db_connection
 
 
 @pytest.fixture(scope="function")
 def client():
     """
-    Pytest fixture to set up and tear down the database for each test function.
-    This ensures that tests are isolated and don't interfere with each other.
+    Pytest fixture to provide a test client with an isolated, in-memory database.
     """
-    # Setup: create a clean database before each test
-    database.init_db()
-    yield TestClient(app)
-    # Teardown: The in-memory database is automatically discarded.
+    # Ensure the test database file does not exist before a test run
+    if os.path.exists(TEST_DB_FILE):
+        os.remove(TEST_DB_FILE)
 
+    # Create the table for this test function
+    with database.get_db_connection() as conn:
+        database.init_db()
+
+    yield TestClient(app)
+
+    # Clean up the test database file after the test
+    if os.path.exists(TEST_DB_FILE):
+        os.remove(TEST_DB_FILE)
 
 # ===================================
 # 1. Core Logic Tests

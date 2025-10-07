@@ -177,9 +177,8 @@ async def run_cleanup_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the state from disk when the application starts
-    database.init_db()
-    print("Loading translations...")
-    load_translations()
+    # DB initialization and translation loading are now done at the module level
+    # to ensure routes are configured correctly before the app starts.
     print("Starting background cleanup task...")
     cleanup_task = asyncio.create_task(run_cleanup_task())
     yield
@@ -218,6 +217,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Load translations and initialize the database at the module level
+load_translations()
+database.init_db()
 
 def _(text: str, **kwargs):
     """
@@ -277,8 +280,12 @@ Sitemap: https://shortlinks.art/sitemap.xml
     return Response(content=content, media_type="text/plain")
 
 
+# Create a regex to match only the supported language codes.
+# This prevents this route from incorrectly capturing short codes.
+language_codes_regex = "|".join(TRANSLATIONS.keys())
+
 @app.get(
-    "/{lang_code:str}",
+    "/{lang_code:str:regex(" + language_codes_regex + ")}",
     response_class=HTMLResponse,
     summary="Serve Frontend UI",
     tags=["UI"])
@@ -288,10 +295,10 @@ async def read_root(request: Request, lang_code: str):
 
     # Pass the translator function to the template context
     translator = get_translator(lang_code)
-    return templates.TemplateResponse(request, "index.html", {"_": translator, "lang_code": lang_code})
+    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 @app.get(
-    "/{lang_code:str}/about",
+    "/{lang_code:str:regex(" + language_codes_regex + ")}/about",
     response_class=HTMLResponse,
     summary="Serve About Page",
     tags=["UI"]
@@ -301,7 +308,7 @@ async def read_about(request: Request, lang_code: str):
         raise HTTPException(status_code=404, detail="Language not supported")
 
     translator = get_translator(lang_code)
-    return templates.TemplateResponse(request, "about.html", {"_": translator, "lang_code": lang_code})
+    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():

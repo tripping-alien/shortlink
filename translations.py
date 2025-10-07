@@ -1,7 +1,7 @@
 import os
 import re
 from urllib.request import Request
-from .config import TRANSLATIONS, DEFAULT_LANGUAGE
+from config import TRANSLATIONS, DEFAULT_LANGUAGE
 
 def load_translations():
     """

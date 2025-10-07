@@ -14,9 +14,9 @@ import random
 from enum import Enum
 import re
 
-from .mymath import to_bijective_base6, from_bijective_base6
-from .translations import gettext, load_translations
-from .config import settings, TRANSLATIONS, DEFAULT_LANGUAGE
+from mymath import to_bijective_base6, from_bijective_base6
+from translations import gettext, load_translations
+from config import settings, TRANSLATIONS, DEFAULT_LANGUAGE
 
 
 # --- TTL Options ---

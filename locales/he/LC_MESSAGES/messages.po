@@ -39,10 +39,6 @@ msgstr "אימות"
 msgid "Answer"
 msgstr "תשובה"
 
-# TTL info text
-msgid "Your link is private and will automatically expire in 24 Hours."
-msgstr "הקישור שלך פרטי ויפוג تلقائياً תוך 24 שעות."
-
 # TTL dropdown label
 msgid "Link expires in:"
 msgstr "הקישור יפוג בעוד:"

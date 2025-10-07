@@ -40,10 +40,6 @@ msgstr "التحقق"
 msgid "Answer"
 msgstr "الإجابة"
 
-# TTL info text
-msgid "Your link is private and will automatically expire in 24 Hours."
-msgstr "رابطك خاص وسينتهي صلاحيته تلقائيًا خلال 24 ساعة."
-
 # TTL dropdown label
 msgid "Link expires in:"
 msgstr "تنتهي صلاحية الرابط خلال:"

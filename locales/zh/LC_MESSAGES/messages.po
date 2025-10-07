@@ -39,10 +39,6 @@ msgstr "验证"
 msgid "Answer"
 msgstr "答案"
 
-# TTL info text
-msgid "Your link is private and will automatically expire in 24 Hours."
-msgstr "您的链接是私密的，并将在24小时后自动过期。"
-
 # TTL dropdown label
 msgid "Link expires in:"
 msgstr "链接有效期："

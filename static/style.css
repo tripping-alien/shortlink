@@ -252,19 +252,29 @@
      gap: 0.5rem;
      flex-wrap: wrap;
  }
-
+ 
  .language-switcher a {
-     padding: 0.25rem 0.5rem;
      border-radius: 4px;
      border: 1px solid transparent;
-     transition: background-color 0.2s, border-color 0.2s;
-     color: #a0a0a0;
+     transition: transform 0.2s, box-shadow 0.2s;
+     line-height: 0; /* Remove extra space around the image */
+     padding: 2px; /* Add a small padding for the border effect */
  }
-
+ 
+ .language-switcher img {
+     width: 28px;
+     height: auto;
+     border-radius: 2px;
+     vertical-align: middle;
+ }
+ 
+ .language-switcher a:hover {
+     transform: scale(1.1);
+ }
+ 
  .language-switcher a.active {
      border-color: var(--accent-color);
-     background-color: rgba(0, 255, 65, 0.1);
-     color: var(--accent-color);
+     box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
  }
 
  /* =====================================================================

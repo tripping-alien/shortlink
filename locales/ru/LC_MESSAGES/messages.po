@@ -39,10 +39,6 @@ msgstr "Проверка"
 msgid "Answer"
 msgstr "Ответ"
 
-# TTL info text
-msgid "Your link is private and will automatically expire in 24 Hours."
-msgstr "Ваша ссылка приватна и автоматически истечет через 24 часа."
-
 # TTL dropdown label
 msgid "Link expires in:"
 msgstr "Ссылка истекает через:"

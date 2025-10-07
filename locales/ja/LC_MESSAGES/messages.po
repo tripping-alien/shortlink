@@ -39,10 +39,6 @@ msgstr "認証"
 msgid "Answer"
 msgstr "回答"
 
-# TTL info text
-msgid "Your link is private and will automatically expire in 24 Hours."
-msgstr "リンクはプライベートで、24時間後に自動的に失効します。"
-
 # TTL dropdown label
 msgid "Link expires in:"
 msgstr "リンクの有効期限:"

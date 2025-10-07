@@ -39,10 +39,6 @@ msgstr "Verifizierung"
 msgid "Answer"
 msgstr "Antwort"
 
-# TTL info text
-msgid "Your link is private and will automatically expire in 24 Hours."
-msgstr "Ihr Link ist privat und läuft automatisch in 24 Stunden ab."
-
 # TTL dropdown label
 msgid "Link expires in:"
 msgstr "Link läuft ab in:"

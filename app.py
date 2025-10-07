@@ -141,12 +141,20 @@ class LinkBase(BaseModel):
         return v
 
 
+class HateoasLink(BaseModel):
+    """A HATEOAS-compliant link object."""
+    rel: str = Field(..., description="The relationship of the link to the resource (e.g., 'self').")
+    href: HttpUrl = Field(..., description="The URL of the related resource.")
+    method: str = Field(..., description="The HTTP method to use for the action (e.g., 'GET', 'DELETE').")
+
+
 class LinkResponse(BaseModel):
     """The response model for a successfully created or retrieved link."""
     short_url: HttpUrl = Field(..., example="https://shortlinks.art/11", description="The generated short URL.")
     long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original long URL.")
     expires_at: datetime | None = Field(..., example="2023-10-27T10:00:00Z",
                                         description="The UTC timestamp when the link will expire. `null` if it never expires.")
+    links: list[HateoasLink] = Field(..., description="HATEOAS links for related actions.")
 
 
 class ErrorResponse(BaseModel):
@@ -239,7 +247,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # API Router for versioning and organization
 api_router = APIRouter(
-    prefix="/api",
+    prefix="/api/v1",
     tags=["Links"],  # Group endpoints in the docs
 )
 
@@ -496,7 +504,19 @@ async def create_short_link(link_data: LinkBase, request: Request):
         response_content = {
             "short_url": str(short_url),
             "long_url": str(link_data.long_url),
-            "expires_at": expires_at.isoformat() if expires_at else None
+            "expires_at": expires_at.isoformat() if expires_at else None,
+            "links": [
+                {
+                    "rel": "self",
+                    "href": f"{request.base_url}api/v1/links/{short_code}",
+                    "method": "GET"
+                },
+                {
+                    "rel": "delete",
+                    "href": f"{request.base_url}api/v1/links/{short_code}",
+                    "method": "DELETE"
+                }
+            ]
         }
 
         # Return 201 Created with a Location header and the response body
@@ -540,8 +560,45 @@ async def get_link_details(short_code: str, request: Request):
     return {
         "short_url": f"https://shortlinks.art/{short_code}",  # Use canonical URL
         "long_url": record["long_url"],
-        "expires_at": record["expires_at"]
+        "expires_at": record["expires_at"],
+        "links": [
+            {
+                "rel": "self",
+                "href": str(request.url),
+                "method": "GET"
+            },
+            {
+                "rel": "delete",
+                "href": str(request.url),
+                "method": "DELETE"
+            }
+        ]
     }
+
+
+@api_router.delete(
+    "/links/{short_code}",
+    status_code=204,
+    summary="Delete a short link",
+    responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist."}}
+)
+async def delete_short_link(short_code: str):
+    """
+    Permanently deletes a short link.
+    """
+    url_id = from_bijective_base6(short_code)
+
+    def db_delete():
+        return database.delete_link_by_id(url_id)
+
+    rows_deleted = await asyncio.to_thread(db_delete)
+
+    if rows_deleted == 0:
+        translator = get_translator()
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+
+    # Return a 204 No Content response, which is standard for successful deletions.
+    return Response(status_code=204)
 
 
 app.include_router(api_router)

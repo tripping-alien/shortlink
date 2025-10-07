@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch('/api/links', {
+                const response = await fetch('/api/v1/links', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ttlSelect) return;
         const langCode = document.documentElement.lang || 'en';
         try {
-            const response = await fetch(`/api/translations/${langCode}`);
+            const response = await fetch(`/api/v1/translations/${langCode}`);
             const i18n = await response.json();
 
             const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);

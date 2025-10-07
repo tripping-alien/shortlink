@@ -30,3 +30,10 @@ def init_db():
         """)
         conn.commit()
     print("Database initialized successfully.")
+
+def delete_link_by_id(link_id: int) -> int:
+    """Deletes a link from the database by its ID and returns the number of rows affected."""
+    with get_db_connection() as conn:
+        cursor = conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
+        conn.commit()
+        return cursor.rowcount

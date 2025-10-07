@@ -43,7 +43,8 @@ class LinkBase(BaseModel):
 
 class Challenge(BaseModel):
     num1: int = Field(..., example=5, description="The first number in the bot-check challenge.")
-    num2: int = Field(..., example=8, description="The second number in the bot-check challenge.")
+    num2: int = Field(..., example=8,
+                      description="The second number in the bot-check challenge.")
     challenge_answer: int = Field(..., example=13, description="The user's answer to the `num1 + num2` challenge.")
 
 
@@ -79,7 +80,8 @@ class LinkCreate(LinkBase):
 class LinkResponse(BaseModel):
     """The response model for a successfully created or retrieved link."""
     short_url: HttpUrl = Field(..., example="https://shortlinks.art/11", description="The generated short URL.")
-    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original long URL.")
+    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi",
+                              description="The original long URL.")
     expires_at: datetime | None = Field(..., example="2023-10-27T10:00:00Z",
                                         description="The UTC timestamp when the link will expire. `null` if it never expires.")
 
@@ -108,14 +110,82 @@ async def run_cleanup_task():
         await asyncio.sleep(settings.cleanup_interval_seconds)
 
 
+# --- Route Handler Definitions ---
+# These functions are defined here so they can be referenced by name during startup.
+
+async def read_root(request: Request, lang_code: str):
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+    translator = get_translator(lang_code)
+    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
+
+
+async def read_about(request: Request, lang_code: str):
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+    translator = get_translator(lang_code)
+    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
+
+
+async def redirect_to_long_url(short_code: str, request: Request):
+    """Redirects to the original URL if the short link exists and has not expired."""
+    now = datetime.now(timezone.utc)
+    translator = get_translator()
+    try:
+        url_id = from_bijective_base6(short_code)
+
+        def db_select():
+            with database.get_db_connection() as conn:
+                return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+
+        record = await asyncio.to_thread(db_select)
+        if not record:
+            raise HTTPException(status_code=404, detail=translator("Short link not found"))
+        expires_at = record['expires_at']
+        if expires_at and now > expires_at:
+            raise HTTPException(status_code=404, detail=translator("Short link has expired"))
+        return RedirectResponse(url=record['long_url'])
+    except ValueError:
+        raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
+
+
 # --- Lifespan Events for Startup and Shutdown ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # The lifespan now only manages long-running background tasks.
-    print("Lifespan: Starting background cleanup task...")
+    """
+    Handles application startup and shutdown events. This is the single,
+    canonical place for all initialization logic.
+    """
+    # --- STARTUP ---
+    print("Startup: Initializing database...")
+    database.init_db()
+
+    print("Startup: Loading translations...")
+    load_translations()
+
+    print("Startup: Registering dynamic routes...")
+    # Create a regex to match only the supported language codes.
+    language_codes_regex = "|".join(TRANSLATIONS.keys())
+    if not language_codes_regex:
+        language_codes_regex = DEFAULT_LANGUAGE
+
+    # Programmatically add routes in the correct order of specificity
+    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})", read_root, methods=["GET"],
+                      response_class=HTMLResponse, tags=["UI"])
+    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})/about", read_about, methods=["GET"],
+                      response_class=HTMLResponse, tags=["UI"])
+
+    # Add the catch-all redirect route LAST
+    app.add_api_route("/{short_code}", redirect_to_long_url, methods=["GET"], summary="Redirect to the original URL",
+                      tags=["Redirect"])
+
+    print("Startup: Starting background cleanup task...")
     cleanup_task = asyncio.create_task(run_cleanup_task())
-    yield
-    # Clean up the background task when the application shuts down
+
+    yield  # The application is now running
+
+    # --- SHUTDOWN ---
+    print("Shutdown: Cancelling background tasks...")
     cleanup_task.cancel()
 
 
@@ -373,67 +443,6 @@ async def get_link_details(short_code: str, request: Request):
 
 
 app.include_router(api_router)
-
-
-# --- Final Initialization and Dynamic Route Registration ---
-
-@app.on_event("startup")
-def on_startup():
-    """
-    This function runs once when the application starts up, before serving requests.
-    It's the canonical place for initialization logic that affects routing.
-    """
-    database.init_db()
-    load_translations()
-
-    # Create a regex to match only the supported language codes.
-    language_codes_regex = "|".join(TRANSLATIONS.keys())
-    if not language_codes_regex:
-        language_codes_regex = DEFAULT_LANGUAGE
-
-    # Define route handlers locally or import them
-    async def read_root(request: Request, lang_code: str):
-        if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-            raise HTTPException(status_code=404, detail="Language not supported")
-        translator = get_translator(lang_code)
-        return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
-
-    async def read_about(request: Request, lang_code: str):
-        if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-            raise HTTPException(status_code=404, detail="Language not supported")
-        translator = get_translator(lang_code)
-        return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
-
-    async def redirect_to_long_url(short_code: str, request: Request):
-        """Redirects to the original URL if the short link exists and has not expired."""
-        now = datetime.now(timezone.utc)
-        translator = get_translator()
-        try:
-            url_id = from_bijective_base6(short_code)
-
-            def db_select():
-                with database.get_db_connection() as conn:
-                    return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
-
-            record = await asyncio.to_thread(db_select)
-            if not record:
-                raise HTTPException(status_code=404, detail=translator("Short link not found"))
-            expires_at = record['expires_at']
-            if expires_at and now > expires_at:
-                raise HTTPException(status_code=404, detail=translator("Short link has expired"))
-            return RedirectResponse(url=record['long_url'])
-        except ValueError:
-            raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
-
-    # Programmatically add routes in the correct order of specificity
-    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})", read_root, methods=["GET"],
-                      response_class=HTMLResponse, tags=["UI"])
-    app.add_api_route(f"/{'{lang_code}'}:str:regex({language_codes_regex})/about", read_about, methods=["GET"],
-                      response_class=HTMLResponse, tags=["UI"])
-
-    # Add the catch-all redirect route LAST
-    app.add_api_route("/{short_code}", redirect_to_long_url, methods=["GET"], summary="Redirect to the original URL",
-                      tags=["Redirect"])
 
 
 # This block is useful for local development but not strictly needed for Render deployment

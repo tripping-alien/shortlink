@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 expire_never: "Your link is private and will never expire.",
                 copied: "Copied!",
                 copy: "Copy",
+                ttl_1_hour: "1 Hour",
+                ttl_24_hours: "24 Hours",
+                ttl_1_week: "1 Week",
+                ttl_never: "Never",
             };
         }
     }
@@ -36,11 +40,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (ttlSelect && ttlInfoText) {
         ttlSelect.addEventListener('change', () => {
-            const selectedOption = ttlSelect.options[ttlSelect.selectedIndex];
-            if (selectedOption.value === 'never') {
+            const selectedValue = ttlSelect.value;
+            let durationText = '';
+
+            if (selectedValue === '1h') {
+                durationText = i18n.ttl_1_hour;
+            } else if (selectedValue === '1d') {
+                durationText = i18n.ttl_24_hours;
+            } else if (selectedValue === '1w') {
+                durationText = i18n.ttl_1_week;
+            }
+
+            if (selectedValue === 'never') {
                 ttlInfoText.textContent = i18n.expire_never;
             } else {
-                ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', selectedOption.text);
+                ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
             }
         });
     }

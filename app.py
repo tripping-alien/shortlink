@@ -411,6 +411,10 @@ async def get_translations(lang_code: str):
         "expire_never": translator("Your link is private and will never expire."),
         "copied": translator("Copied!"),
         "copy": translator("Copy"),
+        "ttl_1_hour": translator("1 Hour"),
+        "ttl_24_hours": translator("24 Hours"),
+        "ttl_1_week": translator("1 Week"),
+        "ttl_never": translator("Never"),
     }
 
 

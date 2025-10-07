@@ -38,25 +38,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ttlSelect = document.getElementById('ttl-select');
     const ttlInfoText = document.getElementById('ttl-info-text');
 
-    if (ttlSelect && ttlInfoText) {
-        ttlSelect.addEventListener('change', () => {
-            const selectedValue = ttlSelect.value;
-            let durationText = '';
+    function updateTtlInfo() {
+        if (!ttlSelect || !ttlInfoText) return;
 
-            if (selectedValue === '1h') {
-                durationText = i18n.ttl_1_hour;
-            } else if (selectedValue === '1d') {
-                durationText = i18n.ttl_24_hours;
-            } else if (selectedValue === '1w') {
-                durationText = i18n.ttl_1_week;
-            }
+        const selectedValue = ttlSelect.value;
+        let durationText = '';
 
-            if (selectedValue === 'never') {
-                ttlInfoText.textContent = i18n.expire_never;
-            } else {
-                ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
-            }
-        });
+        if (selectedValue === '1h') {
+            durationText = i18n.ttl_1_hour;
+        } else if (selectedValue === '1d') {
+            durationText = i18n.ttl_24_hours;
+        } else if (selectedValue === '1w') {
+            durationText = i18n.ttl_1_week;
+        }
+
+        if (selectedValue === 'never') {
+            ttlInfoText.textContent = i18n.expire_never;
+        } else {
+            ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
+        }
+    }
+
+    if (ttlSelect) {
+        ttlSelect.addEventListener('change', updateTtlInfo);
+        // Initialize the text on page load to ensure consistency
+        updateTtlInfo();
     }
 
     const vertexShaderSource = `

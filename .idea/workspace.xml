@@ -176,30 +176,6 @@
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
     </task>
-    <task id="LOCAL‎-00338" summary="release 2.0.0">
-      <option name="closed" value="true" />
-      <created>1759134321871</created>
-      <option name="number" value="00338" />
-      <option name="presentableId" value="LOCAL‎-00338" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759134321871</updated>
-    </task>
-    <task id="LOCAL‎-00339" summary="release 2.0.0">
-      <option name="closed" value="true" />
-      <created>1759134487238</created>
-      <option name="number" value="00339" />
-      <option name="presentableId" value="LOCAL‎-00339" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759134487238</updated>
-    </task>
-    <task id="LOCAL‎-00340" summary="release 2.0.0">
-      <option name="closed" value="true" />
-      <created>1759134602208</created>
-      <option name="number" value="00340" />
-      <option name="presentableId" value="LOCAL‎-00340" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759134602208</updated>
-    </task>
     <task id="LOCAL‎-00341" summary="release 2.0.0">
       <option name="closed" value="true" />
       <created>1759134842872</created>
@@ -568,7 +544,31 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759864382217</updated>
     </task>
-    <option name="localTasksCounter" value="387" />
+    <task id="LOCAL‎-00387" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759864774911</created>
+      <option name="number" value="00387" />
+      <option name="presentableId" value="LOCAL‎-00387" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759864774911</updated>
+    </task>
+    <task id="LOCAL‎-00388" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759864887110</created>
+      <option name="number" value="00388" />
+      <option name="presentableId" value="LOCAL‎-00388" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759864887110</updated>
+    </task>
+    <task id="LOCAL‎-00389" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759864971119</created>
+      <option name="number" value="00389" />
+      <option name="presentableId" value="LOCAL‎-00389" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759864971119</updated>
+    </task>
+    <option name="localTasksCounter" value="390" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

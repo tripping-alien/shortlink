@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 4">
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 6">
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/database.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shortlinks.db" beforeDir="false" afterPath="$PROJECT_DIR$/shortlinks.db" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -232,30 +234,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00409" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759868005309</created>
-      <option name="number" value="00409" />
-      <option name="presentableId" value="LOCAL‎-00409" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759868005309</updated>
-    </task>
-    <task id="LOCAL‎-00410" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759869191213</created>
-      <option name="number" value="00410" />
-      <option name="presentableId" value="LOCAL‎-00410" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759869191213</updated>
-    </task>
-    <task id="LOCAL‎-00411" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759869376084</created>
-      <option name="number" value="00411" />
-      <option name="presentableId" value="LOCAL‎-00411" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759869376084</updated>
     </task>
     <task id="LOCAL‎-00412" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -625,7 +603,31 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759880484326</updated>
     </task>
-    <option name="localTasksCounter" value="458" />
+    <task id="LOCAL‎-00458" summary="Workng 5">
+      <option name="closed" value="true" />
+      <created>1759880877731</created>
+      <option name="number" value="00458" />
+      <option name="presentableId" value="LOCAL‎-00458" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759880877731</updated>
+    </task>
+    <task id="LOCAL‎-00459" summary="Workng 6">
+      <option name="closed" value="true" />
+      <created>1759880971912</created>
+      <option name="number" value="00459" />
+      <option name="presentableId" value="LOCAL‎-00459" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759880971912</updated>
+    </task>
+    <task id="LOCAL‎-00460" summary="Workng 6">
+      <option name="closed" value="true" />
+      <created>1759881064687</created>
+      <option name="number" value="00460" />
+      <option name="presentableId" value="LOCAL‎-00460" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759881064687</updated>
+    </task>
+    <option name="localTasksCounter" value="461" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -643,8 +645,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="תרגום" />
-    <MESSAGE value="main" />
     <MESSAGE value="tel" />
     <MESSAGE value="themes" />
     <MESSAGE value="lang" />
@@ -668,14 +668,16 @@
     <MESSAGE value="Workng 2" />
     <MESSAGE value="Workng 3" />
     <MESSAGE value="Workng 4" />
-    <option name="LAST_COMMIT_MESSAGE" value="Workng 4" />
+    <MESSAGE value="Workng 5" />
+    <MESSAGE value="Workng 6" />
+    <option name="LAST_COMMIT_MESSAGE" value="Workng 6" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/app.py</url>
-          <line>144</line>
+          <line>145</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

@@ -276,28 +276,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.middleware("http")
-async def i18n_middleware(request: Request, call_next):
-    """
-    Detects user language and sets it in the request scope.
-    Priority: 1. Query Parameter (`?lang=...`) 2. Accept-Language Header.
-    """
-    lang = DEFAULT_LANGUAGE
-    
-    # 1. Check for query parameter
-    query_lang = request.query_params.get('lang')
-    if query_lang and query_lang in TRANSLATIONS:
-        lang = query_lang
-    else:
-        # 2. Fallback to Accept-Language header
-        accept_language = request.headers.get("accept-language")
-        if accept_language:
-            lang = accept_language.split(",")[0].split("-")[0].lower()
-
-    request.scope["language"] = lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE
-    response = await call_next(request)
-    return response
-
 def _(text: str, **kwargs):
     """
     This is a placeholder for Jinja2. The actual translation happens
@@ -308,24 +286,38 @@ def _(text: str, **kwargs):
 templates.env.globals['gettext'] = gettext
 templates.env.globals['_'] = _
 
-def get_translator(request: Request):
+def get_translator(lang: str = DEFAULT_LANGUAGE):
     """Dependency to get a translator function for the current request's language."""
-    lang = request.scope.get("language", DEFAULT_LANGUAGE)
     def translator(text: str, **kwargs) -> str:
         translated = gettext(text, lang)
         return translated.format(**kwargs) if kwargs else translated
     return translator
 
 
+@app.get("/", include_in_schema=False)
+async def redirect_to_default_lang(request: Request):
+    """Redirects the root path to the default language."""
+    # Detect browser language for a better first-time user experience
+    accept_language = request.headers.get("accept-language")
+    lang = DEFAULT_LANGUAGE
+    if accept_language:
+        browser_lang = accept_language.split(",")[0].split("-")[0].lower()
+        if browser_lang in TRANSLATIONS:
+            lang = browser_lang
+    return RedirectResponse(url=f"/{lang}")
+
 @app.get(
-    "/",
+    "/{lang_code:str}",
     response_class=HTMLResponse,
     summary="Serve Frontend UI",
     tags=["UI"])
-async def read_root(request: Request):
+async def read_root(request: Request, lang_code: str):
+    if lang_code not in TRANSLATIONS:
+        raise HTTPException(status_code=404, detail="Language not supported")
+
     # Pass the translator function to the template context
-    translator = get_translator(request)
-    return templates.TemplateResponse("index.html", {"request": request, "_": translator})
+    translator = get_translator(lang_code)
+    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 @app.get("/health", summary="Health Check", tags=["Monitoring"])
 async def health_check():
@@ -358,13 +350,21 @@ Sitemap: https://shortlinks.art/sitemap.xml
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
     today = date.today().isoformat()
+    urlset = []
+    # Add an entry for each supported language
+    for lang_code in TRANSLATIONS.keys():
+        urlset.append(f"""  <url>
+    <loc>https://shortlinks.art/{lang_code}/</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>""")
+
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://shortlinks.art/</loc>
-    <lastmod>{today}</lastmod>
-  </url>
-</urlset>"""
+{"".join(urlset)}
+</urlset>
+"""
     return Response(content=xml_content, media_type="application/xml")
 
 
@@ -374,7 +374,7 @@ async def get_challenge(request: Request):
     Provides a simple arithmetic challenge to be solved by the client.
     This is a stateless mechanism to deter simple bots from spamming the link creation endpoint.
     """
-    translator = get_translator(request)
+    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE)) # Fallback for direct API calls
     num1 = random.randint(1, 10)
     num2 = random.randint(1, 10)
     return {"num1": num1, "num2": num2, "question": translator("What is {num1} + {num2}?", num1=num1, num2=num2)}
@@ -398,7 +398,9 @@ async def create_short_link(link_data: LinkCreate, request: Request):
     - **Bot Protection**: Requires a simple arithmetic challenge to be solved.
     - **TTL**: Links can be set to expire after a specific duration.
     """
-    translator = get_translator(request)
+    # Determine language from referrer or default
+    lang = request.headers.get("Referer", f"/{DEFAULT_LANGUAGE}").split('/')[-2]
+    translator = get_translator(lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE)
     # Stateless bot verification
     if link_data.challenge.challenge_answer != (link_data.challenge.num1 + link_data.challenge.num2):
         raise HTTPException(status_code=400, detail=translator("Bot verification failed. Incorrect answer."))
@@ -459,7 +461,7 @@ async def get_link_details(short_code: str, request: Request):
     Retrieves the details of a short link, such as the original URL and its
     expiration time, without performing a redirect.
     """
-    translator = get_translator(request)
+    translator = get_translator() # Defaults to 'en' for API responses
     try:
         url_id = from_bijective_base6(short_code)
     except ValueError:
@@ -490,7 +492,7 @@ async def redirect_to_long_url(short_code: str, request: Request):
     If the link is expired, it is cleaned up and its ID is made available for reuse.
     This is the primary function of the service.
     """
-    translator = get_translator(request)
+    translator = get_translator() # Defaults to 'en' for error messages on redirect
     try:
         url_id = from_bijective_base6(short_code)
 

@@ -1,0 +1,101 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Bijective-Shorty\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-21 12:00+0000\n"
+"PO-Revision-Date: 2024-05-21 12:00+0000\n"
+"Last-Translator: Gemini Code Assist\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+
+# HTML Title
+msgid "Private & Easy Link Shortener | Bijective-Shorty"
+msgstr "مختصِر روابط خاص وسهل | Bijective-Shorty"
+
+# HTML Meta Description
+msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
+msgstr "مختصِر روابط خاص وسهل لإنشاء عناوين URL قصيرة ومؤقتة وآمنة وبسيطة. سريع ومجاني ويحترم خصوصيتك."
+
+# Main heading
+msgid "A Private and Easy Link Shortener"
+msgstr "مختصِر روابط خاص وسهل"
+
+# URL input placeholder
+msgid "Enter a long URL to shorten..."
+msgstr "أدخل عنوان URL طويلاً لتقصيره..."
+
+# Submit button text
+msgid "Shorten"
+msgstr "تقصير"
+
+# Verification label
+msgid "Verification"
+msgstr "التحقق"
+
+# Verification input placeholder
+msgid "Answer"
+msgstr "الإجابة"
+
+# TTL info text
+msgid "Your link is private and will automatically expire in 24 Hours."
+msgstr "رابطك خاص وسينتهي صلاحيته تلقائيًا خلال 24 ساعة."
+
+# TTL dropdown label
+msgid "Link expires in:"
+msgstr "تنتهي صلاحية الرابط خلال:"
+
+# TTL options
+msgid "1 Hour"
+msgstr "ساعة واحدة"
+
+msgid "24 Hours"
+msgstr "24 ساعة"
+
+msgid "1 Week"
+msgstr "أسبوع واحد"
+
+msgid "Never"
+msgstr "أبدًا"
+
+# Result box heading
+msgid "Your short link:"
+msgstr "رابطك المختصر:"
+
+# Copy button text
+msgid "Copy"
+msgstr "نسخ"
+
+# Copied button text
+msgid "Copied!"
+msgstr "تم النسخ!"
+
+# Footer
+msgid "Crafted by"
+msgstr "صُنع بواسطة"
+
+msgid "View on"
+msgstr "عرض على"
+
+msgid "Released under the"
+msgstr "صدر تحت"
+
+# API Error Messages
+msgid "Bot verification failed. Incorrect answer."
+msgstr "فشل التحقق من البوت. إجابة غير صحيحة."
+
+msgid "Invalid short code format"
+msgstr "تنسيق الرمز المختصر غير صالح"
+
+msgid "Short link not found"
+msgstr "الرابط المختصر غير موجود"
+
+msgid "Short link has expired"
+msgstr "انتهت صلاحية الرابط المختصر"
+
+# Challenge question
+msgid "What is {num1} + {num2}?"
+msgstr "ما هو ناتج {num1} + {num2}؟"

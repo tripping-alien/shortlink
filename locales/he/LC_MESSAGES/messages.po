@@ -1,0 +1,100 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Bijective-Shorty\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-21 12:00+0000\n"
+"PO-Revision-Date: 2024-05-21 12:00+0000\n"
+"Last-Translator: Gemini Code Assist\n"
+"Language-Team: Hebrew\n"
+"Language: he\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# HTML Title
+msgid "Private & Easy Link Shortener | Bijective-Shorty"
+msgstr "מקצר קישורים פרטי וקל | Bijective-Shorty"
+
+# HTML Meta Description
+msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
+msgstr "מקצר קישורים פרטי וקל ליצירת כתובות URL קצרות, זמניות, מאובטחות ופשוטות. מהיר, חינמי ומכבד את פרטיותך."
+
+# Main heading
+msgid "A Private and Easy Link Shortener"
+msgstr "מקצר קישורים פרטי וקל"
+
+# URL input placeholder
+msgid "Enter a long URL to shorten..."
+msgstr "הזן כתובת URL ארוכה לקיצור..."
+
+# Submit button text
+msgid "Shorten"
+msgstr "קצר"
+
+# Verification label
+msgid "Verification"
+msgstr "אימות"
+
+# Verification input placeholder
+msgid "Answer"
+msgstr "תשובה"
+
+# TTL info text
+msgid "Your link is private and will automatically expire in 24 Hours."
+msgstr "הקישור שלך פרטי ויפוג تلقائياً תוך 24 שעות."
+
+# TTL dropdown label
+msgid "Link expires in:"
+msgstr "הקישור יפוג בעוד:"
+
+# TTL options
+msgid "1 Hour"
+msgstr "שעה"
+
+msgid "24 Hours"
+msgstr "24 שעות"
+
+msgid "1 Week"
+msgstr "שבוע"
+
+msgid "Never"
+msgstr "לעולם לא"
+
+# Result box heading
+msgid "Your short link:"
+msgstr "הקישור המקוצר שלך:"
+
+# Copy button text
+msgid "Copy"
+msgstr "העתק"
+
+# Copied button text
+msgid "Copied!"
+msgstr "הועתק!"
+
+# Footer
+msgid "Crafted by"
+msgstr "נוצר על ידי"
+
+msgid "View on"
+msgstr "צפה ב"
+
+msgid "Released under the"
+msgstr "שוחרר תחת"
+
+# API Error Messages
+msgid "Bot verification failed. Incorrect answer."
+msgstr "אימות הבוט נכשל. תשובה שגויה."
+
+msgid "Invalid short code format"
+msgstr "פורמט קוד קצר לא תקין"
+
+msgid "Short link not found"
+msgstr "קישור קצר לא נמצא"
+
+msgid "Short link has expired"
+msgstr "הקישור הקצר פג תוקף"
+
+# Challenge question
+msgid "What is {num1} + {num2}?"
+msgstr "כמה זה {num1} + {num2}?"

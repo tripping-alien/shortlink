@@ -263,3 +263,15 @@ footer a:hover {
     border-color: var(--accent-color);
     background-color: rgba(0, 255, 65, 0.1);
 }
+
+/* Right-to-Left (RTL) Language Support */
+[dir="rtl"] .form-grid {
+    grid-template-columns: auto 1fr; /* Button first, then input */
+}
+
+[dir="rtl"] .form-grid button {
+    grid-column: 1;
+}
+[dir="rtl"] .form-grid input {
+    grid-column: 2;
+}

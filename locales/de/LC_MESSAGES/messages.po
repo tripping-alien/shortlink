@@ -1,0 +1,100 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Bijective-Shorty\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-21 12:00+0000\n"
+"PO-Revision-Date: 2024-05-21 12:00+0000\n"
+"Last-Translator: Gemini Code Assist\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# HTML Title
+msgid "Private & Easy Link Shortener | Bijective-Shorty"
+msgstr "Privater & Einfacher Link-Kürzer | Bijective-Shorty"
+
+# HTML Meta Description
+msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
+msgstr "Ein privater und einfacher Link-Kürzer zum Erstellen temporärer, sicherer und einfacher Kurz-URLs. Schnell, kostenlos und respektiert Ihre Privatsphäre."
+
+# Main heading
+msgid "A Private and Easy Link Shortener"
+msgstr "Ein Privater und Einfacher Link-Kürzer"
+
+# URL input placeholder
+msgid "Enter a long URL to shorten..."
+msgstr "Lange URL zum Kürzen eingeben..."
+
+# Submit button text
+msgid "Shorten"
+msgstr "Kürzen"
+
+# Verification label
+msgid "Verification"
+msgstr "Verifizierung"
+
+# Verification input placeholder
+msgid "Answer"
+msgstr "Antwort"
+
+# TTL info text
+msgid "Your link is private and will automatically expire in 24 Hours."
+msgstr "Ihr Link ist privat und läuft automatisch in 24 Stunden ab."
+
+# TTL dropdown label
+msgid "Link expires in:"
+msgstr "Link läuft ab in:"
+
+# TTL options
+msgid "1 Hour"
+msgstr "1 Stunde"
+
+msgid "24 Hours"
+msgstr "24 Stunden"
+
+msgid "1 Week"
+msgstr "1 Woche"
+
+msgid "Never"
+msgstr "Niemals"
+
+# Result box heading
+msgid "Your short link:"
+msgstr "Ihr Kurzlink:"
+
+# Copy button text
+msgid "Copy"
+msgstr "Kopieren"
+
+# Copied button text
+msgid "Copied!"
+msgstr "Kopiert!"
+
+# Footer
+msgid "Crafted by"
+msgstr "Erstellt von"
+
+msgid "View on"
+msgstr "Ansehen auf"
+
+msgid "Released under the"
+msgstr "Veröffentlicht unter der"
+
+# API Error Messages
+msgid "Bot verification failed. Incorrect answer."
+msgstr "Bot-Verifizierung fehlgeschlagen. Falsche Antwort."
+
+msgid "Invalid short code format"
+msgstr "Ungültiges Kurzcode-Format"
+
+msgid "Short link not found"
+msgstr "Kurzlink nicht gefunden"
+
+msgid "Short link has expired"
+msgstr "Kurzlink ist abgelaufen"
+
+# Challenge question
+msgid "What is {num1} + {num2}?"
+msgstr "Was ist {num1} + {num2}?"

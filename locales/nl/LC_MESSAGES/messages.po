@@ -1,0 +1,100 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Bijective-Shorty\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-21 12:00+0000\n"
+"PO-Revision-Date: 2024-05-21 12:00+0000\n"
+"Last-Translator: Gemini Code Assist\n"
+"Language-Team: Dutch\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# HTML Title
+msgid "Private & Easy Link Shortener | Bijective-Shorty"
+msgstr "Privé & Eenvoudige Link Verkorter | Bijective-Shorty"
+
+# HTML Meta Description
+msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
+msgstr "Een privé en eenvoudige linkverkorter om tijdelijke, veilige en simpele korte URL's te maken. Snel, gratis en respecteert uw privacy."
+
+# Main heading
+msgid "A Private and Easy Link Shortener"
+msgstr "Een Privé en Eenvoudige Link Verkorter"
+
+# URL input placeholder
+msgid "Enter a long URL to shorten..."
+msgstr "Voer een lange URL in om te verkorten..."
+
+# Submit button text
+msgid "Shorten"
+msgstr "Verkorten"
+
+# Verification label
+msgid "Verification"
+msgstr "Verificatie"
+
+# Verification input placeholder
+msgid "Answer"
+msgstr "Antwoord"
+
+# TTL info text
+msgid "Your link is private and will automatically expire in 24 Hours."
+msgstr "Uw link is privé en vervalt automatisch over 24 uur."
+
+# TTL dropdown label
+msgid "Link expires in:"
+msgstr "Link vervalt over:"
+
+# TTL options
+msgid "1 Hour"
+msgstr "1 uur"
+
+msgid "24 Hours"
+msgstr "24 uur"
+
+msgid "1 Week"
+msgstr "1 week"
+
+msgid "Never"
+msgstr "Nooit"
+
+# Result box heading
+msgid "Your short link:"
+msgstr "Uw korte link:"
+
+# Copy button text
+msgid "Copy"
+msgstr "Kopiëren"
+
+# Copied button text
+msgid "Copied!"
+msgstr "Gekopieerd!"
+
+# Footer
+msgid "Crafted by"
+msgstr "Gemaakt door"
+
+msgid "View on"
+msgstr "Bekijk op"
+
+msgid "Released under the"
+msgstr "Uitgebracht onder de"
+
+# API Error Messages
+msgid "Bot verification failed. Incorrect answer."
+msgstr "Botverificatie mislukt. Onjuist antwoord."
+
+msgid "Invalid short code format"
+msgstr "Ongeldig formaat korte code"
+
+msgid "Short link not found"
+msgstr "Korte link niet gevonden"
+
+msgid "Short link has expired"
+msgstr "Korte link is verlopen"
+
+# Challenge question
+msgid "What is {num1} + {num2}?"
+msgstr "Wat is {num1} + {num2}?"

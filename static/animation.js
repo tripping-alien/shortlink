@@ -19,28 +19,29 @@ document.addEventListener('DOMContentLoaded', () => {
         precision mediump float;
         uniform vec2 u_resolution;
         uniform float u_time;
-
-        // 2D Random function
-        float random(vec2 st) {
-            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+        
+        // Function to create a layer of moving lines
+        float line_layer(vec2 st, float speed, float density, float angle) {
+            // Rotate coordinates
+            float s = sin(angle);
+            float c = cos(angle);
+            mat2 rotation_matrix = mat2(c, -s, s, c);
+            st = rotation_matrix * st;
+            
+            // Create repeating lines
+            float line = fract((st.x + u_time * speed) * density);
+            
+            // Make the line smooth and fade it out
+            return smoothstep(0.9, 0.8, line);
         }
 
         void main() {
             vec2 st = gl_FragCoord.xy / u_resolution.xy;
-            st.x *= u_resolution.x / u_resolution.y;
-
-            float rnd = random(floor(st * 200.0));
-            
-            // Create twinkling stars
-            float star = 0.0;
-            if (rnd > 0.99) {
-                float size = (rnd - 0.99) * 100.0;
-                float pulse = sin(u_time * 2.0 + rnd * 20.0) * 0.5 + 0.5;
-                star = size * pulse;
-            }
-
-            // Use the accent color for the stars
-            vec3 color = vec3(0.0, 1.0, 0.25) * star; // Terminal Green
+            // Create three layers of lines with different speeds, densities, and opacities
+            float layer1 = line_layer(st, 0.05, 5.0, 0.785) * 0.1;  // 45 degrees
+            float layer2 = line_layer(st, 0.08, 7.0, 0.785) * 0.05;
+            float layer3 = line_layer(st, -0.06, 6.0, -0.785) * 0.08; // -45 degrees
+            vec3 color = vec3(0.0, 1.0, 0.25) * (layer1 + layer2 + layer3); // Terminal Green
 
             gl_FragColor = vec4(color, 1.0);
         }

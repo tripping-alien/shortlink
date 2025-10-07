@@ -314,3 +314,11 @@
  [dir="rtl"] .form-grid {
      grid-template-columns: auto 1fr; /* Button first, then input */
  }
+ 
+ /* Explicitly place the button in the first column (auto-width) and the input in the second (1fr) */
+ [dir="rtl"] .form-grid .btn-primary {
+     grid-column: 1;
+ }
+ [dir="rtl"] .form-grid .form-control {
+     grid-column: 2;
+ }

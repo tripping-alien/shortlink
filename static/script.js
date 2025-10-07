@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Form Submission Handler ---
     if (shortenForm) {
         shortenForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
+            event.preventDefault(); // This is the key fix: prevent default browser submission
 
             // Hide the result box while a new link is being created
             resultBox.style.display = 'none';
@@ -56,14 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch('/api/links', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' }, // Send data as JSON
                     body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
-                    // Smartly parse FastAPI's error messages
+                    // Smartly parse FastAPI's validation errors
                     let errorMessage = "An unexpected error occurred.";
                     if (data.detail) {
                         if (Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg) {
@@ -75,11 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorMessage);
                 }
 
-                // --- This is the fix: Populate and show the result box ---
+                // Populate and show the result box
                 shortUrlLink.href = data.short_url;
                 shortUrlLink.textContent = data.short_url;
                 resultBox.style.display = 'block';
-                resultBox.classList.add('fade-in-up'); // Trigger fade-in animation
+                resultBox.classList.add('fade-in-up');
                 copyButton.textContent = 'Copy';
                 copyButton.classList.remove('copied');
 

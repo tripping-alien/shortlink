@@ -3,11 +3,11 @@
 :root {
     --bg-color: #87CEFA; /* Light Sky Blue */
     --text-color: #2c3e50; /* Dark Slate Blue for readability */
-    --accent-color: #FFD700; /* Gold for sun */
-    --accent-color-hover: #FFC107; /* Slightly darker gold for hover */
-    --border-color: #AECDE0; /* Muted light blue for borders */
-    --input-bg: #FFFFFF; /* Pure white for input fields */
-    --shadow-color: rgba(255, 215, 0, 0.2); /* Soft gold shadow */
+    --accent-color: #FFD700; /* Gold (Sun) */
+    --accent-color-hover: #FFC107; /* Amber */
+    --border-color: #AECDE0; /* Muted Light Blue */
+    --input-bg: #FFFFFF; /* White */
+    --shadow-color: rgba(255, 215, 0, 0.25); /* Soft Gold Shadow */
 }
 
 body {
@@ -38,7 +38,7 @@ body {
     width: 100%;
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 8px; /* Keep padding consistent */
     padding: 2rem; /* Keep padding consistent */
     box-shadow: 0 0 20px var(--shadow-color);
     position: relative;
@@ -52,7 +52,7 @@ header {
 
 .display-5 {
     color: var(--accent-color);
-    text-shadow: 0 0 5px var(--shadow-color);
+    text-shadow: 0 0 8px var(--shadow-color);
     margin-bottom: 0.5rem;
 }
 
@@ -136,7 +136,7 @@ header {
 
 .btn-primary:hover {
     background-color: var(--accent-color-hover);
-    border-color: var(--accent-color-hover);
+    border-color: var(--accent-color-hover); /* Keep accent for copied state */
     box-shadow: 0 0 10px var(--shadow-color);
 }
 
@@ -156,7 +156,7 @@ header {
 }
 
 .btn-secondary.copied {
-    background-color: var(--accent-color); /* Keep accent for copied state */
+    background-color: var(--accent-color);
     color: var(--bg-color);
     animation: copied-animation 1.5s ease-out forwards;
 }
@@ -186,10 +186,31 @@ header {
     gap: 0.5rem;
 }
 
-.ttl-selector #ttl-select {
-    flex-grow: 0;
-    width: auto;
-    padding-right: 2rem;
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* Add a custom dropdown arrow using a pseudo-element */
+.select-wrapper::after {
+    content: '▼';
+    font-size: 0.7em;
+    color: var(--accent-color);
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none; /* Allows clicks to pass through to the select element */
+}
+
+/* Style the <select> element itself */
+.ttl-selector .form-control {
+    -webkit-appearance: none; /* Remove default styling for Safari/Chrome */
+    -moz-appearance: none;    /* Remove default styling for Firefox */
+    appearance: none;         /* Remove default styling for modern browsers */
+    padding-right: 2.5rem; /* Add space for our custom arrow */
+    background-color: var(--input-bg); /* Ensure it has the correct background */
+    cursor: pointer;
 }
 
 .result-box {
@@ -280,7 +301,7 @@ footer a:hover {
 
 .language-switcher a.active {
     border-color: var(--accent-color);
-    box-shadow: 0 0 8px var(--shadow-color);
+    box-shadow: 0 0 10px var(--shadow-color);
 }
 
 /* =====================================================================
@@ -302,6 +323,12 @@ footer a:hover {
 [dir="rtl"] input,
 [dir="rtl"] select {
     text-align: right;
+}
+
+/* Adjust the custom arrow position for RTL */
+[dir="rtl"] .select-wrapper::after {
+    right: auto;
+    left: 1rem;
 }
 
 [dir="rtl"] .language-switcher a {

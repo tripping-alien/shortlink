@@ -1,20 +1,20 @@
-from fastapi import FastAPI, HTTPException, Request, APIRouter
-from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic_settings import BaseSettings
+import asyncio
+import json
+import logging
+import os
+import re
 from contextlib import asynccontextmanager
-from pydantic import BaseModel, HttpUrl, field_validator, Field
 from datetime import datetime, timedelta, date
+from enum import Enum
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, Request, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import uvicorn
-import json
-import asyncio
-import os
-import random
-from enum import Enum
-import re
-import logging
+from pydantic import BaseModel, HttpUrl, field_validator, Field
+from pydantic_settings import BaseSettings
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -182,9 +182,10 @@ class LinkBase(BaseModel):
         """
         Prepends 'https://' to the URL if no scheme (http:// or https://) is present.
         """
-        if isinstance(v, str) and not re.match(r'^[a-zA-Z]+://', v):
+        if isinstance(v, str) and not v.startswith(('http://', 'https://')):
             return 'https://' + v
         return v
+
 
 class LinkResponse(BaseModel):
     """The response model for a successfully created or retrieved link."""
@@ -265,6 +266,7 @@ app = FastAPI(
     },
 )
 
+
 # --- Custom Exception Handlers for Robustness ---
 
 @app.exception_handler(ValueError)
@@ -281,6 +283,7 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
         content={"detail": translator("Invalid short code format")},
     )
 
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
     """
@@ -294,6 +297,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"detail": "An unexpected internal error occurred."},
     )
+
 
 # API Router for versioning and organization
 api_router = APIRouter(
@@ -435,6 +439,7 @@ async def sitemap():
 </urlset>
 """
     return Response(content=xml_content, media_type="application/xml")
+
 
 @api_router.get("/translations/{lang_code}", include_in_schema=False)
 async def get_translations(lang_code: str):

@@ -17,7 +17,8 @@ import database
 TEST_DB_FILE = "./test.db"
 database.DB_FILE = TEST_DB_FILE
 
-from app import app, to_bijective_base6, from_bijective_base6, get_db_connection
+from app import app, to_bijective_base6, from_bijective_base6
+from database import get_db_connection
 
 
 @pytest.fixture(scope="function")

@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 import os
 import sys
-import time
+from datetime import timedelta
 
 # Add the project root to sys.path to resolve module imports correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -46,6 +46,7 @@ def client():
 
 # These tests don't need the client fixture as they test pure functions.
 from mymath import to_bijective_base6, from_bijective_base6
+from app import TTL # Import the TTL enum directly
 
 
 def test_bijective_functions():
@@ -105,7 +106,7 @@ def test_create_link_success(client: TestClient):
 
     response = client.post(
         "/api/links",
-        data={
+        json={
             "long_url": "https://example.com/a-very-long-url",
             "ttl": "1d",
             "g-recaptcha-response": "mock-token"
@@ -124,7 +125,7 @@ def test_create_link_recaptcha_failure(client: TestClient):
 
     response = client.post(
         "/api/links",
-        data={
+        json={
             "long_url": "https://example.com",
             "ttl": "1d",
             "g-recaptcha-response": "mock-token-fail"
@@ -142,7 +143,7 @@ def test_redirect_to_long_url(client: TestClient):
     # First, create a link
     client.post(
         "/api/links",
-        data={"long_url": "https://redirect-target.com", "ttl": "1h", "g-recaptcha-response": "mock-token"}
+        json={"long_url": "https://redirect-target.com", "ttl": "1h", "g-recaptcha-response": "mock-token"}
     )
     # Now, test the redirect
     response = client.get("/1", follow_redirects=False)
@@ -162,11 +163,11 @@ def test_link_expiration(client: TestClient):
     respx.post("https://www.google.com/recaptcha/api/siteverify").respond(200, json={"success": True})
 
     # Monkeypatch the TTL_MAP for this test to create a very short-lived link
-    with patch("app.TTL_MAP", {app.TTL.ONE_HOUR: timedelta(seconds=1)}):
+    with patch("app.TTL_MAP", {TTL.ONE_HOUR: timedelta(seconds=0.1)}):
         # Create a link with a 1-second TTL
         client.post(
             "/api/links",
-            data={"long_url": "https://expiring-link.com", "ttl": "1h", "g-recaptcha-response": "mock-token"}
+            json={"long_url": "https://expiring-link.com", "ttl": "1h", "g-recaptcha-response": "mock-token"}
         )
 
     # Immediately, it should work
@@ -174,7 +175,7 @@ def test_link_expiration(client: TestClient):
     assert response.status_code == 307
 
     # Wait for more than 1 second
-    time.sleep(1.5)
+    # time.sleep(1.5) # Sleeping in tests is not ideal, but necessary here. Let's make it short.
 
     # Now, it should be expired and return a 404
     response_after_expiry = client.get("/1", follow_redirects=False)

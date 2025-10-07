@@ -5,7 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release">
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.json" beforeDir="false" afterPath="$PROJECT_DIR$/db.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytest.ini" beforeDir="false" afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_app.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,7 +77,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Python.app">
+  <component name="RunManager" selected="Python tests.Python tests in test_app.py">
     <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
@@ -159,8 +163,24 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
+    <configuration name="Python tests in test_app.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="PythonProject" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_app.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.Python tests in test_app.py" />
         <item itemvalue="Python.app" />
         <item itemvalue="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py" />
         <item itemvalue="Python.telegram_ai" />
@@ -185,22 +205,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00377" summary="v1.2 Release">
-      <option name="closed" value="true" />
-      <created>1759544853704</created>
-      <option name="number" value="00377" />
-      <option name="presentableId" value="LOCAL‎-00377" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759544853704</updated>
-    </task>
-    <task id="LOCAL‎-00378" summary="v1.2 Release">
-      <option name="closed" value="true" />
-      <created>1759544908734</created>
-      <option name="number" value="00378" />
-      <option name="presentableId" value="LOCAL‎-00378" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759544908734</updated>
     </task>
     <task id="LOCAL‎-00379" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -578,7 +582,23 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759872341987</updated>
     </task>
-    <option name="localTasksCounter" value="426" />
+    <task id="LOCAL‎-00426" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759872516007</created>
+      <option name="number" value="00426" />
+      <option name="presentableId" value="LOCAL‎-00426" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759872516007</updated>
+    </task>
+    <task id="LOCAL‎-00427" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759872551253</created>
+      <option name="number" value="00427" />
+      <option name="presentableId" value="LOCAL‎-00427" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759872551253</updated>
+    </task>
+    <option name="localTasksCounter" value="428" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

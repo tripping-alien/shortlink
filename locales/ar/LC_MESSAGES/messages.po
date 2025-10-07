@@ -102,3 +102,10 @@ msgstr "رابطك خاص وسينتهي صلاحيته تلقائيًا خلا�
 
 msgid "Your link is private and will never expire."
 msgstr "رابطك خاص ولن تنتهي صلاحيته أبدًا."
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "رابطك خاص وسينتهي صلاحيته تلقائيًا خلال {duration}."
+
+msgid "Your link is private and will never expire."
+msgstr "رابطك خاص ولن تنتهي صلاحيته أبدًا."

@@ -79,9 +79,6 @@ msgid "Released under the"
 msgstr "Uitgebracht onder de"
 
 # API Error Messages
-msgid "Bot verification failed. Incorrect answer."
-msgstr "Botverificatie mislukt. Onjuist antwoord."
-
 msgid "Invalid short code format"
 msgstr "Ongeldig formaat korte code"
 
@@ -90,10 +87,6 @@ msgstr "Korte link niet gevonden"
 
 msgid "Short link has expired"
 msgstr "Korte link is verlopen"
-
-# Challenge question
-msgid "What is {num1} + {num2}?"
-msgstr "Wat is {num1} + {num2}?"
 
 # Dynamic UI text
 msgid "Your link is private and will automatically expire in {duration}."

@@ -79,9 +79,6 @@ msgid "Released under the"
 msgstr "שוחרר תחת"
 
 # API Error Messages
-msgid "Bot verification failed. Incorrect answer."
-msgstr "אימות הבוט נכשל. תשובה שגויה."
-
 msgid "Invalid short code format"
 msgstr "פורמט קוד קצר לא תקין"
 
@@ -90,10 +87,6 @@ msgstr "קישור קצר לא נמצא"
 
 msgid "Short link has expired"
 msgstr "הקישור הקצר פג תוקף"
-
-# Challenge question
-msgid "What is {num1} + {num2}?"
-msgstr "כמה זה {num1} + {num2}?"
 
 # Dynamic UI text
 msgid "Your link is private and will automatically expire in {duration}."

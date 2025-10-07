@@ -79,9 +79,6 @@ msgid "Released under the"
 msgstr "根据...发布"
 
 # API Error Messages
-msgid "Bot verification failed. Incorrect answer."
-msgstr "机器人验证失败。答案不正确。"
-
 msgid "Invalid short code format"
 msgstr "短代码格式无效"
 
@@ -90,10 +87,6 @@ msgstr "未找到短链接"
 
 msgid "Short link has expired"
 msgstr "短链接已过期"
-
-# Challenge question
-msgid "What is {num1} + {num2}?"
-msgstr "{num1} + {num2} 等于多少？"
 
 # Dynamic UI text
 msgid "Your link is private and will automatically expire in {duration}."

@@ -86,9 +86,6 @@ msgid "Released under the"
 msgstr "Released under the"
 
 # API Error Messages
-msgid "Bot verification failed. Incorrect answer."
-msgstr "Bot verification failed. Incorrect answer."
-
 msgid "Invalid short code format"
 msgstr "Invalid short code format"
 
@@ -97,7 +94,3 @@ msgstr "Short link not found"
 
 msgid "Short link has expired"
 msgstr "Short link has expired"
-
-# Challenge question
-msgid "What is {num1} + {num2}?"
-msgstr "What is {num1} + {num2}?"

@@ -80,9 +80,6 @@ msgid "Released under the"
 msgstr "صدر تحت"
 
 # API Error Messages
-msgid "Bot verification failed. Incorrect answer."
-msgstr "فشل التحقق من البوت. إجابة غير صحيحة."
-
 msgid "Invalid short code format"
 msgstr "تنسيق الرمز المختصر غير صالح"
 
@@ -91,10 +88,6 @@ msgstr "الرابط المختصر غير موجود"
 
 msgid "Short link has expired"
 msgstr "انتهت صلاحية الرابط المختصر"
-
-# Challenge question
-msgid "What is {num1} + {num2}?"
-msgstr "ما هو ناتج {num1} + {num2}؟"
 
 # Dynamic UI text
 msgid "Your link is private and will automatically expire in {duration}."

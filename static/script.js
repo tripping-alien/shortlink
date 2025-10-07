@@ -46,26 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = true;
 
             const formData = new FormData(shortenForm);
+            const payload = {
+                long_url: formData.get('long_url'),
+                ttl: formData.get('ttl')
+            };
 
             try {
-                // First, get the anti-bot challenge
-                const challengeResponse = await fetch('/challenge');
-                if (!challengeResponse.ok) {
-                    throw new Error('Failed to load verification challenge.');
-                }
-                const challengeData = await challengeResponse.json();
-
-                // Now, construct the payload with the challenge answer
-                const payload = {
-                    long_url: formData.get('long_url'),
-                    ttl: formData.get('ttl'),
-                    challenge: {
-                        num1: challengeData.num1,
-                        num2: challengeData.num2,
-                        challenge_answer: challengeData.num1 + challengeData.num2 // Solve the challenge
-                    }
-                };
-
                 const response = await fetch('/api/links', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

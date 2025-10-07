@@ -79,9 +79,6 @@ msgid "Released under the"
 msgstr "Выпущено под"
 
 # API Error Messages
-msgid "Bot verification failed. Incorrect answer."
-msgstr "Проверка на бота не пройдена. Неверный ответ."
-
 msgid "Invalid short code format"
 msgstr "Неверный формат короткого кода"
 
@@ -90,10 +87,6 @@ msgstr "Короткая ссылка не найдена"
 
 msgid "Short link has expired"
 msgstr "Срок действия короткой ссылки истек"
-
-# Challenge question
-msgid "What is {num1} + {num2}?"
-msgstr "Сколько будет {num1} + {num2}?"
 
 # Dynamic UI text
 msgid "Your link is private and will automatically expire in {duration}."

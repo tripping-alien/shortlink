@@ -331,13 +331,20 @@ def get_translator(lang: str = DEFAULT_LANGUAGE):
 @app.get("/", include_in_schema=False)
 async def redirect_to_default_lang(request: Request):
     """Redirects the root path to the default language."""
-    # Detect browser language for a better first-time user experience
-    accept_language = request.headers.get("accept-language")
     lang = DEFAULT_LANGUAGE
-    if accept_language:
-        browser_lang = accept_language.split(",")[0].split("-")[0].lower()
-        if browser_lang in TRANSLATIONS:
-            lang = browser_lang
+
+    # 1. Prioritize the language cookie set by the user.
+    user_lang_cookie = request.cookies.get("lang")
+    if user_lang_cookie and user_lang_cookie in TRANSLATIONS:
+        lang = user_lang_cookie
+    else:
+        # 2. Fallback to browser's Accept-Language header for a good first-time experience.
+        accept_language = request.headers.get("accept-language")
+        if accept_language:
+            browser_lang = accept_language.split(",")[0].split("-")[0].lower()
+            if browser_lang in TRANSLATIONS:
+                lang = browser_lang
+
     return RedirectResponse(url=f"/{lang}")
 
 

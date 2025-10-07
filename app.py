@@ -14,6 +14,11 @@ import os
 import random
 from enum import Enum
 import re
+import logging
+
+# --- Setup Logging ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
 # --- Configuration Management ---
@@ -171,34 +176,15 @@ class LinkBase(BaseModel):
                               description="The original, long URL to be shortened.")
     ttl: TTL = Field(TTL.ONE_DAY, description="Time-to-live for the link. Determines when it will expire.")
 
-
-class LinkCreate(LinkBase):
-    """The request body for creating a new short link."""
-
     @field_validator('long_url', mode='before')
     @classmethod
     def prepend_scheme_if_missing(cls, v: str):
         """
         Prepends 'https://' to the URL if no scheme (http:// or https://) is present.
         """
-        if not re.match(r'^[a-zA-Z]+://', v):
+        if isinstance(v, str) and not re.match(r'^[a-zA-Z]+://', v):
             return 'https://' + v
         return v
-
-    # Keep the validator on the combined model
-    @field_validator('long_url')
-    @classmethod
-    def check_domain(cls, v: HttpUrl):
-        """
-        Ensures the URL is not pointing to a local or private address.
-        """
-        # Pydantic's HttpUrl already does a great job, but we can add custom logic.
-        if v.host in ('localhost', '127.0.0.1'):
-            raise ValueError('Shortening localhost URLs is not permitted.')
-        if not v.host or '.' not in v.host:
-            raise ValueError('The provided URL must have a valid domain name.')
-        return v
-
 
 class LinkResponse(BaseModel):
     """The response model for a successfully created or retrieved link."""
@@ -278,6 +264,36 @@ app = FastAPI(
         "email": "your-email@example.com",
     },
 )
+
+# --- Custom Exception Handlers for Robustness ---
+
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request: Request, exc: ValueError):
+    """
+    Handles ValueErrors that occur during request processing, typically from
+    invalid short codes in `from_bijective_base6`. Returns a 404 response.
+    """
+    logger.warning(f"ValueError handled for request {request.url.path}: {exc}")
+    # Use the translator from the request scope if available, otherwise default
+    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))
+    return JSONResponse(
+        status_code=404,
+        content={"detail": translator("Invalid short code format")},
+    )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    """
+    Catches any unhandled exceptions, logs the full error for debugging,
+    and returns a generic 500 Internal Server Error to the user.
+    This prevents leaking sensitive implementation details.
+    """
+    logger.error(f"Unhandled exception for request {request.url.path}", exc_info=True)
+    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected internal error occurred."},
+    )
 
 # API Router for versioning and organization
 api_router = APIRouter(
@@ -451,7 +467,7 @@ async def get_translations(lang_code: str):
         422: {"model": ErrorResponse, "description": "Validation Error: The request body is malformed."},
     }
 )
-async def create_short_link(link_data: LinkCreate, request: Request):
+async def create_short_link(link_data: LinkBase, request: Request):
     """
     Creates a new short link from a long URL.
 
@@ -515,11 +531,8 @@ async def get_link_details(short_code: str, request: Request):
     expiration time, without performing a redirect.
     """
     translator = get_translator()  # Defaults to 'en' for API responses
-    try:
-        url_id = from_bijective_base6(short_code)
-    except ValueError:
-        raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
-
+    # The ValueError from an invalid short_code is now handled by the exception handler
+    url_id = from_bijective_base6(short_code)
     record = url_database.get(url_id)
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
@@ -546,27 +559,23 @@ async def redirect_to_long_url(short_code: str, request: Request):
     This is the primary function of the service.
     """
     translator = get_translator()  # Defaults to 'en' for error messages on redirect
-    try:
-        url_id = from_bijective_base6(short_code)
+    # The ValueError from an invalid short_code is now handled by the exception handler
+    url_id = from_bijective_base6(short_code)
+    record = url_database.get(url_id)
+    if not record:
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
-        record = url_database.get(url_id)
-        if not record:
-            raise HTTPException(status_code=404, detail=translator("Short link not found"))
+    # Check if the link has an expiration date and if it has passed
+    if record["expires_at"] and datetime.utcnow() > record["expires_at"]:
+        # Clean up the expired link (passive check)
+        async with db_lock:
+            if url_id in url_database:  # Check again in case the background task just removed it
+                del url_database[url_id]
+                freed_ids.append(url_id)
+                save_state()
+        raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
-        # Check if the link has an expiration date and if it has passed
-        if record["expires_at"] and datetime.utcnow() > record["expires_at"]:
-            # Clean up the expired link (passive check)
-            async with db_lock:
-                if url_id in url_database:  # Check again in case the background task just removed it
-                    del url_database[url_id]
-                    freed_ids.append(url_id)
-                    save_state()
-            raise HTTPException(status_code=404, detail=translator("Short link has expired"))
-
-        return RedirectResponse(url=record["long_url"])
-
-    except ValueError:
-        raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
+    return RedirectResponse(url=record["long_url"])
 
 
 # This block is useful for local development but not strictly needed for Render deployment

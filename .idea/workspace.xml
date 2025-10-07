@@ -5,9 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release">
-      <change beforePath="$PROJECT_DIR$/db.json" beforeDir="false" afterPath="$PROJECT_DIR$/db.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/animation.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/animation.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/script.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -203,22 +201,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00388" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759864887110</created>
-      <option name="number" value="00388" />
-      <option name="presentableId" value="LOCAL‎-00388" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759864887110</updated>
-    </task>
-    <task id="LOCAL‎-00389" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759864971119</created>
-      <option name="number" value="00389" />
-      <option name="presentableId" value="LOCAL‎-00389" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759864971119</updated>
     </task>
     <task id="LOCAL‎-00390" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -596,7 +578,23 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759874085802</updated>
     </task>
-    <option name="localTasksCounter" value="437" />
+    <task id="LOCAL‎-00437" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759874250496</created>
+      <option name="number" value="00437" />
+      <option name="presentableId" value="LOCAL‎-00437" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759874250496</updated>
+    </task>
+    <task id="LOCAL‎-00438" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759874409624</created>
+      <option name="number" value="00438" />
+      <option name="presentableId" value="LOCAL‎-00438" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759874409624</updated>
+    </task>
+    <option name="localTasksCounter" value="439" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -646,12 +644,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/app.py</url>
-          <line>173</line>
+          <line>183</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mymath.py</url>
-          <line>14</line>
+          <line>17</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>

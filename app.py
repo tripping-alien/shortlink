@@ -168,6 +168,16 @@ class Challenge(BaseModel):
 class LinkCreate(LinkBase):
     """The request body for creating a new short link."""
     challenge: Challenge = Field(..., description="A simple challenge-response object to prevent spam.")
+    
+    @field_validator('long_url', mode='before')
+    @classmethod
+    def prepend_scheme_if_missing(cls, v: str):
+        """
+        Prepends 'https://' to the URL if no scheme (http:// or https://) is present.
+        """
+        if not re.match(r'^[a-zA-Z]+://', v):
+            return 'https://' + v
+        return v
 
     # Keep the validator on the combined model
     @field_validator('long_url')

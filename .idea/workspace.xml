@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release" />
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release">
+      <change beforePath="$PROJECT_DIR$/locales/ar/LC_MESSAGES/messages.po" beforeDir="false" afterPath="$PROJECT_DIR$/locales/ar/LC_MESSAGES/messages.po" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/animation.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/animation.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -175,14 +178,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00341" summary="release 2.0.0">
-      <option name="closed" value="true" />
-      <created>1759134842872</created>
-      <option name="number" value="00341" />
-      <option name="presentableId" value="LOCAL‎-00341" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759134842874</updated>
     </task>
     <task id="LOCAL‎-00342" summary="release 2.0.0">
       <option name="closed" value="true" />
@@ -568,7 +563,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759864971119</updated>
     </task>
-    <option name="localTasksCounter" value="390" />
+    <task id="LOCAL‎-00390" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759865074779</created>
+      <option name="number" value="00390" />
+      <option name="presentableId" value="LOCAL‎-00390" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759865074779</updated>
+    </task>
+    <option name="localTasksCounter" value="391" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

@@ -404,19 +404,26 @@ async def create_short_link(link_data: LinkCreate, request: Request):
         raise HTTPException(status_code=400, detail=translator("Bot verification failed. Incorrect answer."))
 
     # Calculate the expiration datetime (store as UTC)
-    expires_at = None
-    if link_data.ttl != TTL.NEVER:
-        expires_at = datetime.now(timezone.utc) + TTL_MAP[link_data.ttl]
 
     new_id = None
     try:
-        with database.get_db_connection() as conn:
-            cursor = conn.execute(
-                "INSERT INTO links (long_url, expires_at) VALUES (?, ?)",
-                (str(link_data.long_url), expires_at)
-            )
-            new_id = cursor.lastrowid
-            conn.commit()
+        # Run synchronous DB code in a separate thread to avoid blocking the event loop
+        def db_insert():
+            with database.get_db_connection() as conn:
+                expires_at = None
+                if link_data.ttl != TTL.NEVER:
+                    expires_at = datetime.now(timezone.utc) + TTL_MAP[link_data.ttl]
+                
+                cursor = conn.execute(
+                    "INSERT INTO links (long_url, expires_at) VALUES (?, ?)",
+                    (str(link_data.long_url), expires_at)
+                )
+                new_id = cursor.lastrowid
+                conn.commit()
+                return new_id, expires_at
+        
+        new_id, expires_at = await asyncio.to_thread(db_insert)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
@@ -460,8 +467,11 @@ async def get_link_details(short_code: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
 
-    with database.get_db_connection() as conn:
-        record = conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+    def db_select():
+        with database.get_db_connection() as conn:
+            return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+
+    record = await asyncio.to_thread(db_select)
 
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
@@ -481,20 +491,6 @@ async def get_link_details(short_code: str, request: Request):
 app.include_router(api_router)
 
 
-@app.get(
-    "/{lang_code:str}/about",
-    response_class=HTMLResponse,
-    summary="Serve About Page",
-    tags=["UI"]
-)
-async def read_about(request: Request, lang_code: str):
-    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-        raise HTTPException(status_code=404, detail="Language not supported")
-
-    translator = get_translator(lang_code)
-    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
-
-
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
 async def redirect_to_long_url(short_code: str, request: Request):
     """
@@ -507,8 +503,11 @@ async def redirect_to_long_url(short_code: str, request: Request):
     try:
         url_id = from_bijective_base6(short_code)
 
-        with database.get_db_connection() as conn:
-            record = conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+        def db_select():
+            with database.get_db_connection() as conn:
+                return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
+
+        record = await asyncio.to_thread(db_select)
 
         if not record:
             raise HTTPException(status_code=404, detail=translator("Short link not found"))

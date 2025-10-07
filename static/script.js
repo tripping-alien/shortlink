@@ -62,7 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.detail || 'An unknown error occurred.');
+                    // Smartly parse FastAPI's error messages
+                    let errorMessage = "An unexpected error occurred.";
+                    if (data.detail) {
+                        if (Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg) {
+                            errorMessage = data.detail[0].msg;
+                        } else if (typeof data.detail === 'string') {
+                            errorMessage = data.detail;
+                        }
+                    }
+                    throw new Error(errorMessage);
                 }
 
                 // --- This is the fix: Populate and show the result box ---

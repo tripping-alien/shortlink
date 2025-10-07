@@ -17,6 +17,7 @@ from pydantic_settings import BaseSettings
 from starlette.staticfiles import StaticFiles
 
 import database
+from obfuscation import obfuscate, deobfuscate
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -514,7 +515,8 @@ async def create_short_link(link_data: LinkBase, request: Request):
 
     try:
         new_id, expires_at, deletion_token = await asyncio.to_thread(db_insert)
-        short_code = to_bijective_base6(new_id)
+        obfuscated_id = obfuscate(new_id)
+        short_code = to_bijective_base6(obfuscated_id)
         short_url = f"{request.base_url}{short_code}"
         resource_location = short_url
 
@@ -562,7 +564,8 @@ async def get_link_details(short_code: str, request: Request):
     """
     translator = get_translator()  # Defaults to 'en' for API responses
     # The ValueError from an invalid short_code is now handled by the exception handler
-    url_id = from_bijective_base6(short_code)
+    obfuscated_id = from_bijective_base6(short_code)
+    url_id = deobfuscate(obfuscated_id)
     
     def db_select():
         with database.get_db_connection() as conn:
@@ -618,7 +621,8 @@ async def delete_short_link(short_code: str, request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid request body. Expecting JSON with 'deletion_token'.")
 
-    url_id = from_bijective_base6(short_code)
+    obfuscated_id = from_bijective_base6(short_code)
+    url_id = deobfuscate(obfuscated_id)
 
     def db_delete():
         return database.delete_link_by_id_and_token(url_id, token)
@@ -647,7 +651,8 @@ async def redirect_to_long_url(short_code: str, request: Request):
     now = datetime.now(tz=timezone.utc)
     translator = get_translator()  # Defaults to 'en' for error messages on redirect
     # The ValueError from an invalid short_code is now handled by the exception handler
-    url_id = from_bijective_base6(short_code)
+    obfuscated_id = from_bijective_base6(short_code)
+    url_id = deobfuscate(obfuscated_id)
     
     def db_select():
         with database.get_db_connection() as conn:

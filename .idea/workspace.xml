@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng">
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 2">
       <change beforePath="$PROJECT_DIR$/shortlinks.db" beforeDir="false" afterPath="$PROJECT_DIR$/shortlinks.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -232,38 +233,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00400" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759866675507</created>
-      <option name="number" value="00400" />
-      <option name="presentableId" value="LOCAL‎-00400" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759866675507</updated>
-    </task>
-    <task id="LOCAL‎-00401" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759866743458</created>
-      <option name="number" value="00401" />
-      <option name="presentableId" value="LOCAL‎-00401" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759866743458</updated>
-    </task>
-    <task id="LOCAL‎-00402" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759867079762</created>
-      <option name="number" value="00402" />
-      <option name="presentableId" value="LOCAL‎-00402" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759867079762</updated>
-    </task>
-    <task id="LOCAL‎-00403" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759867165652</created>
-      <option name="number" value="00403" />
-      <option name="presentableId" value="LOCAL‎-00403" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759867165652</updated>
     </task>
     <task id="LOCAL‎-00404" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -625,7 +594,39 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759878868792</updated>
     </task>
-    <option name="localTasksCounter" value="449" />
+    <task id="LOCAL‎-00449" summary="Workng 2">
+      <option name="closed" value="true" />
+      <created>1759878988151</created>
+      <option name="number" value="00449" />
+      <option name="presentableId" value="LOCAL‎-00449" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759878988152</updated>
+    </task>
+    <task id="LOCAL‎-00450" summary="Workng 2">
+      <option name="closed" value="true" />
+      <created>1759879168134</created>
+      <option name="number" value="00450" />
+      <option name="presentableId" value="LOCAL‎-00450" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759879168134</updated>
+    </task>
+    <task id="LOCAL‎-00451" summary="Workng 2">
+      <option name="closed" value="true" />
+      <created>1759879201739</created>
+      <option name="number" value="00451" />
+      <option name="presentableId" value="LOCAL‎-00451" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759879201739</updated>
+    </task>
+    <task id="LOCAL‎-00452" summary="Workng 2">
+      <option name="closed" value="true" />
+      <created>1759879263654</created>
+      <option name="number" value="00452" />
+      <option name="presentableId" value="LOCAL‎-00452" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759879263654</updated>
+    </task>
+    <option name="localTasksCounter" value="453" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -643,7 +644,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="checkbox" />
     <MESSAGE value="רליז" />
     <MESSAGE value="עובד" />
     <MESSAGE value="תרגום" />
@@ -668,7 +668,8 @@
     <MESSAGE value="v1.2 Release" />
     <MESSAGE value="v2.0 Release" />
     <MESSAGE value="Workng" />
-    <option name="LAST_COMMIT_MESSAGE" value="Workng" />
+    <MESSAGE value="Workng 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="Workng 2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

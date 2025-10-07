@@ -296,7 +296,7 @@ async def redirect_to_default_lang(request: Request):
             if browser_lang in TRANSLATIONS:
                 lang = browser_lang
 
-    return RedirectResponse(url=f"/{lang}")
+    return RedirectResponse(url=f"/ui/{lang}")
 
 
 @app.get(

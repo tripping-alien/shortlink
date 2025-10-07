@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const ttlSelect = document.getElementById('ttl-select');
     const ttlInfoText = document.getElementById('ttl-info-text');
+    const TTL_STORAGE_KEY = 'bijective_shorty_ttl'; // Key for localStorage
 
     function updateTtlInfo() {
         if (!ttlSelect || !ttlInfoText) return;
@@ -60,8 +61,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (ttlSelect) {
-        ttlSelect.addEventListener('change', updateTtlInfo);
-        // Initialize the text on page load to ensure consistency
+        // 1. On page load, try to restore the TTL selection from localStorage
+        const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
+        if (savedTtl) {
+            ttlSelect.value = savedTtl;
+        }
+
+        // 2. Add a listener to save the selection whenever it changes
+        ttlSelect.addEventListener('change', () => {
+            localStorage.setItem(TTL_STORAGE_KEY, ttlSelect.value);
+            updateTtlInfo();
+        });
+
+        // 3. Initialize the info text based on the (potentially restored) selection
         updateTtlInfo();
     }
 

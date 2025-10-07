@@ -94,3 +94,10 @@ msgstr "短链接已过期"
 # Challenge question
 msgid "What is {num1} + {num2}?"
 msgstr "{num1} + {num2} 等于多少？"
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "您的链接是私密的，并将在{duration}后自动过期。"
+
+msgid "Your link is private and will never expire."
+msgstr "您的链接是私密的，永不过期。"

@@ -94,3 +94,10 @@ msgstr "הקישור הקצר פג תוקף"
 # Challenge question
 msgid "What is {num1} + {num2}?"
 msgstr "כמה זה {num1} + {num2}?"
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "הקישור שלך פרטי ויפוג تلقائياً תוך {duration}."
+
+msgid "Your link is private and will never expire."
+msgstr "הקישור שלך פרטי ולעולם לא יפוג."

@@ -94,3 +94,10 @@ msgstr "Срок действия короткой ссылки истек"
 # Challenge question
 msgid "What is {num1} + {num2}?"
 msgstr "Сколько будет {num1} + {num2}?"
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "Ваша ссылка приватна и автоматически истечет через {duration}."
+
+msgid "Your link is private and will never expire."
+msgstr "Ваша ссылка приватна и никогда не истечет."

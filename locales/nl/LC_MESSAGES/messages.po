@@ -94,3 +94,10 @@ msgstr "Korte link is verlopen"
 # Challenge question
 msgid "What is {num1} + {num2}?"
 msgstr "Wat is {num1} + {num2}?"
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "Uw link is privé en vervalt automatisch over {duration}."
+
+msgid "Your link is private and will never expire."
+msgstr "Uw link is privé en zal nooit vervallen."

@@ -95,3 +95,10 @@ msgstr "انتهت صلاحية الرابط المختصر"
 # Challenge question
 msgid "What is {num1} + {num2}?"
 msgstr "ما هو ناتج {num1} + {num2}؟"
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "رابطك خاص وسينتهي صلاحيته تلقائيًا خلال {duration}."
+
+msgid "Your link is private and will never expire."
+msgstr "رابطك خاص ولن تنتهي صلاحيته أبدًا."

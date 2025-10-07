@@ -94,3 +94,10 @@ msgstr "Le lien court a expiré"
 # Challenge question
 msgid "What is {num1} + {num2}?"
 msgstr "Combien font {num1} + {num2} ?"
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "Votre lien est privé et expirera automatiquement dans {duration}."
+
+msgid "Your link is private and will never expire."
+msgstr "Votre lien est privé et n'expirera jamais."

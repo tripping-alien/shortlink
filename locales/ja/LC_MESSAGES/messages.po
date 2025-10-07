@@ -94,3 +94,10 @@ msgstr "短縮リンクの有効期限が切れています"
 # Challenge question
 msgid "What is {num1} + {num2}?"
 msgstr "{num1} + {num2} は？"
+
+# Dynamic UI text
+msgid "Your link is private and will automatically expire in {duration}."
+msgstr "リンクはプライベートで、{duration}後に自動的に失効します。"
+
+msgid "Your link is private and will never expire."
+msgstr "リンクはプライベートで、失効することはありません。"

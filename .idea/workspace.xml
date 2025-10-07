@@ -4,11 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release" />
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="v2.0 Release">
+      <change afterPath="$PROJECT_DIR$/math.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/translations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="PUSH_AUTO_UPDATE" value="true" />
@@ -63,7 +75,7 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python tests.Python tests in test_app.py">
+  <component name="RunManager" selected="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py">
     <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
@@ -133,7 +145,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Python tests in test_app.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+    <configuration name="Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -151,7 +163,7 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python tests.Python tests in test_app.py" />
+        <item itemvalue="Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py" />
         <item itemvalue="Python.telegram_ai" />
         <item itemvalue="Python.desktop_app" />
         <item itemvalue="Python.app" />
@@ -175,14 +187,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00357" summary="v1.0">
-      <option name="closed" value="true" />
-      <created>1759140531735</created>
-      <option name="number" value="00357" />
-      <option name="presentableId" value="LOCAL‎-00357" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759140531735</updated>
     </task>
     <task id="LOCAL‎-00358" summary="v1.0">
       <option name="closed" value="true" />
@@ -568,7 +572,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759867331920</updated>
     </task>
-    <option name="localTasksCounter" value="406" />
+    <task id="LOCAL‎-00406" summary="v2.0 Release">
+      <option name="closed" value="true" />
+      <created>1759867444528</created>
+      <option name="number" value="00406" />
+      <option name="presentableId" value="LOCAL‎-00406" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759867444528</updated>
+    </task>
+    <option name="localTasksCounter" value="407" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

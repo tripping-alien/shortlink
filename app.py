@@ -398,22 +398,36 @@ async def sitemap():
     today = date.today().isoformat()
     now = datetime.now(tz=timezone.utc)
     urlset = []
+    base_url = "https://shortlinks.art"
+
+    # Generate hreflang links for a given path (e.g., "/ui/{lang}/")
+    def generate_hreflang_links(path_template: str) -> str:
+        links = []
+        for code in TRANSLATIONS.keys():
+            links.append(f'    <xhtml:link rel="alternate" hreflang="{code}" href="{base_url}{path_template.format(lang=code)}"/>')
+        # Add x-default for the default language
+        links.append(f'    <xhtml:link rel="alternate" hreflang="x-default" href="{base_url}{path_template.format(lang=DEFAULT_LANGUAGE)}"/>')
+        return "\n".join(links)
 
     # 1. Add an entry for each supported language homepage
-    for lang_code in TRANSLATIONS.keys():
-        # UI Homepage
-        urlset.append(f"""  <url>
-    <loc>https://shortlinks.art/ui/{lang_code}/</loc>
+    # We only need to create one entry for each "page" and list the language alternatives within it.
+    
+    # Homepage
+    urlset.append(f"""  <url>
+    <loc>{base_url}/ui/en/</loc>
     <lastmod>{today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+{generate_hreflang_links("/ui/{lang}/")}
   </url>""")
-        # About Page
-        urlset.append(f"""  <url>
-    <loc>https://shortlinks.art/ui/{lang_code}/about/</loc>
+
+    # About Page
+    urlset.append(f"""  <url>
+    <loc>{base_url}/ui/en/about/</loc>
     <lastmod>{today}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
+{generate_hreflang_links("/ui/{lang}/about/")}
   </url>""")
 
     # 2. Add an entry for each active short link
@@ -426,13 +440,14 @@ async def sitemap():
     for link in active_links:
         short_code = to_bijective_base6(link['id'])
         urlset.append(f"""  <url>
-    <loc>https://shortlinks.art/{short_code}</loc>
+    <loc>{base_url}/{short_code}</loc>
     <changefreq>never</changefreq>
     <priority>0.5</priority>
   </url>""")
 
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 {"".join(urlset)}
 </urlset>
 """

@@ -300,7 +300,7 @@ async def redirect_to_default_lang(request: Request):
 
 
 @app.get(
-    "/{lang_code:str}",
+    "/ui/{lang_code:str}",
     response_class=HTMLResponse,
     summary="Serve Frontend UI",
     tags=["UI"])
@@ -314,7 +314,7 @@ async def read_root(request: Request, lang_code: str):
 
 
 @app.get(
-    "/{lang_code:str}/about",
+    "/ui/{lang_code:str}/about",
     response_class=HTMLResponse,
     summary="Serve About Page",
     tags=["UI"]
@@ -393,11 +393,19 @@ async def sitemap():
 
     # 1. Add an entry for each supported language homepage
     for lang_code in TRANSLATIONS.keys():
+        # UI Homepage
         urlset.append(f"""  <url>
-    <loc>https://shortlinks.art/{lang_code}/</loc>
+    <loc>https://shortlinks.art/ui/{lang_code}/</loc>
     <lastmod>{today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+  </url>""")
+        # About Page
+        urlset.append(f"""  <url>
+    <loc>https://shortlinks.art/ui/{lang_code}/about/</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
   </url>""")
 
     # 2. Add an entry for each active short link

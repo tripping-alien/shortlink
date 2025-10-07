@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import RedirectResponse, HTMLResponse, Response
+from fastapi import FastAPI, HTTPException, Request, APIRouter
+from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic_settings import BaseSettings
 from contextlib import asynccontextmanager
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, HttpUrl, field_validator, Field
 from datetime import datetime, timedelta, date
-from fastapi.staticfiles import StaticFiles
+from fastapi.staticfiles import StaticFiles 
 from fastapi.templating import Jinja2Templates
 import uvicorn
 import json
@@ -12,11 +13,64 @@ import asyncio
 import os
 import random
 from enum import Enum
+import re
 
-# --- Configuration ---
-LINK_TTL_SECONDS = 86400  # Links will expire after 24 hours (24 * 60 * 60)
-# Use Render's persistent disk path. Default to local file for development.
-DB_FILE = os.path.join(os.environ.get('RENDER_DISK_PATH', '.'), 'db.json')
+# --- Configuration Management ---
+class Settings(BaseSettings):
+    """Manages application configuration using environment variables."""
+    # Use Render's persistent disk path. Default to local file for development.
+    db_file: str = os.path.join(os.environ.get('RENDER_DISK_PATH', '.'), 'db.json')
+    # In production, set this to your frontend's domain: "https://your-frontend.com"
+    # The default ["*"] is insecure and for development only.
+    cors_origins: list[str] = ["*"]
+    cleanup_interval_seconds: int = 3600 # Run cleanup task every hour
+
+settings = Settings()
+
+# --- Custom I18n Implementation (replaces fastapi-i18n) ---
+
+TRANSLATIONS = {}
+DEFAULT_LANGUAGE = "en"
+
+def load_translations():
+    """
+    Parses .po files from the locales directory and loads them into memory.
+    This is a simple parser that handles the basic msgid/msgstr format.
+    """
+    locales_dir = "locales"
+    if not os.path.isdir(locales_dir):
+        return
+
+    for lang in os.listdir(locales_dir):
+        po_file = os.path.join(locales_dir, lang, "LC_MESSAGES", "messages.po")
+        if os.path.exists(po_file):
+            with open(po_file, "r", encoding="utf-8") as f:
+                content = f.read()
+            
+            translations = {}
+            # Regex to find msgid "" and msgstr "" pairs
+            pattern = re.compile(r'msgid "((?:\\.|[^"])*)"\s+msgstr "((?:\\.|[^"])*)"', re.DOTALL)
+            
+            for match in pattern.finditer(content):
+                msgid = match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                msgstr = match.group(2).replace('\\"', '"').replace('\\n', '\n')
+                if msgid:  # Ensure msgid is not empty
+                    translations[msgid] = msgstr
+            
+            TRANSLATIONS[lang] = translations
+            print(f"Loaded {len(translations)} translations for language: {lang}")
+
+def gettext(text: str, lang: str = DEFAULT_LANGUAGE) -> str:
+    """
+    Translates a given text to the specified language.
+    Falls back to the original text if no translation is found.
+    """
+    return TRANSLATIONS.get(lang, {}).get(text, text)
+
+def lazy_gettext(request: Request, text: str) -> str:
+    """A 'lazy' version of gettext that uses the language from the request scope."""
+    lang = request.scope.get("language", DEFAULT_LANGUAGE)
+    return gettext(text, lang)
 
 # --- In-Memory "Database" ---
 # In a real application, you would replace this with a proper database
@@ -43,14 +97,14 @@ def save_state():
         "freed_ids": freed_ids
     }
     # This function is now synchronous, so we don't need async file I/O
-    with open(DB_FILE, "w") as f:
+    with open(settings.db_file, "w") as f:
         json.dump(state, f, indent=4)
 
 def load_state():
     """Loads the state from a JSON file on startup."""
     global url_database, id_counter, freed_ids
     try:
-        with open(DB_FILE, "r") as f:
+        with open(settings.db_file, "r") as f:
             state = json.load(f)
             # Convert string timestamps back to datetime objects
             url_database = {
@@ -101,25 +155,43 @@ TTL_MAP = {
     TTL.ONE_WEEK: timedelta(weeks=1),
 }
 
-# --- API Models ---
-class URLItem(BaseModel):
-    long_url: HttpUrl
-    challenge_answer: int
-    num1: int
-    num2: int
-    ttl: TTL = TTL.ONE_DAY # Default to 1 day
+# --- Pydantic Models ---
+class LinkBase(BaseModel):
+    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original, long URL to be shortened.")
+    ttl: TTL = Field(TTL.ONE_DAY, description="Time-to-live for the link. Determines when it will expire.")
 
+class Challenge(BaseModel):
+    num1: int = Field(..., example=5, description="The first number in the bot-check challenge.")
+    num2: int = Field(..., example=8, description="The second number in the bot-check challenge.")
+    challenge_answer: int = Field(..., example=13, description="The user's answer to the `num1 + num2` challenge.")
+
+class LinkCreate(LinkBase):
+    """The request body for creating a new short link."""
+    challenge: Challenge = Field(..., description="A simple challenge-response object to prevent spam.")
+
+    # Keep the validator on the combined model
     @field_validator('long_url')
     @classmethod
     def check_domain(cls, v: HttpUrl):
         """
         Ensures the URL is not pointing to a local or private address.
         """
+        # Pydantic's HttpUrl already does a great job, but we can add custom logic.
         if v.host in ('localhost', '127.0.0.1'):
             raise ValueError('Shortening localhost URLs is not permitted.')
         if not v.host or '.' not in v.host:
             raise ValueError('The provided URL must have a valid domain name.')
         return v
+
+class LinkResponse(BaseModel):
+    """The response model for a successfully created or retrieved link."""
+    short_url: HttpUrl = Field(..., example="https://shortlinks.art/11", description="The generated short URL.")
+    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original long URL.")
+    expires_at: datetime | None = Field(..., example="2023-10-27T10:00:00Z", description="The UTC timestamp when the link will expire. `null` if it never expires.")
+
+class ErrorResponse(BaseModel):
+    """A standardized error response model."""
+    detail: str
 
 
 # --- Background Cleanup Task ---
@@ -153,24 +225,42 @@ async def run_cleanup_task():
     """Runs the cleanup task in a loop."""
     while True:
         await cleanup_expired_links()
-        await asyncio.sleep(3600)  # Run every hour
+        await asyncio.sleep(settings.cleanup_interval_seconds)
 
 # --- Lifespan Events for Startup and Shutdown ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the state from disk when the application starts
+    print("Loading translations...")
+    load_translations()
+    print("Loading application state...")
     load_state()
+    print("Starting background cleanup task...")
     cleanup_task = asyncio.create_task(run_cleanup_task())
     yield
     # Save the state to disk when the application shuts down
+    print("Saving application state...")
     save_state()
     cleanup_task.cancel()
 
-# --- FastAPI Application ---
+# --- FastAPI Application Setup ---
 app = FastAPI(
     title="Bijective-Shorty API",
-    description="A simple URL shortener using bijective base-6 encoding with TTL and ID reuse.",
-    lifespan=lifespan
+    description="A robust and efficient URL shortener using bijective base-6 encoding, TTL, and ID reuse. "
+                "This API provides endpoints for creating, retrieving, and redirecting short links.",
+    version="1.0.0",
+    lifespan=lifespan,
+    contact={
+        "name": "API Support",
+        "url": "https://github.com/your-repo", # Replace with your project's repo
+        "email": "your-email@example.com",
+    },
+)
+
+# API Router for versioning and organization
+api_router = APIRouter(
+    prefix="/api",
+    tags=["Links"], # Group endpoints in the docs
 )
 
 # Mount static files and templates
@@ -180,32 +270,85 @@ templates = Jinja2Templates(directory="templates")
 # CORS Middleware to allow the frontend to communicate with the API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this to your frontend's domain
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def i18n_middleware(request: Request, call_next):
+    """
+    Detects user language and sets it in the request scope.
+    Priority: 1. Query Parameter (`?lang=...`) 2. Accept-Language Header.
+    """
+    lang = DEFAULT_LANGUAGE
+    
+    # 1. Check for query parameter
+    query_lang = request.query_params.get('lang')
+    if query_lang and query_lang in TRANSLATIONS:
+        lang = query_lang
+    else:
+        # 2. Fallback to Accept-Language header
+        accept_language = request.headers.get("accept-language")
+        if accept_language:
+            lang = accept_language.split(",")[0].split("-")[0].lower()
 
-@app.get("/", response_class=HTMLResponse, summary="Serve Frontend UI")
+    request.scope["language"] = lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE
+    response = await call_next(request)
+    return response
+
+def _(text: str, **kwargs):
+    """
+    This is a placeholder for Jinja2. The actual translation happens
+    via a context processor that we add to the TemplateResponse.
+    """
+    return text.format(**kwargs)
+
+templates.env.globals['gettext'] = gettext
+templates.env.globals['_'] = _
+
+def get_translator(request: Request):
+    """Dependency to get a translator function for the current request's language."""
+    lang = request.scope.get("language", DEFAULT_LANGUAGE)
+    def translator(text: str, **kwargs) -> str:
+        translated = gettext(text, lang)
+        return translated.format(**kwargs) if kwargs else translated
+    return translator
+
+
+@app.get(
+    "/",
+    response_class=HTMLResponse,
+    summary="Serve Frontend UI",
+    tags=["UI"])
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Pass the translator function to the template context
+    translator = get_translator(request)
+    return templates.TemplateResponse("index.html", {"request": request, "_": translator})
 
-
-@app.get("/health", summary="Health Check")
+@app.get("/health", summary="Health Check", tags=["Monitoring"])
 async def health_check():
+    """
+    A simple health check endpoint that returns a 200 OK status.
+    Useful for uptime monitoring services.
+    """
     return Response(status_code=200)
 
 
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
     content = f"""User-agent: *
-Allow: /
-Disallow: /shorten
+Allow: /$
+Allow: /static/
+Disallow: /api
 Disallow: /challenge
 
+# Yandex-specific directives
+Clean-param: ref /
+
 # Yandex-specific directive for the main mirror
-Host: https://shortlinks.art
+Host: https://shortlinks.art/
 
 Sitemap: https://shortlinks.art/sitemap.xml
 """
@@ -225,22 +368,40 @@ async def sitemap():
     return Response(content=xml_content, media_type="application/xml")
 
 
-@app.get("/challenge", summary="Get a new bot verification challenge")
-async def get_challenge():
+@app.get("/challenge", summary="Get a new bot verification challenge", tags=["Utilities"])
+async def get_challenge(request: Request):
+    """
+    Provides a simple arithmetic challenge to be solved by the client.
+    This is a stateless mechanism to deter simple bots from spamming the link creation endpoint.
+    """
+    translator = get_translator(request)
     num1 = random.randint(1, 10)
     num2 = random.randint(1, 10)
-    return {"num1": num1, "num2": num2, "question": f"What is {num1} + {num2}?"}
+    return {"num1": num1, "num2": num2, "question": translator("What is {num1} + {num2}?", num1=num1, num2=num2)}
 
 
-@app.post("/shorten", summary="Create a new short link")
-async def create_short_link(url_item: URLItem, request: Request):
+@api_router.post(
+    "/links",
+    response_model=LinkResponse,
+    status_code=201,
+    summary="Create a new short link",
+    responses={
+        400: {"model": ErrorResponse, "description": "Bad Request: Invalid input or failed bot check."},
+        422: {"model": ErrorResponse, "description": "Validation Error: The request body is malformed."},
+    }
+)
+async def create_short_link(link_data: LinkCreate, request: Request):
     """
-    Creates a new short link. It will first try to reuse an expired ID.
-    If no IDs are available for reuse, it will create a new one.
+    Creates a new short link from a long URL.
+
+    - **ID Reuse**: It will first try to reuse an expired ID to keep codes short.
+    - **Bot Protection**: Requires a simple arithmetic challenge to be solved.
+    - **TTL**: Links can be set to expire after a specific duration.
     """
+    translator = get_translator(request)
     # Stateless bot verification
-    if url_item.challenge_answer != (url_item.num1 + url_item.num2):
-        raise HTTPException(status_code=400, detail="Bot verification failed. Incorrect answer.")
+    if link_data.challenge.challenge_answer != (link_data.challenge.num1 + link_data.challenge.num2):
+        raise HTTPException(status_code=400, detail=translator("Bot verification failed. Incorrect answer."))
 
     async with db_lock:
         global id_counter, url_database, freed_ids
@@ -254,36 +415,88 @@ async def create_short_link(url_item: URLItem, request: Request):
             new_id = id_counter
         
         # Calculate the expiration datetime
-        if url_item.ttl == TTL.NEVER:
+        if link_data.ttl == TTL.NEVER:
             expires_at = None
         else:
-            expires_at = datetime.utcnow() + TTL_MAP[url_item.ttl]
+            expires_at = datetime.utcnow() + TTL_MAP[link_data.ttl]
 
         url_database[new_id] = {
-            "long_url": url_item.long_url,
+            "long_url": str(link_data.long_url), # Store as string
             "expires_at": expires_at
         }
 
         short_code = to_bijective_base6(new_id)
+        # Construct the URL for the redirect, not the API path
         short_url = f"{request.base_url}{short_code}"
+        resource_location = short_url
 
         # Save the new state to disk
         save_state()
-        return {"short_url": short_url, "long_url": url_item.long_url}
+
+        # Prepare the response object that matches the LinkResponse model
+        response_content = {
+            "short_url": short_url,
+            "long_url": link_data.long_url,
+            "expires_at": expires_at
+        }
+
+        # Return 201 Created with a Location header and the response body
+        return JSONResponse(
+            status_code=201,
+            content=response_content,
+            headers={"Location": resource_location}
+        )
 
 
-@app.get("/{short_code}", summary="Redirect to the original URL")
-async def redirect_to_long_url(short_code: str):
+@api_router.get(
+    "/links/{short_code}",
+    response_model=LinkResponse,
+    summary="Get details for a short link",
+    responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist or has expired."}}
+)
+async def get_link_details(short_code: str, request: Request):
+    """
+    Retrieves the details of a short link, such as the original URL and its
+    expiration time, without performing a redirect.
+    """
+    translator = get_translator(request)
+    try:
+        url_id = from_bijective_base6(short_code)
+    except ValueError:
+        raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
+
+    record = url_database.get(url_id)
+    if not record:
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+
+    # Check for expiration but do not delete it here (let the background task handle it)
+    if record["expires_at"] and datetime.utcnow() > record["expires_at"]:
+        raise HTTPException(status_code=404, detail=translator("Short link has expired"))
+
+    return {
+        "short_url": f"https://shortlinks.art/{short_code}", # Use canonical URL
+        "long_url": record["long_url"],
+        "expires_at": record["expires_at"]
+    }
+
+
+app.include_router(api_router)
+
+
+@app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
+async def redirect_to_long_url(short_code: str, request: Request):
     """
     Redirects to the original URL if the short link exists and has not expired.
     If the link is expired, it is cleaned up and its ID is made available for reuse.
+    This is the primary function of the service.
     """
+    translator = get_translator(request)
     try:
         url_id = from_bijective_base6(short_code)
 
         record = url_database.get(url_id)
         if not record:
-            raise HTTPException(status_code=404, detail="Short link not found")
+            raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
         # Check if the link has an expiration date and if it has passed
         if record["expires_at"] and datetime.utcnow() > record["expires_at"]:
@@ -293,12 +506,12 @@ async def redirect_to_long_url(short_code: str):
                     del url_database[url_id]
                     freed_ids.append(url_id)
                     save_state()
-            raise HTTPException(status_code=404, detail="Short link has expired")
+            raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
         return RedirectResponse(url=record["long_url"])
 
     except ValueError:
-        raise HTTPException(status_code=404, detail="Invalid short code format")
+        raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
 
 
 # This block is useful for local development but not strictly needed for Render deployment

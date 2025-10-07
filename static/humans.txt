@@ -1,12 +1,15 @@
 /* TEAM */
-Creator: Andrey Lopukhov
-Contact: AndreyEvenflow@gmail.com
-GitHub: https://github.com/tripping-alien/shortlink
-
-/* THANKS */
-Inspiration: Bijective Functions
+Developer: Andrey Lopukhov
+GitHub: @tripping-alien
+Contact: https://github.com/tripping-alien/shortlink
+From: Planet Earth
 
 /* SITE */
-Standards: HTML5, CSS3, JavaScript, WebGL
-Components: FastAPI, Uvicorn, Pydantic
-Software: Python
+Last update: 2024-05-21
+Language: English
+Standards: HTML5, CSS3, JavaScript
+Components: FastAPI, Uvicorn, Pydantic, Jinja2
+Software: Visual Studio Code
+
+/* THANKS */
+Thanks for checking out the code! This is a project to demonstrate a simple, private, and easy-to-use link shortener.

@@ -7,18 +7,23 @@
     <!-- =====================================================================
          1. CORE SEO & BROWSER METADATA
     ====================================================================== -->
-    <title>Bijective-Shorty | Fast, Simple, and Efficient URL Shortener</title>
-    <meta name="description" content="A high-performance URL shortener using bijective functions to create the shortest possible, collision-free links. Features link expiration, ID reuse, and bot protection.">
-    <meta name="keywords" content="url shortener, link shortener, bijective function, short url, custom url, fastapi, python">
+    <title>{{ _('Private & Easy Link Shortener | Bijective-Shorty') }}</title>
+    <meta name="description" content="{{ _('A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок.') }}">
+    <meta name="keywords" content="private link shortener, easy link shortener, simple url shortener, temporary url, secure link shortener, url shortener, link shortener, сокращатель ссылок, приватный сокращатель ссылок, простой сокращатель ссылок">
     <meta name="author" content="Andrey Lopukhov">
     <link rel="canonical" href="https://shortlinks.art">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 
+    <!-- Hreflang tags to indicate language targeting for search engines -->
+    <link rel="alternate" hreflang="en" href="https://shortlinks.art/" />
+    <link rel="alternate" hreflang="ru" href="https://shortlinks.art/" />
+    <link rel="alternate" hreflang="x-default" href="https://shortlinks.art/" />
+
     <!-- =====================================================================
          3. OPEN GRAPH (for Facebook, LinkedIn, etc.)
     ====================================================================== -->
-    <meta property="og:title" content="Bijective-Shorty | Fast, Simple, and Efficient URL Shortener">
-    <meta property="og:description" content="Create short, clean, and temporary links with this high-performance URL shortener.">
+    <meta property="og:title" content="Private & Easy Link Shortener | Bijective-Shorty">
+    <meta property="og:description" content="A private and easy link shortener to create temporary, secure, and simple short URLs.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://shortlinks.art/">
     <meta property="og:image" content="https://raw.githubusercontent.com/tripping-alien/shortlink/refs/heads/main/assets/screenshot.png">
@@ -30,8 +35,8 @@
          4. TWITTER CARD (for Twitter/X)
     ====================================================================== -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Bijective-Shorty | Fast, Simple, and Efficient URL Shortener">
-    <meta name="twitter:description" content="Create short, clean, and temporary links with this high-performance URL shortener.">
+    <meta name="twitter:title" content="Private & Easy Link Shortener | Bijective-Shorty">
+    <meta name="twitter:description" content="A private and easy link shortener to create temporary, secure, and simple short URLs.">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/tripping-alien/shortlink/refs/heads/main/assets/screenshot.png">
     <!-- <meta name="twitter:site" content="@YourTwitterHandle"> -->
     <!-- <meta name="twitter:creator" content="@YourTwitterHandle"> -->
@@ -46,8 +51,8 @@
       "name": "Bijective-Shorty",
       "applicationCategory": "Utilities",
       "operatingSystem": "Web",
-      "url": "https://shortlinks.art/",
-      "abstract": "A high-performance URL shortener using bijective functions to create the shortest possible, collision-free links.",
+      "url": "https://shortlinks.art",
+      "abstract": "A private and easy link shortener for creating temporary and secure short URLs. Приватный и простой сокращатель ссылок.",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -60,52 +65,57 @@
     <link rel="stylesheet" href="/static/style.css"> <!-- Assuming style.css exists -->
     <link rel="author" href="/static/humans.txt">
 </head>
-<body>
+<body lang="{{ request.scope.get('language', 'en') }}">
     <canvas id="background-animation"></canvas>
 
     <main class="container">
         <header>
             <h1 class="display-5">Bijective-Shorty</h1>
-            <p class="lead">Fast, Simple, and Efficient URL Shortening</p>
+            <p class="lead">{{ _('A Private and Easy Link Shortener') }}</p>
         </header>
 
         <form id="shorten-form" class="form-grid">
-            <input type="url" id="long-url-input" class="form-control" placeholder="Enter a long URL to shorten..." required>
+            <input type="url" id="long-url-input" class="form-control" placeholder="{{ _('Enter a long URL to shorten...') }}" required>
             <button type="submit" class="btn-primary" id="submit-button">
-                <span class="button-text">Shorten</span>
+                <span class="button-text">{{ _('Shorten') }}</span>
                 <span class="spinner" style="display: none;"></span>
             </button>
-            <label id="verification-label" for="verification-input" style="display: none;">Verification</label>
-            <input type="number" id="verification-input" class="form-control form-control-full" placeholder="Answer" required style="display: none;">
+            <label id="verification-label" for="verification-input" style="display: none;">{{ _('Verification') }}</label>
+            <input type="number" id="verification-input" class="form-control form-control-full" placeholder="{{ _('Answer') }}" required style="display: none;">
         </form>
 
         <div class="form-info">
-            <p id="ttl-info-text">Link is private and will automatically expire in 24 Hours.</p>
+            <p id="ttl-info-text">{{ _('Your link is private and will automatically expire in 24 Hours.') }}</p>
             <div class="ttl-selector">
-                <label for="ttl-select">Link expires in:</label>
+                <label for="ttl-select">{{ _('Link expires in:') }}</label>
                 <select id="ttl-select" class="form-control">
-                    <option value="1h">1 Hour</option>
-                    <option value="1d" selected>24 Hours</option>
-                    <option value="1w">1 Week</option>
-                    <option value="never">Never</option>
+                    <option value="1h">{{ _('1 Hour') }}</option>
+                    <option value="1d" selected>{{ _('24 Hours') }}</option>
+                    <option value="1w">{{ _('1 Week') }}</option>
+                    <option value="never">{{ _('Never') }}</option>
                 </select>
             </div>
         </div>
 
         <div id="result-box" class="result-box" style="display: none;">
-            <p>Your short link:</p>
+            <p>{{ _('Your short link:') }}</p>
             <div class="result-content">
                 <a href="#" id="short-url-link" target="_blank"></a>
-                <button id="copy-button" class="btn-secondary">Copy</button>
+                <button id="copy-button" class="btn-secondary">{{ _('Copy') }}</button>
             </div>
         </div>
 
         <footer>
             <p>
-                Crafted by <a href="https://github.com/tripping-alien" target="_blank" rel="noopener noreferrer">Andrey Lopukhov</a>.
-                View on <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">GitHub</a> |
-                Released under the <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>.
+                {{ _('Crafted by') }} <a href="https://github.com/tripping-alien" target="_blank" rel="noopener noreferrer">Andrey Lopukhov</a>.
+                {{ _('View on') }} <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">GitHub</a> |
+                {{ _('Released under the') }} <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>.
             </p>
+            <div class="language-switcher">
+                <span>Language:</span>
+                <a href="?lang=en" class="{{ 'active' if request.scope.get('language') == 'en' else '' }}">EN</a>
+                <a href="?lang=ru" class="{{ 'active' if request.scope.get('language') == 'ru' else '' }}">RU</a>
+            </div>
         </footer>
     </main>
 

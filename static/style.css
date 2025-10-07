@@ -243,3 +243,23 @@ footer a {
 footer a:hover {
     text-decoration: underline;
 }
+
+.language-switcher {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.language-switcher a {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.language-switcher a.active {
+    border-color: var(--accent-color);
+    background-color: rgba(0, 255, 65, 0.1);
+}

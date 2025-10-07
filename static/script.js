@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch('/links', {
+                const response = await fetch('/api/links', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }, // Send data as JSON
                     body: JSON.stringify(payload)

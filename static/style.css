@@ -1,11 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
 
 :root {
-    --bg-color: #87CEEB; /* Sky Blue */
-    --text-color: #2c3e50; /* Dark Slate Blue */
-    --accent-color: #2980b9; /* Stronger Blue */
-    --border-color: #bdc3c7; /* Light Gray */
-    --input-bg: #ecf0f1; /* Very Light Gray */
+    --bg-color: #87CEFA; /* Light Sky Blue */
+    --text-color: #2c3e50; /* Dark Slate Blue for readability */
+    --accent-color: #FFD700; /* Gold for sun */
+    --accent-color-hover: #FFC107; /* Slightly darker gold for hover */
+    --border-color: #AECDE0; /* Muted light blue for borders */
+    --input-bg: #FFFFFF; /* Pure white for input fields */
+    --shadow-color: rgba(255, 215, 0, 0.2); /* Soft gold shadow */
 }
 
 body {
@@ -37,8 +39,8 @@ body {
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 2rem;
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+    padding: 2rem; /* Keep padding consistent */
+    box-shadow: 0 0 20px var(--shadow-color);
     position: relative;
     z-index: 1;
 }
@@ -50,7 +52,7 @@ header {
 
 .display-5 {
     color: var(--accent-color);
-    text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+    text-shadow: 0 0 5px var(--shadow-color);
     margin-bottom: 0.5rem;
 }
 
@@ -88,8 +90,8 @@ header {
     outline: none;
     background-color: var(--bg-color);
     color: var(--text-color);
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 0.25rem rgba(0, 255, 65, 0.25);
+    border-color: var(--accent-color); /* Keep accent color for focus */
+    box-shadow: 0 0 0 0.25rem var(--shadow-color);
 }
 
 .btn-primary {
@@ -133,9 +135,9 @@ header {
 }
 
 .btn-primary:hover {
-    background-color: #00e639;
-    border-color: #00e639;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    background-color: var(--accent-color-hover);
+    border-color: var(--accent-color-hover);
+    box-shadow: 0 0 10px var(--shadow-color);
 }
 
 .btn-secondary {
@@ -154,7 +156,7 @@ header {
 }
 
 .btn-secondary.copied {
-    background-color: var(--accent-color);
+    background-color: var(--accent-color); /* Keep accent for copied state */
     color: var(--bg-color);
     animation: copied-animation 1.5s ease-out forwards;
 }
@@ -278,7 +280,7 @@ footer a:hover {
 
 .language-switcher a.active {
     border-color: var(--accent-color);
-    box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+    box-shadow: 0 0 8px var(--shadow-color);
 }
 
 /* =====================================================================

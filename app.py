@@ -16,6 +16,14 @@ import random
 from enum import Enum
 import re
 
+# --- Load Secrets ---
+secrets = {}
+try:
+    with open("secrets.json") as f:
+        secrets = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    print("WARNING: secrets.json not found or invalid. Using default/placeholder values.")
+
 
 # --- Configuration Management ---
 class Settings(BaseSettings):
@@ -26,7 +34,8 @@ class Settings(BaseSettings):
     # The default ["*"] is insecure and for development only.
     cors_origins: list[str] = ["*"]
     cleanup_interval_seconds: int = 3600  # Run cleanup task every hour
-    recaptcha_secret_key: str = "6Lc__uErAAAAAG_6kSItnoZFzVlEw552nXqN5PHO"
+    recaptcha_secret_key: str = secrets.get("recaptcha_secret_key", "MISSING_SECRET_KEY")
+    recaptcha_site_key: str = secrets.get("recaptcha_site_key", "MISSING_SITE_KEY")
 
 
 settings = Settings()
@@ -355,7 +364,8 @@ async def read_root(request: Request, lang_code: str):
 
     # Pass the translator function to the template context
     translator = get_translator(lang_code)
-    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
+    context = {"request": request, "_": translator, "lang_code": lang_code, "recaptcha_site_key": settings.recaptcha_site_key}
+    return templates.TemplateResponse("index.html", context)
 
 
 @app.get("/health", summary="Health Check", tags=["Monitoring"])

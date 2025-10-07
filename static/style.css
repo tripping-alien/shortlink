@@ -1,348 +1,333 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
 
- :root {
-     --bg-color: #0a0a0a;
-     --text-color: #e6e6e6;
-     --accent-color: #00ff41; /* Terminal Green */
-     --border-color: #30363d;
-     --input-bg: #1c1c1c;
- }
+:root {
+    --bg-color: #0a0a0a;
+    --text-color: #e6e6e6;
+    --accent-color: #00ff41; /* Terminal Green */
+    --border-color: #30363d;
+    --input-bg: #1c1c1c;
+}
 
- body {
-     background-color: var(--bg-color);
-     color: var(--text-color);
-     font-family: 'Fira Code', monospace;
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     min-height: 100vh;
-     margin: 0;
-     padding: 1rem;
- }
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 1rem;
+    overflow: hidden; /* Prevent scrollbars from animation */
+}
 
- #background-animation {
-     position: fixed;
-     top: 0;
-     left: 0;
-     width: 100%;
-     height: 100%;
-     z-index: -1;
-     opacity: 0.5; /* Keep it subtle */
- }
+#background-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.5; /* Keep it subtle */
+}
 
- .container {
-     max-width: 600px;
-     width: 100%;
-     background-color: var(--input-bg);
-     border: 1px solid var(--border-color);
-     border-radius: 8px;
-     padding: 2rem;
-     box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
- }
+.container {
+    max-width: 600px;
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+    position: relative;
+    z-index: 1;
+}
 
- header {
-     text-align: center;
-     margin-bottom: 2rem;
- }
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
 
- .display-5 {
-     color: var(--accent-color);
-     text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
-     margin-bottom: 0.5rem;
- }
+.display-5 {
+    color: var(--accent-color);
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+    margin-bottom: 0.5rem;
+}
 
- .lead {
-     color: #a0a0a0;
-     margin-bottom: 0;
- }
+.lead {
+    color: #a0a0a0;
+    margin-bottom: 0;
+}
 
- .form-grid {
-     display: grid;
-     grid-template-columns: 1fr auto; /* Flexible input, auto-sized button */
-     gap: 0.5rem;
-     align-items: center; /* This is the key change */
-     margin-bottom: 1rem;
- }
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr auto; /* Flexible input, auto-sized button */
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
 
- /* Center the reCAPTCHA widget */
- .g-recaptcha {
-     display: inline-block;
-     margin-bottom: 1.5rem;
- }
+/* Explicitly place the input in the first column and the button in the second for LTR */
+.form-grid > #long-url-input {
+    grid-column: 1;
+}
+.form-grid .btn-primary {
+    grid-column: 2;
+}
 
- /* Explicitly place the input in the first column and the button in the second for LTR */
- .form-grid > #long-url-input {
-     grid-column: 1;
- }
- .form-grid .btn-primary {
-     grid-column: 2;
- }
+.form-control {
+    flex-grow: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    font-family: 'Fira Code', monospace;
+    border-style: solid;
+    border-width: 1px;
+    width: 100%;
+    min-width: 0;
+}
 
- .form-grid label {
-     grid-column: 1 / -1; /* Span the full width */
- }
+.form-control:focus {
+    outline: none;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.25rem rgba(0, 255, 65, 0.25);
+}
 
- .form-control {
-     flex-grow: 1;
-     padding: 0.75rem 1rem;
-     border-radius: 4px;
-     background-color: var(--bg-color);
-     color: var(--text-color);
-     border-color: var(--border-color);
-     font-family: 'Fira Code', monospace;
-     border-style: solid;
-     border-width: 1px;
-     width: auto;
-     min-width: 0;
- }
+.btn-primary {
+    flex-shrink: 0;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--bg-color);
+    font-weight: bold;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 120px;
+}
 
- .form-control:focus {
-     outline: none;
-     background-color: var(--bg-color);
-     color: var(--text-color);
-     border-color: var(--accent-color);
-     box-shadow: 0 0 0 0.25rem rgba(0, 255, 65, 0.25);
- }
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
 
- .form-control-full {
-     grid-column: 1 / -1; /* Make this input span all grid columns */
- }
+.button-text {
+    display: inline-block;
+}
 
- .btn-primary {
-     /* Ensure button doesn't shrink */
-     flex-shrink: 0;
-     padding: 0.75rem 1.5rem;
-     border-radius: 4px;
-     background-color: var(--accent-color);
-     border-color: var(--accent-color);
-     color: var(--bg-color);
-     font-weight: bold;
-     transition: background-color 0.2s, box-shadow 0.2s;
-     cursor: pointer;
- }
+.spinner {
+    display: none; /* Hidden by default */
+    width: 1em;
+    height: 1em;
+    border: 2px solid rgba(10, 10, 10, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--bg-color);
+    animation: spin 1s ease-in-out infinite;
+    vertical-align: middle;
+}
 
- .btn-primary:disabled {
-     opacity: 0.7;
-     cursor: not-allowed;
- }
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
 
- .button-text {
-     display: inline-block;
- }
+.btn-primary:hover {
+    background-color: #00e639;
+    border-color: #00e639;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
 
- .spinner {
-     display: none; /* Hidden by default */
-     width: 1em;
-     height: 1em;
-     border: 2px solid rgba(10, 10, 10, 0.3);
-     border-radius: 50%;
-     border-top-color: var(--bg-color);
-     animation: spin 1s ease-in-out infinite;
-     vertical-align: middle;
- }
+.btn-secondary {
+    padding: 0.5rem 1rem;
+    background-color: var(--border-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: background-color 0.2s, transform 0.2s;
+    cursor: pointer;
+    position: relative;
+}
 
- @keyframes spin {
-     to { transform: rotate(360deg); }
- }
+.btn-secondary:hover {
+    background-color: #444c56;
+}
 
- .btn-primary:hover {
-     background-color: #00e639;
-     border-color: #00e639;
-     box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
- }
+.btn-secondary.copied {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+    animation: copied-animation 1.5s ease-out forwards;
+}
 
- .btn-secondary {
-     padding: 0.5rem 1rem;
-     background-color: var(--border-color);
-     color: var(--text-color);
-     border: 1px solid var(--border-color);
-     border-radius: 4px;
-     transition: background-color 0.2s, transform 0.2s;
-     cursor: pointer;
-     position: relative; /* For animation positioning */
- }
+@keyframes copied-animation {
+    0% { transform: scale(1); }
+    20% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
 
- .btn-secondary:hover {
-     background-color: #444c56;
- }
+.form-info {
+    text-align: center;
+    color: #a0a0a0;
+    font-size: 0.9em;
+    margin: 1.5rem 0;
+}
 
- .btn-secondary.copied {
-     background-color: var(--accent-color);
-     color: var(--bg-color);
-     animation: copied-animation 1.5s ease-out forwards;
- }
+.form-info p {
+    margin: 0;
+}
 
- @keyframes copied-animation {
-     0% {
-         transform: scale(1);
-     }
-     20% {
-         transform: scale(1.1);
-     }
-     100% {
-         transform: scale(1);
-     }
- }
+.ttl-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0.5rem;
+    gap: 0.5rem;
+}
 
- .form-info {
-     text-align: center;
-     color: #a0a0a0; /* Use the same muted color as the lead text */
-     font-size: 0.9em;
-     margin: 1.5rem 0; /* Give it some vertical space */
- }
+.ttl-selector #ttl-select {
+    flex-grow: 0;
+    width: auto;
+    padding-right: 2rem;
+}
 
- .form-info p {
-     margin: 0;
- }
+.result-box {
+    margin-top: 1.5rem;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: center;
+    display: none;
+    opacity: 0; /* Initially hidden for animation */
+}
 
- .ttl-selector {
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     margin-top: 0.5rem;
-     gap: 0.5rem;
- }
+.result-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
 
- .ttl-selector #ttl-select {
-     flex-grow: 0;
-     width: auto; /* Allow the select to size to its content */
-     padding-right: 2rem; /* Make space for the dropdown arrow */
- }
+.result-box a {
+    color: var(--accent-color);
+    word-break: break-all;
+    text-decoration: none;
+}
 
- .result-box {
-     margin-top: 1.5rem;
-     background-color: var(--bg-color);
-     border: 1px solid var(--border-color);
-     padding: 1rem;
-     border-radius: 4px;
-     text-align: center;
-     display: none;
- }
+.result-box a:hover {
+    text-decoration: underline;
+}
 
- .result-content {
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     gap: 1rem;
- }
+footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    color: #a0a0a0;
+    font-size: 0.9em;
+    text-align: center;
+}
 
- .result-box a {
-     color: var(--accent-color);
-     word-break: break-all;
-     text-decoration: none;
- }
+footer p {
+    margin: 0;
+    margin-bottom: 0.5rem;
+}
 
- .result-box a:hover {
-     text-decoration: underline;
- }
+footer a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
 
- footer {
-     margin-top: 2rem;
-     padding-top: 1rem;
-     border-top: 1px solid var(--border-color);
-     color: #a0a0a0;
-     font-size: 0.9em;
-     text-align: center;
- }
+footer a:hover {
+    text-decoration: underline;
+}
 
- footer p {
-     margin: 0;
- }
+.footer-links {
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
 
- footer a {
-     color: var(--accent-color);
-     text-decoration: none;
- }
+.language-switcher {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
 
- footer a:hover {
-     text-decoration: underline;
- }
+.language-switcher a {
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: transform 0.2s, box-shadow 0.2s;
+    line-height: 0;
+    padding: 2px;
+}
 
- .language-switcher {
-     margin-top: 1rem;
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     gap: 0.5rem;
-     flex-wrap: wrap;
- }
- 
- .language-switcher a {
-     border-radius: 4px;
-     border: 1px solid transparent;
-     transition: transform 0.2s, box-shadow 0.2s;
-     line-height: 0; /* Remove extra space around the image */
-     padding: 2px; /* Add a small padding for the border effect */
- }
- 
- .language-switcher img {
-     width: 28px;
-     height: auto;
-     border-radius: 2px;
-     vertical-align: middle;
- }
- 
- .language-switcher a:hover {
-     transform: scale(1.1);
- }
- 
- .language-switcher a.active {
-     border-color: var(--accent-color);
-     box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
- }
+.language-switcher img {
+    width: 28px;
+    height: auto;
+    border-radius: 2px;
+    vertical-align: middle;
+}
 
- /* =====================================================================
-      Right-to-Left (RTL) Language Support
-    ====================================================================== */
- /* Set the base text alignment for the entire page */
- [dir="rtl"] {
-     text-align: right;
- }
+.language-switcher a:hover {
+    transform: scale(1.1);
+}
 
- /* Reverse the order of flex containers for a natural RTL layout */
- [dir="rtl"] .ttl-selector {
-     flex-direction: row-reverse;
- }
+.language-switcher a.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+}
 
- [dir="rtl"] .result-content {
-     flex-direction: row-reverse;
-     text-align: left; /* Keep the URL text itself LTR */
- }
+/* =====================================================================
+     Right-to-Left (RTL) Language Support
+   ====================================================================== */
+[dir="rtl"] {
+    text-align: right;
+}
 
- /* Ensure form inputs, placeholders, and selects are right-aligned */
- [dir="rtl"] input,
- [dir="rtl"] select {
-     text-align: right;
- }
+[dir="rtl"] .ttl-selector,
+[dir="rtl"] .result-content {
+    flex-direction: row-reverse;
+}
 
- /* Adjust language switcher for RTL */
- [dir="rtl"] .language-switcher a {
-     margin: 0 0.25rem;
- }
+[dir="rtl"] .result-content a {
+    text-align: left; /* Keep the URL text itself LTR */
+}
 
- [dir="rtl"] .form-grid label {
-     text-align: right;
- }
+[dir="rtl"] input,
+[dir="rtl"] select {
+    text-align: right;
+}
 
- /* The main form grid needs explicit column ordering for RTL */
- [dir="rtl"] .form-grid {
-     grid-template-columns: auto 1fr; /* Button first, then input */
- }
+[dir="rtl"] .language-switcher a {
+    margin: 0 0.25rem;
+}
 
- /* Explicitly place the button in the first column and the input in the second for RTL */
- [dir="rtl"] .form-grid .btn-primary {
-     grid-column: 1;
- }
- [dir="rtl"] .form-grid > #long-url-input {
-     grid-column: 2;
- }
+[dir="rtl"] .form-grid {
+    grid-template-columns: auto 1fr; /* Button first, then input */
+}
+
+[dir="rtl"] .form-grid .btn-primary {
+    grid-column: 1;
+}
+[dir="rtl"] .form-grid > #long-url-input {
+    grid-column: 2;
+}
 
 /* =====================================================================
      Animations & Dynamic UI
    ====================================================================== */
 
 .result-box.fade-in-up {
-    animation: fadeInUp 0.5s ease-out forwards;
+    animation: fadeInUp 0.5s 0.2s ease-out forwards; /* Added a small delay */
 }
 
 @keyframes fadeInUp {
@@ -381,4 +366,52 @@
 .toast.show {
     opacity: 1;
     transform: translateX(0);
+}
+
+#animation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    overflow: hidden;
+}
+
+.paper-airplane {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    color: var(--accent-color);
+    opacity: 0;
+    transform: scale(0.5) rotate(-45deg);
+    /* Animation will be added via JS */
+}
+
+.paper-airplane.fly {
+    animation: fly-to-result 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes fly-to-result {
+    0% {
+        opacity: 1;
+        transform: scale(0.5) rotate(-45deg);
+    }
+    40% {
+        transform:
+            translateX(calc( (var(--end-x) - var(--start-x)) * 0.4 ))
+            translateY(calc( (var(--end-y) - var(--start-y)) * 0.4 - 100px )) /* Arc upwards */
+            scale(0.8)
+            rotate(15deg);
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(calc(var(--end-x) - var(--start-x))) translateY(calc(var(--end-y) - var(--start-y))) scale(0) rotate(90deg);
+        opacity: 0;
+        left: var(--start-x); /* CSS variables don't work with 'left'/'top', so we use transform */
+        top: var(--start-y);
+    }
 }

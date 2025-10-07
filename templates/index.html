@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang_code }}" dir="{{ 'rtl' if lang_code in ['ar', 'he'] else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- reCAPTCHA Script -->
+
     <!-- reCAPTCHA Script -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
 
     <!-- =====================================================================
          1. CORE SEO & BROWSER METADATA
@@ -33,27 +32,24 @@
     <!-- =====================================================================
          3. OPEN GRAPH (for Facebook, LinkedIn, etc.)
     ====================================================================== -->
-    <meta property="og:title" content="Private & Easy Link Shortener | Bijective-Shorty">
-    <meta property="og:description" content="A private and easy link shortener to create temporary, secure, and simple short URLs.">
+    <meta property="og:title" content="{{ _('Private & Easy Link Shortener | Bijective-Shorty') }}">
+    <meta property="og:description" content="{{ _('A private and easy link shortener to create temporary, secure, and simple short URLs.') }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://shortlinks.art/">
+    <meta property="og:url" content="https://shortlinks.art/{{ lang_code }}/">
     <meta property="og:image" content="https://raw.githubusercontent.com/tripping-alien/shortlink/refs/heads/main/assets/screenshot.png">
-    <meta property="og:image:width" content="904">
-    <meta property="og:image:height" content="618">
-    <meta property="og:site_name" content="Bijective-Shorty">
+    <meta property="og:image:alt" content="A screenshot of the Bijective-Shorty URL shortener interface.">
+    <meta property="og:locale" content="{{ lang_code }}">
 
     <!-- =====================================================================
          4. TWITTER CARD (for Twitter/X)
     ====================================================================== -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Private & Easy Link Shortener | Bijective-Shorty">
-    <meta name="twitter:description" content="A private and easy link shortener to create temporary, secure, and simple short URLs.">
+    <meta name="twitter:title" content="{{ _('Private & Easy Link Shortener | Bijective-Shorty') }}">
+    <meta name="twitter:description" content="{{ _('A private and easy link shortener to create temporary, secure, and simple short URLs.') }}">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/tripping-alien/shortlink/refs/heads/main/assets/screenshot.png">
-    <!-- <meta name="twitter:site" content="@YourTwitterHandle"> -->
-    <!-- <meta name="twitter:creator" content="@YourTwitterHandle"> -->
 
     <!-- =====================================================================
-         5. STRUCTURED DATA (JSON-LD for Rich Snippets)
+         5. JSON-LD SCHEMA (for Rich Snippets)
     ====================================================================== -->
     <script type="application/ld+json">
     {
@@ -63,7 +59,7 @@
       "applicationCategory": "Utilities",
       "operatingSystem": "Web",
       "url": "https://shortlinks.art",
-      "abstract": "A private and easy link shortener for creating temporary and secure short URLs. Приватный и простой сокращатель ссылок.",
+      "abstract": "{{ _('A private and easy link shortener for creating temporary and secure short URLs. Приватный и простой сокращатель ссылок.') }}",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -73,10 +69,10 @@
     </script>
 
     <!-- Link to your CSS and other files -->
-    <link rel="stylesheet" href="/static/style.css"> <!-- Assuming style.css exists -->
+    <link rel="stylesheet" href="/static/style.css">
     <link rel="author" href="/static/humans.txt">
 </head>
-<body lang="{{ lang_code }}" dir="{{ 'rtl' if lang_code in ['ar', 'he'] else 'ltr' }}">
+<body>
     <canvas id="background-animation"></canvas>
 
     <main class="container">
@@ -86,23 +82,21 @@
         </header>
 
         <form id="shorten-form" class="form-grid">
-            <input type="url" id="long-url-input" class="form-control" placeholder="{{ _('Enter a long URL to shorten...') }}" required>
-            <button type="submit" class="btn-primary" id="submit-button">
+            <input type="url" id="long-url-input" name="long_url" class="form-control"
+                   placeholder="{{ _('Enter a long URL to shorten...') }}" required>
+            <button type="submit" class="btn-primary g-recaptcha" id="submit-button"
+                    data-sitekey="{{ recaptcha_site_key }}"
+                    data-callback="onRecaptchaSuccess">
                 <span class="button-text">{{ _('Shorten') }}</span>
                 <span class="spinner" style="display: none;"></span>
             </button>
-            <label id="verification-label" for="verification-input" style="display: none;">{{ _('Verification') }}</label>
-            <input type="number" id="verification-input" class="form-control form-control-full" placeholder="{{ _('Answer') }}" required style="display: none;">
         </form>
 
-        <!-- reCAPTCHA Widget -->
-        <div class="g-recaptcha" data-sitekey="6Lc__uErAAAAAHpI8O6n7i09b2eZcbD2aF9a_a1a" data-theme="dark"></div>
-
         <div class="form-info">
-            <p id="ttl-info-text">{{ _('Your link is private and will automatically expire in 24 Hours.') }}</p>
+            <p id="ttl-info-text">{{ _('Your link is private and will automatically expire in {duration}.').format(duration=_('24 Hours')) }}</p>
             <div class="ttl-selector">
                 <label for="ttl-select">{{ _('Link expires in:') }}</label>
-                <select id="ttl-select" class="form-control">
+                <select id="ttl-select" name="ttl" class="form-control">
                     <option value="1h">{{ _('1 Hour') }}</option>
                     <option value="1d" selected>{{ _('24 Hours') }}</option>
                     <option value="1w">{{ _('1 Week') }}</option>
@@ -111,10 +105,10 @@
             </div>
         </div>
 
-        <div id="result-box" class="result-box" style="display: none;">
+        <div id="result-box" class="result-box">
             <p>{{ _('Your short link:') }}</p>
             <div class="result-content">
-                <a href="#" id="short-url-link" target="_blank"></a>
+                <a href="#" id="short-url-link" target="_blank" rel="noopener noreferrer"></a>
                 <button id="copy-button" class="btn-secondary">{{ _('Copy') }}</button>
             </div>
         </div>
@@ -122,23 +116,28 @@
         <footer>
             <p>
                 {{ _('Crafted by') }} <a href="https://github.com/tripping-alien" target="_blank" rel="noopener noreferrer">Andrey Lopukhov</a>.
-                {{ _('View on') }} <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">GitHub</a> |
-                {{ _('Released under the') }} <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>.
             </p>
+            <div class="footer-links">
+                <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">{{ _('View on') }} GitHub</a> |
+                <a href="/{{ lang_code }}/about/">{{ _('About') }}</a> |
+                <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">{{ _('Released under the') }} MIT License</a>.
+            </div>
+
             <div class="language-switcher">
-                 <a href="/en/" class="{{ 'active' if lang_code == 'en' else '' }}" title="English"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/gb.svg" alt="English"></a>
-                 <a href="/de/" class="{{ 'active' if lang_code == 'de' else '' }}" title="Deutsch"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/de.svg" alt="Deutsch"></a>
-                 <a href="/fr/" class="{{ 'active' if lang_code == 'fr' else '' }}" title="Français"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/fr.svg" alt="Français"></a>
-                 <a href="/ru/" class="{{ 'active' if lang_code == 'ru' else '' }}" title="Русский"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/ru.svg" alt="Русский"></a>
-                 <a href="/nl/" class="{{ 'active' if lang_code == 'nl' else '' }}" title="Nederlands"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/nl.svg" alt="Nederlands"></a>
-                 <a href="/zh/" class="{{ 'active' if lang_code == 'zh' else '' }}" title="中文"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/cn.svg" alt="中文"></a>
-                 <a href="/ja/" class="{{ 'active' if lang_code == 'ja' else '' }}" title="日本語"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/jp.svg" alt="日本語"></a>
-                 <a href="/ar/" class="{{ 'active' if lang_code == 'ar' else '' }}" title="العربية"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/sa.svg" alt="العربية"></a>
-                 <a href="/he/" class="{{ 'active' if lang_code == 'he' else '' }}" title="עברית"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/il.svg" alt="עברית"></a>
-             </div>
+                <a href="/en/" class="{{ 'active' if lang_code == 'en' else '' }}" title="English"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/gb.svg" alt="English"></a>
+                <a href="/de/" class="{{ 'active' if lang_code == 'de' else '' }}" title="Deutsch"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/de.svg" alt="Deutsch"></a>
+                <a href="/fr/" class="{{ 'active' if lang_code == 'fr' else '' }}" title="Français"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/fr.svg" alt="Français"></a>
+                <a href="/ru/" class="{{ 'active' if lang_code == 'ru' else '' }}" title="Русский"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/ru.svg" alt="Русский"></a>
+                <a href="/nl/" class="{{ 'active' if lang_code == 'nl' else '' }}" title="Nederlands"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/nl.svg" alt="Nederlands"></a>
+                <a href="/zh/" class="{{ 'active' if lang_code == 'zh' else '' }}" title="中文"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/cn.svg" alt="中文"></a>
+                <a href="/ja/" class="{{ 'active' if lang_code == 'ja' else '' }}" title="日本語"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/jp.svg" alt="日本語"></a>
+                <a href="/ar/" class="{{ 'active' if lang_code == 'ar' else '' }}" title="العربية"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/sa.svg" alt="العربية"></a>
+                <a href="/he/" class="{{ 'active' if lang_code == 'he' else '' }}" title="עברית"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/il.svg" alt="עברית"></a>
+            </div>
         </footer>
     </main>
 
+    <div id="animation-overlay"></div>
     <div id="toast-container"></div>
 
     <script src="/static/animation.js"></script>

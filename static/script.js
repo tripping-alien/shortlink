@@ -36,34 +36,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Form Submission Handler ---
     if (shortenForm) {
         shortenForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); // This is the key fix: prevent default browser submission
+            event.preventDefault();
 
-            // Hide the result box while a new link is being created
             resultBox.style.display = 'none';
             resultBox.classList.remove('fade-in-up');
 
-            // Show spinner and disable button
             buttonText.style.display = 'none';
             spinner.style.display = 'inline-block';
             submitButton.disabled = true;
 
             const formData = new FormData(shortenForm);
-            const payload = {
-                long_url: formData.get('long_url'),
-                ttl: formData.get('ttl')
-            };
 
             try {
+                // First, get the anti-bot challenge
+                const challengeResponse = await fetch('/challenge');
+                if (!challengeResponse.ok) {
+                    throw new Error('Failed to load verification challenge.');
+                }
+                const challengeData = await challengeResponse.json();
+
+                // Now, construct the payload with the challenge answer
+                const payload = {
+                    long_url: formData.get('long_url'),
+                    ttl: formData.get('ttl'),
+                    challenge: {
+                        num1: challengeData.num1,
+                        num2: challengeData.num2,
+                        challenge_answer: challengeData.num1 + challengeData.num2 // Solve the challenge
+                    }
+                };
+
                 const response = await fetch('/api/links', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }, // Send data as JSON
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
-                    // Smartly parse FastAPI's validation errors
                     let errorMessage = "An unexpected error occurred.";
                     if (data.detail) {
                         if (Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg) {
@@ -75,18 +86,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorMessage);
                 }
 
-                // --- This is the fix: Populate and show the result box ---
                 shortUrlLink.href = data.short_url;
                 shortUrlLink.textContent = data.short_url;
                 resultBox.style.display = 'block';
-                resultBox.classList.add('fade-in-up'); // Trigger fade-in animation
+                resultBox.classList.add('fade-in-up');
                 copyButton.textContent = 'Copy';
                 copyButton.classList.remove('copied');
 
             } catch (error) {
                 showToast(error.message);
             } finally {
-                // Hide spinner and re-enable button
                 buttonText.style.display = 'inline-block';
                 spinner.style.display = 'none';
                 submitButton.disabled = false;
@@ -115,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const lang = link.pathname.split('/')[1];
             if (lang) {
-                // Set a cookie that expires in 1 year.
                 document.cookie = `lang=${lang}; path=/; max-age=31536000; samesite=lax`;
             }
         });
@@ -146,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // This self-invoking async function fetches translations and initializes the TTL UI
     (async function initTtl() {
         if (!ttlSelect) return;
         const langCode = document.documentElement.lang || 'en';

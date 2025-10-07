@@ -94,3 +94,46 @@ msgstr "您的链接是私密的，并将在{duration}后自动过期。"
 
 msgid "Your link is private and will never expire."
 msgstr "您的链接是私密的，永不过期。"
+
+# About Page
+msgid "About"
+msgstr "关于"
+
+msgid "About Bijective-Shorty"
+msgstr "关于 Bijective-Shorty"
+
+msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
+msgstr "本项目是一个基于FastAPI和纯Python技术栈构建的高性能、注重隐私的URL缩短器。"
+
+msgid "It uses a bijective function to convert database IDs into short, non-sequential, and predictable base-6 codes. This method is efficient and avoids the database collisions common in hash-based shorteners."
+msgstr "它使用双射函数将数据库ID转换为简短、非连续且可预测的六进制代码。这种方法效率高，并避免了基于哈希的缩短器中常见的数据库冲突。"
+
+msgid "Core Features"
+msgstr "核心功能"
+
+msgid "Stateless & Fast"
+msgstr "无状态 & 快速"
+
+msgid "Generates short codes mathematically without needing to check for pre-existing hashes."
+msgstr "通过数学方式生成短代码，无需检查预先存在的哈希值。"
+
+msgid "Privacy-Focused"
+msgstr "注重隐私"
+
+msgid "No tracking, no analytics. Just simple, fast redirects."
+msgstr "无跟踪，无分析。只有简单、快速的重定向。"
+
+msgid "Temporary Links"
+msgstr "临时链接"
+
+msgid "Set an expiration time for your links, from one hour to one week, or never."
+msgstr "为您的链接设置一个过期时间，从一小时到一周，或永不过期。"
+
+msgid "Internationalized"
+msgstr "国际化"
+
+msgid "The UI is available in multiple languages."
+msgstr "用户界面支持多种语言。"
+
+msgid "Back to Home"
+msgstr "返回首页"

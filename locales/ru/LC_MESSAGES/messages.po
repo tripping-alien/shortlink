@@ -94,3 +94,46 @@ msgstr "Ваша ссылка приватна и автоматически и�
 
 msgid "Your link is private and will never expire."
 msgstr "Ваша ссылка приватна и никогда не истечет."
+
+# About Page
+msgid "About"
+msgstr "О проекте"
+
+msgid "About Bijective-Shorty"
+msgstr "О Bijective-Shorty"
+
+msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
+msgstr "Этот проект — высокопроизводительный и ориентированный на конфиденциальность сокращатель URL-адресов, созданный с использованием FastAPI и чистого стека технологий Python."
+
+msgid "It uses a bijective function to convert database IDs into short, non-sequential, and predictable base-6 codes. This method is efficient and avoids the database collisions common in hash-based shorteners."
+msgstr "Он использует биективную функцию для преобразования идентификаторов базы данных в короткие, непоследовательные и предсказуемые коды в шестеричной системе счисления. Этот метод эффективен и позволяет избежать коллизий в базе данных, характерных для сокращателей на основе хеширования."
+
+msgid "Core Features"
+msgstr "Ключевые особенности"
+
+msgid "Stateless & Fast"
+msgstr "Без состояния и быстрый"
+
+msgid "Generates short codes mathematically without needing to check for pre-existing hashes."
+msgstr "Генерирует короткие коды математически, без необходимости проверять наличие существующих хешей."
+
+msgid "Privacy-Focused"
+msgstr "Ориентирован на приватность"
+
+msgid "No tracking, no analytics. Just simple, fast redirects."
+msgstr "Без отслеживания, без аналитики. Только простые и быстрые перенаправления."
+
+msgid "Temporary Links"
+msgstr "Временные ссылки"
+
+msgid "Set an expiration time for your links, from one hour to one week, or never."
+msgstr "Установите время истечения срока действия для ваших ссылок: от одного часа до одной недели или никогда."
+
+msgid "Internationalized"
+msgstr "Интернационализация"
+
+msgid "The UI is available in multiple languages."
+msgstr "Интерфейс доступен на нескольких языках."
+
+msgid "Back to Home"
+msgstr "Вернуться на главную"

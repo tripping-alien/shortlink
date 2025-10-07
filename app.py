@@ -5,6 +5,7 @@ import re
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, date, timezone
 from enum import Enum
+import secrets
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, APIRouter
@@ -154,6 +155,7 @@ class LinkResponse(BaseModel):
     long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original long URL.")
     expires_at: datetime | None = Field(..., example="2023-10-27T10:00:00Z",
                                         description="The UTC timestamp when the link will expire. `null` if it never expires.")
+    deletion_token: str = Field(..., example="Kq_y_d_M5a..._x_s", description="The secret token required to delete this link.")
     links: list[HateoasLink] = Field(..., description="HATEOAS links for related actions.")
 
 
@@ -499,6 +501,7 @@ async def create_short_link(link_data: LinkBase, request: Request):
             expires_at = None
         else:
             expires_at = datetime.now(tz=timezone.utc) + TTL_MAP[link_data.ttl]
+        deletion_token = secrets.token_urlsafe(16)
             
         with database.get_db_connection() as conn:
             cursor = conn.execute(
@@ -507,10 +510,10 @@ async def create_short_link(link_data: LinkBase, request: Request):
             )
             new_id = cursor.lastrowid
             conn.commit()
-            return new_id, expires_at
+            return new_id, expires_at, deletion_token
 
     try:
-        new_id, expires_at = await asyncio.to_thread(db_insert)
+        new_id, expires_at, deletion_token = await asyncio.to_thread(db_insert)
         short_code = to_bijective_base6(new_id)
         short_url = f"{request.base_url}{short_code}"
         resource_location = short_url
@@ -520,6 +523,7 @@ async def create_short_link(link_data: LinkBase, request: Request):
             "short_url": str(short_url),
             "long_url": str(link_data.long_url),
             "expires_at": expires_at.isoformat() if expires_at else None,
+            "deletion_token": deletion_token,
             "links": [
                 {
                     "rel": "self",
@@ -601,14 +605,23 @@ async def get_link_details(short_code: str, request: Request):
     summary="Delete a short link",
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist."}}
 )
-async def delete_short_link(short_code: str):
+async def delete_short_link(short_code: str, request: Request):
     """
-    Permanently deletes a short link.
+    Permanently deletes a short link. Requires the secret deletion token,
+    which is provided when the link is created.
     """
+    try:
+        body = await request.json()
+        token = body.get("deletion_token")
+        if not token:
+            raise HTTPException(status_code=400, detail="Deletion token is required.")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request body. Expecting JSON with 'deletion_token'.")
+
     url_id = from_bijective_base6(short_code)
 
     def db_delete():
-        return database.delete_link_by_id(url_id)
+        return database.delete_link_by_id_and_token(url_id, token)
 
     rows_deleted = await asyncio.to_thread(db_delete)
 

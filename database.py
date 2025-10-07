@@ -31,9 +31,9 @@ def init_db():
         conn.commit()
     print("Database initialized successfully.")
 
-def delete_link_by_id(link_id: int) -> int:
-    """Deletes a link from the database by its ID and returns the number of rows affected."""
+def delete_link_by_id_and_token(link_id: int, token: str) -> int:
+    """Deletes a link from the database only if the ID and deletion_token match."""
     with get_db_connection() as conn:
-        cursor = conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
+        cursor = conn.execute("DELETE FROM links WHERE id = ? AND deletion_token = ?", (link_id, token))
         conn.commit()
         return cursor.rowcount

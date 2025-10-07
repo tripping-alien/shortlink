@@ -554,7 +554,11 @@ async def get_link_details(short_code: str, request: Request):
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
     # Check for expiration but do not delete it here (let the background task handle it)
-    if record["expires_at"] and datetime.now(tz=timezone.utc) > record["expires_at"]:
+    expires_at = record["expires_at"]
+    # Make the retrieved datetime object timezone-aware before comparison
+    if expires_at:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at and datetime.now(tz=timezone.utc) > expires_at:
         raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
     return {
@@ -627,6 +631,9 @@ async def redirect_to_long_url(short_code: str, request: Request):
 
     # Check if the link has an expiration date and if it has passed
     expires_at = record['expires_at']
+    # Make the retrieved datetime object timezone-aware before comparison
+    if expires_at:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at and now > expires_at:
         # The background task will eventually remove it. For now, just deny access.
         raise HTTPException(status_code=404, detail=translator("Short link has expired"))

@@ -5,15 +5,16 @@ from pydantic_settings import BaseSettings
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, HttpUrl, field_validator, Field
 from datetime import datetime, timedelta, date, timezone
-from fastapi.staticfiles import StaticFiles 
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import database # Import the new database module
+import database  # Import the new database module
 import uvicorn
 import asyncio
 import os
 import random
 from enum import Enum
 import re
+
 
 # --- Configuration Management ---
 class Settings(BaseSettings):
@@ -24,7 +25,8 @@ class Settings(BaseSettings):
     # In production, set this to your frontend's domain: "https://your-frontend.com"
     # The default ["*"] is insecure and for development only.
     cors_origins: list[str] = ["*"]
-    cleanup_interval_seconds: int = 3600 # Run cleanup task every hour
+    cleanup_interval_seconds: int = 3600  # Run cleanup task every hour
+
 
 settings = Settings()
 
@@ -32,6 +34,7 @@ settings = Settings()
 
 TRANSLATIONS = {}
 DEFAULT_LANGUAGE = "en"
+
 
 def load_translations():
     """
@@ -47,19 +50,20 @@ def load_translations():
         if os.path.exists(po_file):
             with open(po_file, "r", encoding="utf-8") as f:
                 content = f.read()
-            
+
             translations = {}
             # Regex to find msgid "" and msgstr "" pairs
             pattern = re.compile(r'msgid "((?:\\.|[^"])*)"\s+msgstr "((?:\\.|[^"])*)"', re.DOTALL)
-            
+
             for match in pattern.finditer(content):
                 msgid = match.group(1).replace('\\"', '"').replace('\\n', '\n')
                 msgstr = match.group(2).replace('\\"', '"').replace('\\n', '\n')
                 if msgid:  # Ensure msgid is not empty
                     translations[msgid] = msgstr
-            
+
             TRANSLATIONS[lang] = translations
             print(f"Loaded {len(translations)} translations for language: {lang}")
+
 
 def gettext(text: str, lang: str = DEFAULT_LANGUAGE) -> str:
     """
@@ -68,10 +72,12 @@ def gettext(text: str, lang: str = DEFAULT_LANGUAGE) -> str:
     """
     return TRANSLATIONS.get(lang, {}).get(text, text)
 
+
 def lazy_gettext(request: Request, text: str) -> str:
     """A 'lazy' version of gettext that uses the language from the request scope."""
     lang = request.scope.get("language", DEFAULT_LANGUAGE)
     return gettext(text, lang)
+
 
 # --- Bijective Base-6 Logic ---
 def to_bijective_base6(n: int) -> str:
@@ -101,26 +107,31 @@ class TTL(str, Enum):
     ONE_WEEK = "1w"
     NEVER = "never"
 
+
 TTL_MAP = {
     TTL.ONE_HOUR: timedelta(hours=1),
     TTL.ONE_DAY: timedelta(days=1),
     TTL.ONE_WEEK: timedelta(weeks=1),
 }
 
+
 # --- Pydantic Models ---
 class LinkBase(BaseModel):
-    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original, long URL to be shortened.")
+    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi",
+                              description="The original, long URL to be shortened.")
     ttl: TTL = Field(TTL.ONE_DAY, description="Time-to-live for the link. Determines when it will expire.")
+
 
 class Challenge(BaseModel):
     num1: int = Field(..., example=5, description="The first number in the bot-check challenge.")
     num2: int = Field(..., example=8, description="The second number in the bot-check challenge.")
     challenge_answer: int = Field(..., example=13, description="The user's answer to the `num1 + num2` challenge.")
 
+
 class LinkCreate(LinkBase):
     """The request body for creating a new short link."""
     challenge: Challenge = Field(..., description="A simple challenge-response object to prevent spam.")
-    
+
     @field_validator('long_url', mode='before')
     @classmethod
     def prepend_scheme_if_missing(cls, v: str):
@@ -145,11 +156,14 @@ class LinkCreate(LinkBase):
             raise ValueError('The provided URL must have a valid domain name.')
         return v
 
+
 class LinkResponse(BaseModel):
     """The response model for a successfully created or retrieved link."""
     short_url: HttpUrl = Field(..., example="https://shortlinks.art/11", description="The generated short URL.")
     long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original long URL.")
-    expires_at: datetime | None = Field(..., example="2023-10-27T10:00:00Z", description="The UTC timestamp when the link will expire. `null` if it never expires.")
+    expires_at: datetime | None = Field(..., example="2023-10-27T10:00:00Z",
+                                        description="The UTC timestamp when the link will expire. `null` if it never expires.")
+
 
 class ErrorResponse(BaseModel):
     """A standardized error response model."""
@@ -167,11 +181,13 @@ async def cleanup_expired_links():
     if deleted_count > 0:
         print(f"Cleaned up {deleted_count} expired links.")
 
+
 async def run_cleanup_task():
     """Runs the cleanup task in a loop."""
     while True:
         await cleanup_expired_links()
         await asyncio.sleep(settings.cleanup_interval_seconds)
+
 
 # --- Lifespan Events for Startup and Shutdown ---
 @asynccontextmanager
@@ -185,6 +201,7 @@ async def lifespan(app: FastAPI):
     # Save the state to disk when the application shuts down
     cleanup_task.cancel()
 
+
 # --- FastAPI Application Setup ---
 app = FastAPI(
     title="Bijective-Shorty API",
@@ -194,7 +211,7 @@ app = FastAPI(
     lifespan=lifespan,
     contact={
         "name": "API Support",
-        "url": "https://github.com/your-repo", # Replace with your project's repo
+        "url": "https://github.com/your-repo",  # Replace with your project's repo
         "email": "your-email@example.com",
     },
 )
@@ -202,7 +219,7 @@ app = FastAPI(
 # API Router for versioning and organization
 api_router = APIRouter(
     prefix="/api",
-    tags=["Links"], # Group endpoints in the docs
+    tags=["Links"],  # Group endpoints in the docs
 )
 
 # Mount static files and templates
@@ -218,6 +235,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def _(text: str, **kwargs):
     """
     This is a placeholder for Jinja2. The actual translation happens
@@ -225,14 +243,18 @@ def _(text: str, **kwargs):
     """
     return text.format(**kwargs)
 
+
 templates.env.globals['gettext'] = gettext
 templates.env.globals['_'] = _
 
+
 def get_translator(lang: str = DEFAULT_LANGUAGE):
     """Dependency to get a translator function for the current request's language."""
+
     def translator(text: str, **kwargs) -> str:
         translated = gettext(text, lang)
         return translated.format(**kwargs) if kwargs else translated
+
     return translator
 
 
@@ -247,6 +269,7 @@ async def redirect_to_default_lang(request: Request):
         if browser_lang in TRANSLATIONS:
             lang = browser_lang
     return RedirectResponse(url=f"/{lang}")
+
 
 @app.get("/health", summary="Health Check", tags=["Monitoring"])
 async def health_check():
@@ -275,14 +298,16 @@ Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
 
+
 # Load translations at the module level so the regex is ready
 load_translations()
 
 # Create a regex to match only the supported language codes.
 # This prevents this route from incorrectly capturing short codes.
 language_codes_regex = "|".join(TRANSLATIONS.keys())
-if not language_codes_regex: # Fallback for when translations haven't loaded yet
+if not language_codes_regex:  # Fallback for when translations haven't loaded yet
     language_codes_regex = DEFAULT_LANGUAGE
+
 
 @app.get(
     "/{lang_code:str:regex(" + language_codes_regex + ")}",
@@ -297,6 +322,7 @@ async def read_root(request: Request, lang_code: str):
     translator = get_translator(lang_code)
     return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
+
 @app.get(
     "/{lang_code:str:regex(" + language_codes_regex + ")}/about",
     response_class=HTMLResponse,
@@ -309,6 +335,7 @@ async def read_about(request: Request, lang_code: str):
 
     translator = get_translator(lang_code)
     return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
+
 
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
@@ -334,7 +361,8 @@ async def sitemap():
 
     # 2. Add an entry for each active (non-expired) short link
     with database.get_db_connection() as conn:
-        active_links = conn.execute("SELECT id FROM links WHERE expires_at IS NULL OR expires_at > ?", (now,)).fetchall()
+        active_links = conn.execute("SELECT id FROM links WHERE expires_at IS NULL OR expires_at > ?",
+                                    (now,)).fetchall()
 
     for link in active_links:
         short_code = to_bijective_base6(link['id'])
@@ -358,7 +386,7 @@ async def get_challenge(request: Request):
     Provides a simple arithmetic challenge to be solved by the client.
     This is a stateless mechanism to deter simple bots from spamming the link creation endpoint.
     """
-    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE)) # Fallback for direct API calls
+    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))  # Fallback for direct API calls
     num1 = random.randint(1, 10)
     num2 = random.randint(1, 10)
     return {"num1": num1, "num2": num2, "question": translator("What is {num1} + {num2}?", num1=num1, num2=num2)}
@@ -420,7 +448,7 @@ async def create_short_link(link_data: LinkCreate, request: Request):
                 expires_at = None
                 if link_data.ttl != TTL.NEVER:
                     expires_at = datetime.now(timezone.utc) + TTL_MAP[link_data.ttl]
-                
+
                 cursor = conn.execute(
                     "INSERT INTO links (long_url, expires_at) VALUES (?, ?)",
                     (str(link_data.long_url), expires_at)
@@ -428,7 +456,7 @@ async def create_short_link(link_data: LinkCreate, request: Request):
                 new_id = cursor.lastrowid
                 conn.commit()
                 return new_id, expires_at
-        
+
         new_id, expires_at = await asyncio.to_thread(db_insert)
 
     except Exception as e:
@@ -468,7 +496,7 @@ async def get_link_details(short_code: str, request: Request):
     expiration time, without performing a redirect.
     """
     now = datetime.now(timezone.utc)
-    translator = get_translator() # Defaults to 'en' for API responses
+    translator = get_translator()  # Defaults to 'en' for API responses
     try:
         url_id = from_bijective_base6(short_code)
     except ValueError:
@@ -489,13 +517,14 @@ async def get_link_details(short_code: str, request: Request):
         raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
     return {
-        "short_url": f"https://shortlinks.art/{short_code}", # Use canonical URL
+        "short_url": f"https://shortlinks.art/{short_code}",  # Use canonical URL
         "long_url": record['long_url'],
         "expires_at": expires_at
     }
 
 
 app.include_router(api_router)
+
 
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
 async def redirect_to_long_url(short_code: str, request: Request):
@@ -505,7 +534,7 @@ async def redirect_to_long_url(short_code: str, request: Request):
     This is the primary function of the service.
     """
     now = datetime.now(timezone.utc)
-    translator = get_translator() # Defaults to 'en' for error messages on redirect
+    translator = get_translator()  # Defaults to 'en' for error messages on redirect
     try:
         url_id = from_bijective_base6(short_code)
 

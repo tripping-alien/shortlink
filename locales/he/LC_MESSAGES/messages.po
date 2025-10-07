@@ -137,3 +137,7 @@ msgstr "ממשק המשתמש זמין במספר שפות."
 
 msgid "Back to Home"
 msgstr "חזרה לדף הבית"
+
+# SEO Keywords
+msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"
+msgstr "מקצר קישורים פרטי, מקצר קישורים קל, מקצר url מאובטח, קישור זמני, מקצר קישורים חינמי, כתובת url מותאמת אישית, url קצר, מקצר קישורים אנונימי"

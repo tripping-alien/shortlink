@@ -137,3 +137,7 @@ msgstr "UIは複数の言語で利用可能です。"
 
 msgid "Back to Home"
 msgstr "ホームに戻る"
+
+# SEO Keywords
+msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"
+msgstr "プライベートリンク短縮, 簡単リンク短縮, 安全なURL短縮, 一時的なURL, 無料リンク短縮, カスタムURL, 短縮URL, 匿名リンク短縮"

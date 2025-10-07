@@ -137,3 +137,7 @@ msgstr "用户界面支持多种语言。"
 
 msgid "Back to Home"
 msgstr "返回首页"
+
+# SEO Keywords
+msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"
+msgstr "私密链接缩短, 易用链接缩短, 安全URL缩短, 临时URL, 免费链接缩短, 自定义URL, 短URL, 匿名链接缩短"

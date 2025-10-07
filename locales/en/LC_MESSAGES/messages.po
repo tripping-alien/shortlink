@@ -137,3 +137,7 @@ msgstr "The UI is available in multiple languages."
 
 msgid "Back to Home"
 msgstr "Back to Home"
+
+# SEO Keywords
+msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"
+msgstr "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"

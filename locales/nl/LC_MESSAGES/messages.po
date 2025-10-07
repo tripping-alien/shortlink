@@ -137,3 +137,7 @@ msgstr "De UI is beschikbaar in meerdere talen."
 
 msgid "Back to Home"
 msgstr "Terug naar Start"
+
+# SEO Keywords
+msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"
+msgstr "privé link verkorter, makkelijke link verkorter, veilige url verkorter, tijdelijke url, gratis link verkorter, aangepaste url, korte url, anonieme link verkorter"

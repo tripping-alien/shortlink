@@ -218,8 +218,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load translations and initialize the database at the module level
-
 def _(text: str, **kwargs):
     """
     This is a placeholder for Jinja2. The actual translation happens
@@ -277,6 +275,8 @@ Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
 
+# Load translations at the module level so the regex is ready
+load_translations()
 
 # Create a regex to match only the supported language codes.
 # This prevents this route from incorrectly capturing short codes.
@@ -496,9 +496,6 @@ async def get_link_details(short_code: str, request: Request):
 
 
 app.include_router(api_router)
-
-# Load translations at the module level so the regex is ready
-load_translations()
 
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
 async def redirect_to_long_url(short_code: str, request: Request):

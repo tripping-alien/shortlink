@@ -122,6 +122,10 @@ body {
      4. FOOTER
    ====================================================================== */
 
+.footer-links {
+    color: var(--bs-link-color); /* Make the pipe separator white too */
+}
+
 .footer-links a {
     color: var(--bs-link-color); /* Override .text-muted to make footer links white */
     transition: color 0.2s ease-in-out;

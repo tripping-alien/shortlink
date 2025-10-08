@@ -107,6 +107,11 @@ body {
     --bs-alert-color: var(--text-color);
 }
 
+.alert-success .alert-heading {
+    color: #ffffff; /* Make the heading pure white for better emphasis */
+    opacity: 0.9;
+}
+
 .btn-light.copied {
     background-color: var(--secondary-color); /* Use accent green */
     color: white;

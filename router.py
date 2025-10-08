@@ -75,7 +75,7 @@ async def redirect_to_default_lang(request: Request):
     response_class=HTMLResponse,
     summary="Serve Frontend UI"
 )
-async def read_root(request: Request, lang_code: str):
+async def read_root(request: Request, lang_code: str, settings: Settings = Depends(get_settings)):
     """
     Serves the main index page for a given language.
     """
@@ -83,7 +83,12 @@ async def read_root(request: Request, lang_code: str):
         raise HTTPException(status_code=404, detail="Language not supported")
 
     translator = get_translator(lang_code)
-    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "_": translator,
+        "lang_code": lang_code,
+        "base_url": str(settings.base_url).rstrip('/')
+    })
 
 
 @ui_router.get("/health", response_class=HTMLResponse, summary="Health Check", tags=["Monitoring"])

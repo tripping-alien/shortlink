@@ -72,6 +72,7 @@ body {
 .form-control, .form-select {
     background-color: var(--input-bg);
     border-color: var(--border-color) !important;
+    color: var(--text-color); /* Set text color for inputs */
 }
 
 .form-control:focus, .form-select:focus {

@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 7">
-      <change beforePath="$PROJECT_DIR$/static/animation.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/animation.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/style.css" afterDir="false" />
-    </list>
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 8" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -233,14 +230,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00430" summary="v2.0 Release">
-      <option name="closed" value="true" />
-      <created>1759873458281</created>
-      <option name="number" value="00430" />
-      <option name="presentableId" value="LOCAL‎-00430" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759873458281</updated>
     </task>
     <task id="LOCAL‎-00431" summary="v2.0 Release">
       <option name="closed" value="true" />
@@ -626,7 +615,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759892200293</updated>
     </task>
-    <option name="localTasksCounter" value="479" />
+    <task id="LOCAL‎-00479" summary="Workng 8">
+      <option name="closed" value="true" />
+      <created>1759892533707</created>
+      <option name="number" value="00479" />
+      <option name="presentableId" value="LOCAL‎-00479" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759892533707</updated>
+    </task>
+    <option name="localTasksCounter" value="480" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -644,7 +641,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="themes" />
     <MESSAGE value="lang" />
     <MESSAGE value="lang/themees/tabs" />
     <MESSAGE value="lang/themes/tabs" />
@@ -669,7 +665,8 @@
     <MESSAGE value="Workng 5" />
     <MESSAGE value="Workng 6" />
     <MESSAGE value="Workng 7" />
-    <option name="LAST_COMMIT_MESSAGE" value="Workng 7" />
+    <MESSAGE value="Workng 8" />
+    <option name="LAST_COMMIT_MESSAGE" value="Workng 8" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

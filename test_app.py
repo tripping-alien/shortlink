@@ -14,24 +14,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from app import app
 from encoding import encode_id, decode_id, get_hashids
 
-from config import Settings
-
-# Add the project root to sys.path to resolve module imports correctly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
-
-# Import the FastAPI app and other necessary components
-from app import app
-from encoding import encode_id, decode_id
-
 
 def test_hashids_reversibility():
     """
     Tests that hashids encoding and decoding is perfectly reversible.
     This test ensures the singleton pattern for Hashids is working correctly.
     """
+    hashids = get_hashids()
     original_id = 12345
-    encoded = encode_id(original_id)
-    decoded = decode_id(encoded)
+    encoded = encode_id(original_id, hashids)
+    decoded = decode_id(encoded, hashids)
     assert decoded == original_id
 
 @pytest.fixture
@@ -62,20 +54,22 @@ def client(tmp_path, monkeypatch):
 
 def test_encoding_decoding_roundtrip():
     """Tests that encoding and decoding functions are reversible."""
+    hashids = get_hashids()
     test_cases = [1, 6, 7, 12, 37, 100, 12345]
     for num in test_cases:
-        encoded = encode_id(num)
+        encoded = encode_id(num, hashids)
         assert isinstance(encoded, str)
         assert len(encoded) > 0
-        decoded = decode_id(encoded)
+        decoded = decode_id(encoded, hashids)
         assert decoded == num
 
 
 def test_invalid_decoding():
     """Tests that decoding invalid strings returns None."""
-    assert decode_id("0") is None
-    assert decode_id("not-a-valid-id") is None
-    assert decode_id("") is None
+    hashids = get_hashids()
+    assert decode_id("0", hashids) is None
+    assert decode_id("not-a-valid-id", hashids) is None
+    assert decode_id("", hashids) is None
 
 
 # ===================================

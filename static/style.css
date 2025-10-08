@@ -137,6 +137,64 @@ body {
 }
 
 /* =====================================================================
+     5. PAGE-SPECIFIC STYLES
+   ====================================================================== */
+
+/* --- Preview Page --- */
+.preview-card {
+    width: 100%;
+    max-width: 600px;
+    padding: 2rem;
+    background-color: var(--panel-bg);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.preview-card .h4 {
+    color: var(--primary-color);
+}
+
+.destination-url {
+    font-family: monospace;
+    word-break: break-all;
+    background-color: var(--input-bg);
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.btn-proceed {
+    background-color: var(--primary-color);
+    color: #0a0f1e; /* Dark text on bright button */
+    border: none;
+}
+
+.btn-proceed:hover {
+    background-color: var(--primary-color-hover);
+    color: #0a0f1e;
+}
+
+/* --- Health Check Page --- */
+.health-status .ok {
+    color: #4caf50; /* A consistent, healthy green */
+    font-weight: bold;
+}
+
+.health-status .error {
+    color: #f44336; /* A consistent, clear red for errors */
+    font-weight: bold;
+}
+
+.table {
+    --bs-table-bg: var(--panel-bg);
+    --bs-table-border-color: var(--border-color);
+    --bs-table-striped-bg: rgba(var(--bs-primary-rgb), 0.05);
+    --bs-table-color: var(--text-color);
+}
+
+/* =====================================================================
      Right-to-Left (RTL) Language Support
    ====================================================================== */
 [dir="rtl"] {

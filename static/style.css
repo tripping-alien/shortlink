@@ -44,12 +44,14 @@ body {
 }
 
 .container {
+    position: relative; /* Needed for absolute positioning of the child switcher */
     background-color: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-radius: 0.5rem;
     box-shadow: 0 8px 32px 0 var(--shadow-color);
     padding: 2rem;
+    padding-top: 4rem; /* Add space at the top for the language bar */
 }
 
 /* =====================================================================
@@ -112,27 +114,79 @@ body {
     color: white;
 }
 
-.language-switcher img {
+/* =====================================================================
+     LANGUAGE SWITCHER (Fixed Collapsible Bar)
+   ====================================================================== */
+
+.language-bar-container {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+.language-toggle-btn {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
+    padding: 0.25rem 1rem;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transition: color 0.2s;
+}
+
+.language-toggle-btn:hover {
+    color: var(--primary-color-hover);
+}
+
+.language-switcher-fixed {
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0.75rem;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    transform: translateY(-100%);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.language-switcher-fixed.show {
+    transform: translateY(0);
+}
+
+.language-switcher-fixed .flag-icon {
     width: 28px;
     height: auto;
     border-radius: 3px;
+    vertical-align: middle;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 
-.language-switcher a {
-    transition: transform 0.2s;
-    line-height: 0;
-    opacity: 0.7;
+.language-switcher-fixed a {
+    line-height: 0; /* Removes extra space around the image */
+    border-radius: 5px;
+    padding: 3px;
+    transition: all 0.3s ease-in-out;
+    filter: grayscale(80%); /* Mute the non-active flags */
 }
 
-.language-switcher a:hover {
+.language-switcher-fixed a:hover {
     transform: scale(1.1);
-    opacity: 1;
+    filter: grayscale(0%); /* Bring to full color on hover */
 }
 
-.language-switcher a.active {
-    opacity: 1;
-    box-shadow: 0 0 0 2px var(--input-bg), 0 0 0 4px var(--primary-color);
-    border-radius: 4px;
+.language-switcher-fixed a.active {
+    filter: grayscale(0%); /* Ensure active flag is in full color */
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 8px rgba(108, 117, 125, 0.5);
 }
 
 /* =====================================================================

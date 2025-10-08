@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const shortUrlLink = document.getElementById('short-url-link');
         const copyButton = document.getElementById('copy-button');
         const toastContainer = document.getElementById('toast-container');
+        const ttlSelect = document.getElementById('ttl-select');
 
         function showToast(message, type = 'danger') {
         if (!toastContainer) return;
@@ -118,6 +119,59 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         }
+
+        // --- TTL Persistence and UI Update (now inside the shortenForm check) ---
+        const TTL_STORAGE_KEY = 'bijective_shorty_ttl';
+
+        const updateTtlInfo = (i18n) => {
+            const ttlInfoText = document.getElementById('ttl-info-text');
+            if (!ttlInfoText || !ttlSelect) return;
+
+            const selectedValue = ttlSelect.value;
+            let durationText = '';
+
+            if (selectedValue === '1h') {
+                durationText = i18n.ttl_1_hour;
+            } else if (selectedValue === '1d') {
+                durationText = i18n.ttl_24_hours;
+            } else if (selectedValue === '1w') {
+                durationText = i18n.ttl_1_week;
+            }
+
+            if (selectedValue === 'never') {
+                ttlInfoText.textContent = i18n.expire_never;
+            } else {
+                ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
+            }
+        };
+
+        (async function initMainPage() {
+            const langCode = document.documentElement.lang || 'en';
+            try {
+                const response = await fetch(`/api/v1/translations/${langCode}`);
+                if (!response.ok) throw new Error('Failed to load translations');
+                const i18n = await response.json();
+
+                if (copyButton) {
+                    copyButton.dataset.copyText = i18n.copy;
+                    copyButton.dataset.copiedText = i18n.copied;
+                    copyButton.textContent = i18n.copy;
+                }
+
+                const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
+                if (savedTtl) { ttlSelect.value = savedTtl; }
+
+                ttlSelect.addEventListener('change', () => {
+                    localStorage.setItem(TTL_STORAGE_KEY, ttlSelect.value);
+                    updateTtlInfo(i18n);
+                });
+
+                updateTtlInfo(i18n);
+            } catch (error) {
+                console.error("Failed to initialize page:", error);
+                showToast('Could not load page settings.', 'warning');
+            }
+        })();
     }
 });
 
@@ -127,41 +181,53 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 document.addEventListener('DOMContentLoaded', function() {
     (function buildLanguageSwitcher() {
-        const switcherContainer = document.getElementById('language-switcher');
+        const toggleBtn = document.getElementById('language-toggle-btn');
+        const switcherContainer = document.getElementById('language-switcher'); // This is now the bar itself
+        const barContainer = document.getElementById('language-bar-container');
+
         if (!switcherContainer) return;
 
         const currentLang = document.documentElement.lang || 'en';
         const currentPage = window.location.pathname.includes('/about') ? 'about' : 'index';
 
         const languages = [
-            { code: 'en', title: 'English', flag: 'gb' },
-            { code: 'de', title: 'Deutsch', flag: 'de' },
-            { code: 'fr', title: 'Français', flag: 'fr' },
-            { code: 'ru', title: 'Русский', flag: 'ru' },
-            { code: 'nl', title: 'Nederlands', flag: 'nl' },
-            { code: 'zh', title: '中文', flag: 'cn' },
-            { code: 'ja', title: '日本語', flag: 'jp' },
-            { code: 'ar', title: 'العربية', flag: 'sa' },
-            { code: 'he', title: 'עברית', flag: 'il' }
+            { code: 'en', name: 'English', flag: 'gb' },
+            { code: 'de', name: 'Deutsch', flag: 'de' },
+            { code: 'fr', name: 'Français', flag: 'fr' },
+            { code: 'ru', name: 'Русский', flag: 'ru' },
+            { code: 'nl', name: 'Nederlands', flag: 'nl' },
+            { code: 'zh', name: '中文', flag: 'cn' },
+            { code: 'ja', name: '日本語', flag: 'jp' },
+            { code: 'ar', name: 'العربية', flag: 'sa' },
+            { code: 'he', name: 'עברית', flag: 'il' }
         ];
 
         languages.forEach(lang => {
-            const link = document.createElement('a');
+            const a = document.createElement('a');
             const path = (currentPage === 'about') ? `/ui/${lang.code}/about/` : `/ui/${lang.code}/`;
-            link.href = path;
-            link.title = lang.title;
-            if (lang.code === currentLang) {
-                link.classList.add('active');
-            }
+            a.href = path;
+            a.title = lang.name;
 
             const img = document.createElement('img');
             img.src = `https://cdn.jsdelivr.net/gh/lipis/flag-icons/flags/4x3/${lang.flag}.svg`;
-            img.alt = lang.title;
+            img.alt = lang.name;
+            img.classList.add('flag-icon');
+            a.appendChild(img);
 
-            link.appendChild(img);
-            switcherContainer.appendChild(link);
+            if (lang.code === currentLang) {
+                a.classList.add('active');
+            }
+            
+            switcherContainer.appendChild(a);
         });
 
+        // Handle toggling the bar
+        toggleBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent click from bubbling to the document
+            switcherContainer.classList.toggle('show');
+        });
+
+        // Handle clicking a flag (for setting cookie)
         switcherContainer.addEventListener('click', (event) => {
             const link = event.target.closest('a');
             if (!link) return;
@@ -171,76 +237,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.cookie = `lang=${lang}; path=/; max-age=31536000; samesite=lax`;
             }
         });
-    })();
-});
 
-/**
- * Initializes page-specific settings like TTL persistence.
- * This is in its own listener to only run on pages where it's needed.
- */
-document.addEventListener('DOMContentLoaded', function() {
-
-    const updateTtlInfo = (i18n) => {
-        const ttlInfoText = document.getElementById('ttl-info-text');
-        const ttlSelect = document.getElementById('ttl-select');
-        if (!ttlInfoText || !ttlSelect) return;
-
-        const selectedValue = ttlSelect.value;
-        let durationText = '';
-
-        if (selectedValue === '1h') {
-            durationText = i18n.ttl_1_hour;
-        } else if (selectedValue === '1d') {
-            durationText = i18n.ttl_24_hours;
-        } else if (selectedValue === '1w') {
-            durationText = i18n.ttl_1_week;
-        }
-
-        if (selectedValue === 'never') {
-            ttlInfoText.textContent = i18n.expire_never;
-        } else {
-            ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
-        }
-    };
-
-    (async function initMainPage() {
-        const TTL_STORAGE_KEY = 'bijective_shorty_ttl';
-        const ttlSelect = document.getElementById('ttl-select');
-        if (!ttlSelect) return; // Guard clause: Only run this logic on the main page.
-
-        const copyButton = document.getElementById('copy-button');
-        const langCode = document.documentElement.lang || 'en';
-
-        try {
-            const response = await fetch(`/api/v1/translations/${langCode}`);
-            if (!response.ok) throw new Error('Failed to load translations');
-            const i18n = await response.json();
-
-            // Set copy button text from translations
-            if (copyButton) {
-                copyButton.dataset.copyText = i18n.copy;
-                copyButton.dataset.copiedText = i18n.copied;
-                copyButton.textContent = i18n.copy;
+        // Close the bar when clicking anywhere else on the page
+        document.addEventListener('click', (event) => {
+            if (!barContainer.contains(event.target) && switcherContainer.classList.contains('show')) {
+                switcherContainer.classList.remove('show');
             }
-
-            // Restore TTL selection from localStorage
-            const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
-            if (savedTtl) {
-                ttlSelect.value = savedTtl;
-            }
-
-            // Add event listener for future changes
-            ttlSelect.addEventListener('change', () => {
-                localStorage.setItem(TTL_STORAGE_KEY, ttlSelect.value);
-                updateTtlInfo(i18n);
-            });
-
-            // Initialize the text on page load
-            updateTtlInfo(i18n);
-
-        } catch (error) {
-            console.error("Failed to initialize page:", error);
-            // Can't use showToast here as it's defined in the other listener, but console error is sufficient.
-        }
+        });
     })();
 });

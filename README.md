@@ -32,17 +32,22 @@ A simple, high-performance URL shortener built with Python and FastAPI. It uses 
     cd shortlink
     ```
 
-2.  **Set up and run the backend:**
+2.  **Create and activate a virtual environment:**
     ```sh
-    # From the project root directory
     python -m venv .venv
-    # Activate the virtual environment (use .\venv\Scripts\Activate.ps1 on Windows)
+    # On macOS/Linux:
     source .venv/bin/activate
-    pip install -r requirements.txt
-    uvicorn app:app --reload
+    # On Windows (Command Prompt/PowerShell):
+    .\.venv\Scripts\activate
     ```
 
-3.  **Access the application:**
+3.  **Install dependencies and run the server:**
+    ```sh
+    pip install -r requirements.txt
+    uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+    ```
+
+4.  **Access the application:**
     -   Open your web browser and navigate to `http://localhost:8000`.
 
 ## ☁️ Deployment on Render
@@ -52,7 +57,7 @@ This project is configured for easy deployment on a platform like Render.
 1.  **Create a new Web Service** on Render and connect it to your GitHub repository.
 2.  **Set the Start Command** to:
     ```
-    ./build.sh && uvicorn app:app --host 0.0.0.0 --port $PORT
+    uvicorn app:app --host 0.0.0.0 --port $PORT
     ```
 3.  **Add Environment Variables**:
     -   `PYTHON_VERSION`: `3.11` (or your desired Python version).
@@ -62,6 +67,10 @@ This project is configured for easy deployment on a platform like Render.
     -   **Mount Path**: `/var/data`
     -   The application is configured to use the `RENDER_DISK_PATH` environment variable, which Render automatically sets to this mount path.
 5.  **Update the Health Check Path** in your service settings to `/health`.
+
+## ✍️ Author
+
+-   **Andrey Lopukhov** - tripping-alien
 
 ## License
 

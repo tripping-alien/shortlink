@@ -67,9 +67,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     contact={
-        "name": "API Support",
-        "url": "https://github.com/your-repo",  # Replace with your project's repo
-        "email": "your-email@example.com",
+        "name": "Andrey Lopukhov",
+        "url": "https://github.com/tripping-alien/shortlink",
+        "email": "andreyevenflow@gmail.com",
     },
 )
 

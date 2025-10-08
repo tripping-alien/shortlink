@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # --- Background Cleanup Task ---
-async def cleanup_expired_links():
+async def cleanup_expired_links(settings: Settings):
     """Periodically scans the database and removes expired links."""
     now = datetime.now(tz=timezone.utc)
     deleted_count = await asyncio.to_thread(database.cleanup_expired_links, now)
@@ -33,11 +33,10 @@ async def cleanup_expired_links():
         logger.info(f"Cleaned up {deleted_count} expired links.")
 
 
-async def run_cleanup_task():
+async def run_cleanup_task(settings: Settings):
     """Runs the cleanup task in a loop."""
     while True:
-        settings = get_settings()
-        await cleanup_expired_links()
+        await cleanup_expired_links(settings)
         await asyncio.sleep(settings.cleanup_interval_seconds)
 
 # --- Lifespan Events for Startup and Shutdown ---
@@ -49,7 +48,8 @@ async def lifespan(app: FastAPI):
     print("Initializing database...")
     database.init_db()
     print("Starting background cleanup task...")
-    cleanup_task = asyncio.create_task(run_cleanup_task())
+    # Pass settings to the task to avoid re-fetching in the loop
+    cleanup_task = asyncio.create_task(run_cleanup_task(get_settings()))
     yield
     cleanup_task.cancel()
 
@@ -142,6 +142,50 @@ templates.env.globals['_'] = _
 
 app.include_router(api_router)  # API routes are checked first
 app.include_router(ui_router)   # UI routes are checked second
+
+
+# --- Core Application Routes (Catch-All) ---
+
+async def get_valid_link_or_404(short_code: str, hashids: Hashids = Depends(get_hashids)):
+    """
+    A reusable dependency to decode a short code and fetch the corresponding
+    link from the database, handling all validation and not-found cases.
+    """
+    translator = get_translator()
+    url_id = decode_id(short_code, hashids)
+    if url_id is None:
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+
+    record = await asyncio.to_thread(database.get_link_by_id, url_id)
+    if not record:
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+
+    expires_at = record['expires_at']
+    if expires_at and datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=404, detail=translator("Short link has expired"))
+
+    return record
+
+
+@app.get("/get/{short_code}", summary="Preview Short Link", tags=["Redirect"], include_in_schema=False)
+async def preview_short_link(request: Request, record: dict = Depends(get_valid_link_or_404)):
+    """
+    Shows a preview page with the destination URL, allowing the user to
+    confirm before redirecting.
+    """
+    return templates.TemplateResponse("preview.html", {
+        "request": request,
+        "long_url": record["long_url"]
+    })
+
+
+@app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"], include_in_schema=False)
+async def redirect_to_long_url(record: dict = Depends(get_valid_link_or_404)):
+    """
+    Redirects to the original URL if the short link exists and has not expired.
+    This is the primary function of the service.
+    """
+    return RedirectResponse(url=record["long_url"])
 
 
 # This block is useful for local development but not strictly needed for Render deployment

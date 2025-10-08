@@ -98,10 +98,6 @@ msgstr "Short link has expired"
 msgid "Rate limit exceeded. Please try again later."
 msgstr "Rate limit exceeded. Please try again later."
 
-# About Page
-msgid "About"
-msgstr "About"
-
 # SEO Keywords
 msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"
 msgstr "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"

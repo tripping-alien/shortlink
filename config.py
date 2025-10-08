@@ -43,24 +43,26 @@ class Settings(BaseSettings):
     hashids_min_length: int = 5  # Ensures all generated IDs have at least this length.
     hashids_alphabet: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
+    # A secret key to access the admin panel. Set this in your environment for production.
+    admin_secret_key: str = secrets.token_urlsafe(32)
+
 
 @lru_cache
 def get_settings() -> Settings:
     """
     Returns a cached instance of the Settings class.
     Using lru_cache ensures the Settings are created only once, preventing
-    the salt from being regenerated on every import or reload.
-    This function also handles the creation and reading of a stable salt file
-    for development to prevent salt regeneration on auto-reload.
+    the settings from being reloaded on every import. Pydantic-settings
+    will automatically load variables from a .env file.
     """
     # Use an absolute path relative to this config file to ensure stability
     # across different execution environments (pytest vs. uvicorn).
     base_dir = Path(__file__).resolve().parent
     salt_file = base_dir / ".salt"
-    
+
     # Check for environment variable first (for production)
     salt = os.environ.get("HASHIDS_SALT")
-    
+
     if not salt:
         # If no env var, check for the .salt file (for stable development)
         if os.path.exists(salt_file):
@@ -71,5 +73,5 @@ def get_settings() -> Settings:
             salt = secrets.token_hex(32)
             with open(salt_file, "w") as f:
                 f.write(salt)
-                
+
     return Settings(hashids_salt=salt)

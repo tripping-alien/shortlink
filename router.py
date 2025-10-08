@@ -123,6 +123,37 @@ async def health_check(request: Request):
     return templates.TemplateResponse("health.html", context, status_code=status_code)
 
 
+@ui_router.get("/admin", response_class=HTMLResponse, summary="Admin Panel", include_in_schema=False)
+async def admin_panel(request: Request, key: str = "", settings: Settings = Depends(get_settings)):
+    """
+    A simple, secure, read-only admin panel to inspect all links in the database.
+    Access requires a secret key passed as a query parameter.
+    """
+    # 1. Secure the endpoint using a constant-time comparison to prevent timing attacks.
+    if not key or not secrets.compare_digest(key, settings.admin_secret_key):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    # 2. Fetch all links from the database.
+    links_from_db = await asyncio.to_thread(database.get_all_links_for_admin)
+
+    # 3. Prepare the links for rendering by encoding the short code.
+    links_for_template = []
+    hashids = get_hashids()
+    for link in links_from_db:
+        links_for_template.append({
+            "id": link["id"],
+            "short_code": encode_id(link["id"], hashids),
+            "long_url": link["long_url"],
+            "expires_at": link["expires_at"],
+        })
+
+    # 4. Render the admin template.
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "links": links_for_template
+    })
+
+
 @ui_router.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
     content = f"""User-agent: *
@@ -364,3 +395,44 @@ async def delete_short_link(short_code: str, request: Request, hashids: Hashids 
 
     # Return a 204 No Content response, which is standard for successful deletions.
     return Response(status_code=204)
+
+
+async def get_link_address(short_code: str, hashids: Hashids) -> str:
+    """
+    Helper function to decode a short code and retrieve the long URL.
+    This contains the core logic for the redirect, separating it from the route handler.
+    """
+    print(f"\n[DEBUG] get_link_address called with short_code: '{short_code}'")
+    now = datetime.now(tz=timezone.utc)
+    translator = get_translator()
+
+    url_id = decode_id(short_code, hashids)
+    print(f"[DEBUG] Decoded short_code '{short_code}' to url_id: {url_id}")
+    if url_id is None:
+        print("[DEBUG] url_id is None, raising 404 Not Found.")
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+
+    record = await asyncio.to_thread(database.get_link_by_id, url_id)
+    print(f"[DEBUG] Fetched record from DB for url_id {url_id}: {record}")
+    if not record:
+        print(f"[DEBUG] No record found for url_id {url_id}, raising 404 Not Found.")
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+
+    expires_at = record['expires_at']
+    if expires_at and now > expires_at:
+        print(f"[DEBUG] Link {url_id} has expired (expires_at: {expires_at}), raising 404 Expired.")
+        raise HTTPException(status_code=404, detail=translator("Short link has expired"))
+
+    print(f"[DEBUG] Found long_url: {record['long_url']}")
+    return record["long_url"]
+
+
+# This catch-all route MUST be the last route defined in this router.
+@ui_router.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
+async def redirect_to_long_url(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
+    """
+    Redirects to the original URL if the short link exists and has not expired.
+    This is the primary function of the service.
+    """
+    long_url = await get_link_address(short_code, hashids)
+    return RedirectResponse(url=long_url)

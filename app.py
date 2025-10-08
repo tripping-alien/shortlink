@@ -136,35 +136,6 @@ app.include_router(api_router)  # API routes are checked first
 app.include_router(ui_router)   # UI routes are checked second
 
 
-# This catch-all route MUST be defined after the routers are included.
-@app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
-async def redirect_to_long_url(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
-    """
-    Redirects to the original URL if the short link exists and has not expired.
-    If the link is expired, it is cleaned up and its ID is made available for reuse.
-    This is the primary function of the service.
-    """
-    now = datetime.now(tz=timezone.utc)
-    translator = get_translator()  # Defaults to 'en' for error messages on redirect
-    # The ValueError from an invalid short_code is now handled by the exception handler
-    url_id = decode_id(short_code, hashids)
-    if url_id is None:
-        # This handles cases where the short_code is malformed or invalid
-        raise HTTPException(status_code=404, detail=translator("Short link not found"))
-
-    record = await asyncio.to_thread(database.get_link_by_id, url_id)
-    if not record:
-        raise HTTPException(status_code=404, detail=translator("Short link not found"))
-
-    # Check if the link has an expiration date and if it has passed
-    expires_at = record['expires_at']
-    if expires_at and now > expires_at:
-        # The background task will eventually remove it. For now, just deny access.
-        raise HTTPException(status_code=404, detail=translator("Short link has expired"))
-
-    return RedirectResponse(url=record["long_url"])
-
-
 # This block is useful for local development but not strictly needed for Render deployment
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

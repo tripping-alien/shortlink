@@ -123,6 +123,21 @@ def test_root_redirect(client: TestClient):
     assert response.headers["location"] == "/ui/en"
 
 
+def test_root_redirect_with_accept_language_header(client: TestClient):
+    """Tests that the root path '/' redirects based on the Accept-Language header."""
+    response = client.get("/", headers={"Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8"}, follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/ui/de"
+
+
+def test_root_redirect_with_cookie_override(client: TestClient):
+    """Tests that a 'lang' cookie overrides the Accept-Language header."""
+    # Browser asks for German, but cookie is set to French
+    response = client.get("/", headers={"Accept-Language": "de-DE,de;q=0.9"}, cookies={"lang": "fr"}, follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/ui/fr"
+
+
 def test_ui_rendering_for_language(client: TestClient):
     """Tests that a language-specific UI page renders correctly."""
     response = client.get("/ui/de")  # Test with German
@@ -365,7 +380,10 @@ def test_salt_change_invalidates_links(client: TestClient, monkeypatch):
     short_code = create_response.json()['short_url'].split('/')[-1]
 
     # 2. Simulate a server restart where the salt changes
-    monkeypatch.setenv("HASHIDS_SALT", "a-completely-different-salt")
+    # We now override the settings object directly for a more reliable test
+    new_settings = Settings(hashids_salt="a-completely-different-salt")
+    monkeypatch.setattr(app, "settings", new_settings)
+    monkeypatch.setattr(get_hashids, "cache_clear", lambda: None) # Prevent cache clearing issues
 
     # Clear the caches to force re-initialization of settings and hashids
     get_settings.cache_clear()

@@ -45,7 +45,7 @@ A simple, high-performance URL shortener built with Python and FastAPI. It uses 
 3.  **Install dependencies and run the server:**
     ```sh
     pip install -r requirements.txt
-    uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+    python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
     ```
 
 4.  **Access the application:**

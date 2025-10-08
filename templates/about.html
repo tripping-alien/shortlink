@@ -20,7 +20,7 @@
 
         <section class="about-content">
             <p class="lead text-center">{{ _('This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack.') }}</p>
-            <p class="text-center text-muted">{{ _('It uses a bijective function to convert database IDs into short, non-sequential, and predictable base-6 codes. This method is efficient and avoids the database collisions common in hash-based shorteners.') }}</p>
+            <p class="text-center text-muted">{{ _('It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links.') }}</p>
             <h3 class="text-center mt-5">{{ _('Core Features') }}</h3>
             <div class="row mt-4 text-center">
                 <div class="col-md-6 col-lg-3 mb-4"><h5><i class="bi bi-diagram-2-fill"></i><br>{{ _('Stateless & Fast') }}</h5><p class="small text-muted">{{ _('Generates short codes mathematically without needing to check for pre-existing hashes.') }}</p></div>

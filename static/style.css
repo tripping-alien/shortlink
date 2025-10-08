@@ -8,8 +8,8 @@
  :root {
     /* Override Bootstrap variables */
     --bs-body-bg: var(--bg-color);
-    --bs-body-color: var(--text-color); /* This will apply to text inside the panel */
-    --bs-body-font-family: 'Fira Code', monospace;
+    --bs-body-color: var(--text-color);
+    --bs-body-font-family: 'Comic Neue', sans-serif;
     --bs-primary: var(--primary-color);
     --bs-link-color: #ffffff; /* White links for high contrast */
     --bs-link-hover-color: #c9d1d9; /* Use main text color for hover */
@@ -18,7 +18,7 @@
 body {
     display: flex;
     align-items: center;
-    font-size: 14px; /* Reduce the base font size for a smaller overall UI */
+    font-size: 16px; /* Use a slightly larger base font size for readability */
     min-height: 100vh;
     background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
     background-size: 20px 20px;
@@ -31,9 +31,9 @@ body {
 .container {
     position: relative; /* Needed for absolute positioning of the child switcher */
     background-color: var(--panel-bg);
-    border-radius: 0.75rem; /* Slightly larger radius for a softer look */
-    border: 1px solid var(--border-color);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* A more subtle, modern shadow */
+    border-radius: 4px;
+    border: 3px solid var(--border-color);
+    box-shadow: 6px 6px 0 var(--border-color); /* Comic book panel effect */
     padding: 1.5rem; /* Reduce container padding */
     padding-top: 3.5rem; /* Adjust top padding for the language bar */
 }
@@ -43,13 +43,14 @@ body {
    ====================================================================== */
 
 .display-5 {
-    font-size: 2rem; /* Reduce the main heading size */
+    font-family: 'Bangers', cursive;
+    font-size: 3.5rem; /* Larger, more impactful heading */
     color: var(--primary-color); /* Use the theme's primary color for the title */
     text-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .lead {
-    color: #757575; /* A slightly softer grey for the subtitle */
+    color: var(--text-color);
 }
 
 .form-control, .form-select {
@@ -59,10 +60,10 @@ body {
 }
 
 .form-control:focus, .form-select:focus {
-    background-color: var(--input-bg); /* Keep background consistent on focus */
+    background-color: var(--panel-bg); /* Invert background to light on focus */
     border-color: var(--primary-color) !important; /* Use !important to override Bootstrap specificity */
     box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
-    color: #ffffff; /* Invert text to pure white on focus */
+    color: var(--text-color); /* Invert text to dark on focus */
 }
 
 /* Style for the placeholder text */
@@ -72,12 +73,12 @@ body {
 }
 
 .form-control:focus::placeholder {
-    color: #999; /* Invert placeholder to a lighter grey on focus */
+    color: #6c757d; /* Invert placeholder to a muted dark grey on focus */
 }
 
 .btn-primary {
-    --bs-btn-color: #0a0f1e; /* Dark text on a bright button */
-    --bs-btn-bg: var(--primary-color);
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #34A853; /* Google Green for a "comic" feel */
     --bs-btn-border-color: var(--primary-color);
     --bs-btn-hover-color: #0a0f1e;
     --bs-btn-hover-bg: var(--primary-color-hover);
@@ -102,13 +103,15 @@ body {
 }
 
 .alert-success {
-    --bs-alert-bg: rgba(var(--bs-primary-rgb), 0.1); /* Use a transparent version of the primary color */
-    --bs-alert-border-color: rgba(var(--bs-primary-rgb), 0.2);
+    background-color: #fffde7; /* A punchy, caption-box yellow */
+    border: 3px solid var(--border-color);
     --bs-alert-color: var(--text-color);
+    border-radius: 4px;
+    box-shadow: 4px 4px 0 var(--border-color);
 }
 
 .alert-success .alert-heading {
-    color: #ffffff; /* Make the heading pure white for better emphasis */
+    color: var(--text-color);
     opacity: 0.9;
 }
 

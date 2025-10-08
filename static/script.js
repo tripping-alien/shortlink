@@ -3,19 +3,20 @@
  */
 document.addEventListener('DOMContentLoaded', function() {
     // --- Dynamic Comic Book Theming Experiment ---
-    const modernTechPalette = {
-        '--bg-color': '#0a0f1e', // Deep navy background
-        '--panel-bg': '#161b29', // Slightly lighter panel
-        '--text-color': '#c9d1d9', // Light grey text
-        '--primary-color': '#00e5ff', // Vibrant Cyan accent
-        '--primary-color-hover': '#00b8d4',
-        '--secondary-color': '#00e5ff', // Use the same cyan for consistency
-        '--border-color': '#30363d', // Subtle border color
-        '--input-bg': '#0d1117', // Match the background for a seamless look
-        '--bs-primary-rgb': '0, 229, 255'
+    const comicPalette = {
+        '--bg-color': '#fefae0', // Creamy, off-white "newsprint" background
+        '--panel-bg': '#ffffff', // Clean white for the panel
+        '--text-color': '#212529', // Standard dark text for high contrast
+        '--primary-color': '#2962ff', // A vibrant, classic comic blue
+        '--primary-color-hover': '#0039cb', // A darker blue for hover
+        '--secondary-color': '#d50000', // A bold comic red for accents
+        '--border-color': '#000000', // Strong black for outlines
+        '--input-bg': '#2d3748', // A dark slate grey for high contrast
+        '--bs-primary-rgb': '41, 98, 255',
+        '--animation-color-vec': [0.16, 0.38, 1.0] // Matching blue for the (currently disabled) animation
         }
 
-    const chosenPalette = modernTechPalette;
+    const chosenPalette = comicPalette;
 
     // Apply the chosen palette to the root element
     for (const [key, value] of Object.entries(chosenPalette)) {

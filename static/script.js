@@ -1,18 +1,22 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Element Selectors ---
-    const shortenForm = document.getElementById('shorten-form');
-    const longUrlInput = document.getElementById('long-url-input');
-    const submitButton = document.getElementById('submit-button');
-    const buttonText = submitButton.querySelector('.button-text');
-    const spinner = submitButton.querySelector('.spinner');
-    const resultBox = document.getElementById('result-box');
-    const shortUrlLink = document.getElementById('short-url-link');
-    const copyButton = document.getElementById('copy-button');
-    const ttlSelect = document.getElementById('ttl-select');
-    const toastContainer = document.getElementById('toast-container');
+/**
+ * Main script for handling UI interactions.
+ */
 
-    // --- Toast Notification Function ---
-    function showToast(message, type = 'danger') { // Default to 'danger' for errors
+document.addEventListener('DOMContentLoaded', function() {
+    const shortenForm = document.getElementById('shorten-form');
+
+    // This part of the script is specific to the main page (index.html)
+    if (shortenForm) {
+        const longUrlInput = document.getElementById('long-url-input');
+        const submitButton = document.getElementById('submit-button');
+        const buttonText = submitButton.querySelector('.button-text');
+        const spinner = submitButton.querySelector('.spinner');
+        const resultBox = document.getElementById('result-box');
+        const shortUrlLink = document.getElementById('short-url-link');
+        const copyButton = document.getElementById('copy-button');
+        const toastContainer = document.getElementById('toast-container');
+
+        function showToast(message, type = 'danger') {
         if (!toastContainer) return;
 
         const toastId = `toast-${Date.now()}`;
@@ -36,11 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
         toastElement.addEventListener('hidden.bs.toast', () => {
             toastElement.remove();
         });
-    }
+        }
 
-    // --- Form Submission Handler ---
-    if (shortenForm) {
-        shortenForm.addEventListener('submit', async (event) => {
+        shortenForm.addEventListener('submit', async(event) => {
             event.preventDefault();
 
             // Hide previous result
@@ -93,32 +95,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(error.message, 'danger');
             } finally {
                 // Restore button state
-                buttonText.classList.remove('d-none');
                 spinner.style.display = 'none';
                 submitButton.disabled = false;
+                buttonText.classList.remove('d-none');
             }
         });
-    }
 
-    // --- Copy Button Handler ---
-    if (copyButton) {
-        copyButton.addEventListener('click', () => {
-            navigator.clipboard.writeText(shortUrlLink.href).then(() => {
-                copyButton.textContent = copyButton.dataset.copiedText || 'Copied!';
-                copyButton.classList.add('btn-success', 'copied');
-                // Optional: Revert after a few seconds
-                setTimeout(() => {
-                    copyButton.textContent = copyButton.dataset.copyText || 'Copy';
-                    copyButton.classList.remove('btn-success', 'copied');
-                }, 2000);
-            }).catch(err => {
-                showToast('Failed to copy link.', 'danger');
-                console.error('Copy failed:', err);
+        // --- Copy Button Handler (now inside the shortenForm check) ---
+        if (copyButton) {
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(shortUrlLink.href).then(function() {
+                    copyButton.textContent = copyButton.dataset.copiedText || 'Copied!';
+                    copyButton.classList.add('btn-success', 'copied');
+                    // Optional: Revert after a few seconds
+                    setTimeout(() => {
+                        copyButton.textContent = copyButton.dataset.copyText || 'Copy';
+                        copyButton.classList.remove('btn-success', 'copied');
+                    }, 2000);
+                }).catch(function(err) {
+                    showToast('Failed to copy link.', 'danger');
+                    console.error('Copy failed:', err);
+                });
             });
-        });
+        }
     }
+});
 
-    // --- Dynamic Language Switcher & Cookie Handler ---
+/**
+ * Builds the language switcher on any page that has the 'language-switcher' div.
+ * This is in its own listener to ensure it runs independently.
+ */
+document.addEventListener('DOMContentLoaded', function() {
     (function buildLanguageSwitcher() {
         const switcherContainer = document.getElementById('language-switcher');
         if (!switcherContainer) return;
@@ -165,13 +172,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     })();
+});
 
-    // --- TTL Persistence and UI Update ---
-    const TTL_STORAGE_KEY = 'bijective_shorty_ttl';
+/**
+ * Initializes page-specific settings like TTL persistence.
+ * This is in its own listener to only run on pages where it's needed.
+ */
+document.addEventListener('DOMContentLoaded', function() {
 
-    function updateTtlInfo(i18n) {
+    const updateTtlInfo = (i18n) => {
         const ttlInfoText = document.getElementById('ttl-info-text');
-        if (!ttlSelect || !ttlInfoText) return;
+        const ttlSelect = document.getElementById('ttl-select');
+        if (!ttlInfoText || !ttlSelect) return;
 
         const selectedValue = ttlSelect.value;
         let durationText = '';
@@ -189,11 +201,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
         }
-    }
+    };
 
-    (async function initPage() {
-        if (!ttlSelect) return;
+    (async function initMainPage() {
+        const TTL_STORAGE_KEY = 'bijective_shorty_ttl';
+        const ttlSelect = document.getElementById('ttl-select');
+        if (!ttlSelect) return; // Guard clause: Only run this logic on the main page.
+
+        const copyButton = document.getElementById('copy-button');
         const langCode = document.documentElement.lang || 'en';
+
         try {
             const response = await fetch(`/api/v1/translations/${langCode}`);
             if (!response.ok) throw new Error('Failed to load translations');
@@ -223,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Failed to initialize page:", error);
-            showToast('Could not load page settings.', 'warning');
+            // Can't use showToast here as it's defined in the other listener, but console error is sufficient.
         }
     })();
 });

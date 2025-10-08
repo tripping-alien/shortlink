@@ -1,15 +1,17 @@
 import asyncio
-from datetime import date, datetime, timezone
+import logging
+import secrets
+from datetime import date, datetime, timezone, timedelta
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 import database
-from encoding import from_bijective_base6, to_bijective_base6
+from encoding import from_bijective_base6, to_bijective_base6, ALPHABET
 from obfuscation import deobfuscate, obfuscate, MAX_ID
 from i18n import TRANSLATIONS, DEFAULT_LANGUAGE, get_translator
-from models import LinkBase, LinkResponse, ErrorResponse
+from models import LinkBase, LinkResponse, ErrorResponse, TTL
 
 # --- Router Setup ---
 
@@ -26,6 +28,16 @@ ui_router = APIRouter(
 
 # Mount static files and templates
 templates = Jinja2Templates(directory="templates")
+
+# --- Constants and Logger ---
+
+logger = logging.getLogger(__name__)
+
+TTL_MAP = {
+    TTL.ONE_HOUR: timedelta(hours=1),
+    TTL.ONE_DAY: timedelta(days=1),
+    TTL.ONE_WEEK: timedelta(weeks=1),
+}
 
 
 # --- UI Routes ---

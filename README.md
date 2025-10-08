@@ -1,23 +1,25 @@
-# Bijective-Shorty: A URL Shortener with TTL and ID Reuse
+# Bijective-Shorty: A Modern URL Shortener
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Online-brightgreen?style=for-the-badge)](https://shortlink-3rab.onrender.com/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Online-brightgreen?style=for-the-badge)](https://shortlinks.art/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-A simple, high-performance URL shortener built with Python and FastAPI, demonstrating the power of **bijective base-6 numeration**. This project serves as a practical, real-world example of how zero-less number systems can be used to create compact, unambiguous, and predictable short codes.
+A simple, high-performance URL shortener built with Python and FastAPI. It uses the **Hashids** library to generate short, non-sequential, and unique codes from database IDs, providing a clean and secure way to shorten links.
 
 ## ✨ Features
 
--   **Bijective ID Generation**: Creates the shortest possible URL-safe codes without collisions.
--   **Link Expiration (TTL)**: All links automatically expire after 24 hours to keep the database clean.
--   **ID Reuse**: Efficiently reuses the IDs of expired links to keep new codes short.
--   **Persistent Storage**: Uses a file-based JSON database that persists across server restarts.
--   **Bot Verification**: A simple math challenge protects the service from automated abuse.
+-   **Obfuscated & Reversible IDs**: Uses the Hashids library to convert sequential database IDs into short, non-sequential, and URL-safe codes.
+-   **Link Expiration (TTL)**: Set links to expire after a specific duration (1 hour, 24 hours, 1 week) or never.
+-   **Link Previews**: Enhances user security by providing a preview page (`/get/<hash>`) to show the destination URL before redirecting.
+-   **Persistent & Scalable Storage**: Uses a file-based **SQLite** database that persists across server restarts.
+-   **Privacy-Focused**: No tracking or analytics. Just simple, fast redirects.
+-   **Internationalized UI**: Frontend available in 9 languages, with easy-to-extend translation support.
 -   **Production-Ready**: Includes a health check endpoint and is configured for easy deployment on platforms like Render.
 
 ## 🛠️ Tech Stack
 
 !Python
 !FastAPI
+!SQLite
 !JavaScript
 !HTML5
 !CSS3
@@ -50,13 +52,16 @@ This project is configured for easy deployment on a platform like Render.
 1.  **Create a new Web Service** on Render and connect it to your GitHub repository.
 2.  **Set the Start Command** to:
     ```
-    uvicorn app:app --host 0.0.0.0 --port $PORT
+    ./build.sh && uvicorn app:app --host 0.0.0.0 --port $PORT
     ```
-3.  **Add a Persistent Disk** to store the `db.json` file.
+3.  **Add Environment Variables**:
+    -   `PYTHON_VERSION`: `3.11` (or your desired Python version).
+    -   `HASHIDS_SALT`: A long, random, and secret string. This is **critical** for security. You can generate one locally using `python -c "import secrets; print(secrets.token_hex(32))"`.
+4.  **Add a Persistent Disk** to store the `shortlinks.db` file.
     -   **Name**: `data-disk`
-    -   **Mount Path**: `/data`
-    -   This will automatically create the `RENDER_DISK_PATH` environment variable that the application uses.
-4.  **Update the Health Check Path** in your service settings to `/health`.
+    -   **Mount Path**: `/var/data`
+    -   The application is configured to use the `RENDER_DISK_PATH` environment variable, which Render automatically sets to this mount path.
+5.  **Update the Health Check Path** in your service settings to `/health`.
 
 ## License
 

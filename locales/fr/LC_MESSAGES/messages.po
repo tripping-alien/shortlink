@@ -11,9 +11,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-# HTML Title
-msgid "Private & Easy Link Shortener | Bijective-Shorty"
-msgstr "Raccourcisseur de Liens Privé & Simple | Bijective-Shorty"
+# HTML Title & Branding
+msgid "Private & Easy Link Shortener | Shortlink"
+msgstr "Raccourcisseur de Liens Privé & Simple | Shortlink"
 
 # HTML Meta Description
 msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
@@ -99,14 +99,14 @@ msgstr "Votre lien est privé et n'expirera jamais."
 msgid "About"
 msgstr "À propos"
 
-msgid "About Bijective-Shorty"
-msgstr "À propos de Bijective-Shorty"
+msgid "About Shortlink"
+msgstr "À propos de Shortlink"
 
 msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
 msgstr "Ce projet est un raccourcisseur d'URL haute performance, axé sur la confidentialité, construit avec FastAPI et une pile technologique purement Python."
 
-msgid "It uses a bijective function to convert database IDs into short, non-sequential, and predictable base-6 codes. This method is efficient and avoids the database collisions common in hash-based shorteners."
-msgstr "Il utilise une fonction bijective pour convertir les identifiants de la base de données en codes courts, non séquentiels et prévisibles en base 6. Cette méthode est efficace et évite les collisions de base de données courantes dans les raccourcisseurs basés sur le hachage."
+msgid "It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links."
+msgstr "Il utilise la bibliothèque Hashids pour convertir les identifiants de base de données séquentiels en codes courts, non séquentiels et uniques. Cette méthode est efficace et assure l'obfuscation de vos liens."
 
 msgid "Core Features"
 msgstr "Fonctionnalités Clés"

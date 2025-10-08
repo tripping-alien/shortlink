@@ -11,9 +11,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-# HTML Title
-msgid "Private & Easy Link Shortener | Bijective-Shorty"
-msgstr "Privé & Eenvoudige Link Verkorter | Bijective-Shorty"
+# HTML Title & Branding
+msgid "Private & Easy Link Shortener | Shortlink"
+msgstr "Privé & Eenvoudige Link Verkorter | Shortlink"
 
 # HTML Meta Description
 msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
@@ -99,14 +99,14 @@ msgstr "Uw link is privé en zal nooit vervallen."
 msgid "About"
 msgstr "Over"
 
-msgid "About Bijective-Shorty"
-msgstr "Over Bijective-Shorty"
+msgid "About Shortlink"
+msgstr "Over Shortlink"
 
 msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
 msgstr "Dit project is een high-performance, op privacy gerichte URL-verkorter, gebouwd met FastAPI en een pure Python-technologiestack."
 
-msgid "It uses a bijective function to convert database IDs into short, non-sequential, and predictable base-6 codes. This method is efficient and avoids the database collisions common in hash-based shorteners."
-msgstr "Het gebruikt een bijectieve functie om database-ID's om te zetten in korte, niet-sequentiële en voorspelbare base-6-codes. Deze methode is efficiënt en vermijdt de databaseconflicten die vaak voorkomen bij op hash gebaseerde verkorters."
+msgid "It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links."
+msgstr "Het gebruikt de Hashids-bibliotheek om sequentiële database-ID's om te zetten in korte, niet-sequentiële en unieke codes. Deze methode is efficiënt en zorgt voor versluiering van uw links."
 
 msgid "Core Features"
 msgstr "Kernfuncties"

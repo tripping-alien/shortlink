@@ -61,9 +61,8 @@ async def lifespan(app: FastAPI):
 
 # --- FastAPI Application Setup ---
 app = FastAPI(
-    title="Bijective-Shorty API",
-    description="A robust and efficient URL shortener using bijective base-6 encoding, TTL, and ID reuse. "
-                "This API provides endpoints for creating, retrieving, and redirecting short links.",
+    title="Shortlink API",
+    description="A private, secure, and free URL shortener. This API provides endpoints for creating and managing short links.",
     version="1.0.0",
     lifespan=lifespan,
     contact={

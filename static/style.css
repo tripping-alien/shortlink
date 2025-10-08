@@ -56,24 +56,24 @@ body {
 .form-control, .form-select {
     background-color: var(--input-bg);
     border-color: var(--border-color) !important;
-    color: var(--text-color); /* Light grey text for dark input background */
+    color: var(--text-color); /* Dark text for light input background */
 }
 
 .form-control:focus, .form-select:focus {
-    background-color: var(--panel-bg); /* Invert background to light on focus */
+    background-color: #2d3748; /* Invert background to dark on focus */
     border-color: var(--primary-color) !important; /* Use !important to override Bootstrap specificity */
     box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
-    color: var(--text-color); /* Invert text to dark on focus */
+    color: #e2e8f0; /* Invert text to light on focus */
 }
 
 /* Style for the placeholder text */
 .form-control::placeholder {
-    color: #8b949e; /* GitHub's placeholder color for dark themes */
+    color: #6c757d; /* Muted dark grey for placeholder on light background */
     transition: color 0.2s ease-in-out;
 }
 
 .form-control:focus::placeholder {
-    color: #6c757d; /* Invert placeholder to a muted dark grey on focus */
+    color: #a0aec0; /* Invert placeholder to a muted light grey on focus */
 }
 
 .btn-primary {

@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '--primary-color-hover': '#0039cb',
         '--secondary-color': '#d50000', // A bold comic red for accents
         '--border-color': '#000000', // Strong black for outlines
-        '--input-bg': '#2d3748', // A dark slate grey for high contrast
+        '--input-bg': '#f1f3f5', // A very light grey for the default input state
         '--bs-primary-rgb': '0, 82, 204',
         '--animation-color-vec': [0.0, 0.32, 0.8] // Matching blue for the (currently disabled) animation
         }

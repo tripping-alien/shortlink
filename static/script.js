@@ -118,9 +118,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fullUrl = data.short_url;
                 const relativePath = new URL(fullUrl).pathname; // Extracts "/get/Bx7vq"
 
-                // Set up the link to navigate to the preview page
+                // The href should always be the relative path for local dev functionality.
+                // On the live site, this will correctly point to the preview page.
                 shortUrlLink.href = relativePath;
-                // Store the full URL on the copy button for the copy action
+
+                // The copy button should ALWAYS copy the full, canonical URL.
                 copyButton.dataset.fullUrl = fullUrl;
 
                 // Build the comic-style link display

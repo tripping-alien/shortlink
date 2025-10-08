@@ -260,3 +260,21 @@ body {
         transform: translateY(0);
     }
 }
+
+/* =====================================================================
+     6. RESPONSIVE DESIGN (for Mobile)
+   ====================================================================== */
+
+@media (max-width: 576px) {
+    .display-5 {
+        font-size: 2.5rem; /* Slightly smaller heading on mobile */
+    }
+
+    .short-url-display {
+        font-size: 2rem; /* Smaller font for the result link */
+    }
+
+    .short-url-domain {
+        display: none; /* Hide the domain on small screens to focus on the code */
+    }
+}

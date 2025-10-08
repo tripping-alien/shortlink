@@ -10,8 +10,8 @@
     --primary-color-hover: #3367D6; /* Darker Google Blue */
     --secondary-color: #EA4335; /* Google Red, for accents */
     --border-color: #dee2e6; /* Light grey for borders */
-    --input-bg: #010409; /* A near-black for inputs, matching the dark theme */
-    --shadow-color: rgba(0, 0, 0, 0.15);
+    --input-bg: #111111; /* A near-black for inputs, matching the dark theme */
+    --shadow-color: rgba(22, 22, 22, 0.15);
 
     /* Override Bootstrap variables */
     --bs-body-bg: var(--bg-color);
@@ -62,11 +62,12 @@ body {
 
 .display-5 {
     font-size: 2rem; /* Reduce the main heading size */
+    color: var(--primary-color); /* Use the theme's primary color for the title */
     text-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .lead {
-    color: #6c757d; /* Standard Bootstrap muted color */
+    color: #757575; /* A slightly softer grey for the subtitle */
 }
 
 .form-control, .form-select {

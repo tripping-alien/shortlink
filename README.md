@@ -57,9 +57,11 @@ This project is configured for easy deployment on a platform like Render.
 
 1.  **Create a new Web Service** on Render and connect it to your GitHub repository.
 2.  **Set the Start Command** to:
-    ```
-    uvicorn app:app --host 0.0.0.0 --port $PORT
-    ```
+    -   **Build Command**: `pip install -r requirements.txt`
+    -   **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+
+    *Note: The build command ensures all your Python dependencies are installed before the server starts.*
+
 3.  **Add Environment Variables**:
     -   `PYTHON_VERSION`: `3.11` (or your desired Python version).
     -   `HASHIDS_SALT`: A long, random, and secret string. This is **critical** for security. You can generate one locally using `python -c "import secrets; print(secrets.token_hex(32))"`.

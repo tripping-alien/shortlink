@@ -91,7 +91,7 @@
       <recent name="C:\Users\synec\PycharmProjects\stack\shortlinks" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.Python tests in test_app.py">
+  <component name="RunManager" selected="Python.app (1)">
     <configuration name="app (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
@@ -220,8 +220,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python tests.Python tests in test_app.py" />
         <item itemvalue="Python.app (1)" />
+        <item itemvalue="Python tests.Python tests in test_app.py" />
         <item itemvalue="Python.setup" />
         <item itemvalue="Python.build_cpp" />
         <item itemvalue="Python.app" />

@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 9" />
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 10">
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/script.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -235,14 +239,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00450" summary="Workng 2">
-      <option name="closed" value="true" />
-      <created>1759879168134</created>
-      <option name="number" value="00450" />
-      <option name="presentableId" value="LOCAL‎-00450" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759879168134</updated>
     </task>
     <task id="LOCAL‎-00451" summary="Workng 2">
       <option name="closed" value="true" />
@@ -628,7 +624,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759902677663</updated>
     </task>
-    <option name="localTasksCounter" value="499" />
+    <task id="LOCAL‎-00499" summary="Workng 10">
+      <option name="closed" value="true" />
+      <created>1759903284156</created>
+      <option name="number" value="00499" />
+      <option name="presentableId" value="LOCAL‎-00499" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759903284156</updated>
+    </task>
+    <option name="localTasksCounter" value="500" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -646,7 +650,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="lang/themees/tabs" />
     <MESSAGE value="lang/themes/tabs" />
     <MESSAGE value="release" />
     <MESSAGE value="settings" />
@@ -671,7 +674,8 @@
     <MESSAGE value="Workng 7" />
     <MESSAGE value="Workng 8" />
     <MESSAGE value="Workng 9" />
-    <option name="LAST_COMMIT_MESSAGE" value="Workng 9" />
+    <MESSAGE value="Workng 10" />
+    <option name="LAST_COMMIT_MESSAGE" value="Workng 10" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/PythonProject$.coverage" NAME=" Coverage Results" MODIFIED="1758447187993" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

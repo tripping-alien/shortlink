@@ -2,6 +2,11 @@
  * Main script for handling UI interactions.
  */
 
+// Add a class to the body once the DOM is ready to trigger animations
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('page-loaded');
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     const shortenForm = document.getElementById('shorten-form');
 

@@ -10,7 +10,7 @@
     --primary-color-hover: #3367D6; /* Darker Google Blue */
     --secondary-color: #EA4335; /* Google Red, for accents */
     --border-color: #dee2e6; /* Light grey for borders */
-    --input-bg: #ffffff;
+    --input-bg: #010409; /* A near-black for inputs, matching the dark theme */
     --shadow-color: rgba(0, 0, 0, 0.15);
 
     /* Override Bootstrap variables */
@@ -72,25 +72,38 @@ body {
 .form-control, .form-select {
     background-color: var(--input-bg);
     border-color: var(--border-color) !important;
-    color: var(--text-color); /* Set text color for inputs */
+    color: #c9d1d9; /* Light grey text for dark input background */
 }
 
 .form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(
+    var(--bs-primary-rgb), 0.25);
     border-color: var(--primary-color) !important; /* Use !important to override Bootstrap specificity */
     box-shadow: 0 0 0 0.25rem rgba(66, 133, 244, 0.25);
 }
 
+/* Style for the placeholder text */
+.form-control::placeholder {
+    color: #adb5bd; /* A standard, muted placeholder color */
+    transition: color 0.2s ease-in-out;
+}
+
+.form-control:focus::placeholder {
+    color: #e9ecef; /* Fade to a very light grey on focus */
+}
+
 .btn-primary {
-    --bs-btn-color: #ffffff; /* White text on orange button */
-    --bs-btn-bg: var(--primary-color);
-    --bs-btn-border-color: var(--primary-color);
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #34A853; /* Google Green for a "comic" feel */
+    --bs-btn-border-color: #34A853;
     --bs-btn-hover-color: #ffffff;
-    --bs-btn-hover-bg: var(--primary-color-hover);
-    --bs-btn-hover-border-color: var(--primary-color-hover);
-    --bs-btn-active-bg: var(--primary-color-hover);
-    --bs-btn-active-border-color: var(--primary-color-hover);
-    --bs-btn-disabled-bg: var(--primary-color);
-    --bs-btn-disabled-border-color: var(--primary-color);
+    --bs-btn-hover-bg: #2c8f45; /* A slightly darker green for hover */
+    --bs-btn-hover-border-color: #2c8f45;
+    --bs-btn-active-bg: #2c8f45;
+    --bs-btn-active-border-color: #2c8f45;
+    --bs-btn-disabled-bg: #34A853;
+    --bs-btn-disabled-border-color: #34A853;
 }
 
 .spinner {

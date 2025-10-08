@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import secrets
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
+import xml.etree.ElementTree as ET
 
 from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -146,56 +147,32 @@ Sitemap: {settings.base_url}/sitemap.xml
 
 @ui_router.get("/sitemap.xml", include_in_schema=False)
 async def sitemap(settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
-    today = date.today().isoformat()
+    """Generates a sitemap.xml using a robust XML library."""
     now = datetime.now(tz=timezone.utc)
-    urlset = []
     base_url = str(settings.base_url).rstrip('/')
 
-    # Generate hreflang links for a given path (e.g., "/ui/{lang}/")
-    def generate_hreflang_links(path_template: str) -> str:
-        links = []
-        for code in TRANSLATIONS.keys():
-            links.append(f'    <xhtml:link rel="alternate" hreflang="{code}" href="{base_url}{path_template.format(lang=code)}"/>')
-        # Add x-default for the default language
-        links.append(f'    <xhtml:link rel="alternate" hreflang="x-default" href="{base_url}{path_template.format(lang=DEFAULT_LANGUAGE)}"/>')
-        return "\n".join(links)
+    urlset = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
 
-    # 1. Add an entry for each supported language homepage
-    # We only need to create one entry for each "page" and list the language alternatives within it.
-    
     # Homepage
-    urlset.append(f"""  <url>
-    <loc>{base_url}/ui/en/</loc>
-    <lastmod>{today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-{generate_hreflang_links("/ui/{lang}/")}
-  </url>""")
+    url_el = ET.SubElement(urlset, "url")
+    ET.SubElement(url_el, "loc").text = f"{base_url}/ui/en/index"
+    ET.SubElement(url_el, "lastmod").text = now.date().isoformat()
+    ET.SubElement(url_el, "changefreq").text = "monthly"
+    ET.SubElement(url_el, "priority").text = "1.0"
 
-    # 2. Add an entry for each active short link
+    # Active Links
     active_links = await asyncio.to_thread(database.get_all_active_links, now)
 
     for link in active_links:
         short_code = encode_id(link['id'], hashids)
-        urlset.append(f"""  <url>
-    <loc>{base_url}/{short_code}</loc>
-    <changefreq>never</changefreq>
-    <priority>0.5</priority>
-  </url>""")
         # Also add the preview page to the sitemap
-        urlset.append(f"""  <url>
-    <loc>{base_url}/get/{short_code}</loc>
-    <changefreq>never</changefreq>
-    <priority>0.4</priority>
-  </url>""")
+        url_el = ET.SubElement(urlset, "url")
+        ET.SubElement(url_el, "loc").text = f"{base_url}/get/{short_code}"
+        ET.SubElement(url_el, "changefreq").text = "never"
+        ET.SubElement(url_el, "priority").text = "0.4"
 
-    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
-{"".join(urlset)}
-</urlset>
-"""
-    return Response(content=xml_content, media_type="application/xml")
+    xml_content = ET.tostring(urlset, encoding='unicode', method='xml')
+    return Response(content=f'<?xml version="1.0" encoding="UTF-8"?>\n{xml_content}', media_type="application/xml")
 
 
 # --- API Routes ---

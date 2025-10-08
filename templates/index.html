@@ -95,12 +95,12 @@
             </div>
         </form>
 
-        <div class="row justify-content-center align-items-center text-center text-muted small gy-2">
-            <div class="col-md-auto">
+        <div class="row justify-content-center align-items-center text-center small gy-2 mt-2">
+            <div class="col-12 col-md-auto">
                 <p id="ttl-info-text" class="mb-0 ttl-control-label">{{ _('Your link is private and will automatically expire in {duration}.').format(duration=_('24 Hours')) }}</p>
             </div>
-            <div class="col-md-auto">
-                <div class="d-flex justify-content-center align-items-center">
+            <div class="col-12 col-md-auto">
+                <div class="d-flex justify-content-center align-items-center mt-1 mt-md-0">
                     <label for="ttl-select" class="me-2 ttl-control-label">{{ _('Link expires in:') }}</label>
                     <select id="ttl-select" name="ttl" class="form-select form-select-sm" form="shorten-form" style="width: auto;">
                         <option value="1h">{{ _('1 Hour') }}</option>
@@ -126,7 +126,7 @@
 
         <footer class="mt-5 text-center text-muted small">
             <div class="footer-links mb-3">
-                <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">{{ _('View on') }} GitHub</a> |
+                <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">{{ _('View on') }} GitHub</a>
                 <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">{{ _('Released under the') }} MIT License</a>
             </div>
 

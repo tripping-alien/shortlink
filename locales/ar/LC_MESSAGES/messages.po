@@ -100,9 +100,6 @@ msgstr "رابطك خاص ولن تنتهي صلاحيته أبدًا."
 msgid "About"
 msgstr "حول"
 
-msgid "An unexpected internal error occurred."
-msgstr "حدث خطأ داخلي غير متوقع."
-
 # SEO Keywords
 msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"
 msgstr "مختصر روابط خاص, مختصر روابط سهل, مختصر URL آمن, رابط مؤقت, مختصر روابط مجاني, رابط مخصص, رابط قصير, مختصر روابط مجهول"

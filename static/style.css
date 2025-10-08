@@ -176,6 +176,13 @@ body {
     transition: color 0.2s ease-in-out;
 }
 
+/* Add the pipe separator using CSS for a clean separation of content and presentation */
+.footer-links a + a::before {
+    content: "|";
+    margin: 0 0.5rem;
+    color: var(--text-color);
+}
+
 /* =====================================================================
      5. PAGE-SPECIFIC STYLES
    ====================================================================== */

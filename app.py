@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.templating import Jinja2Templates
 from hashids import Hashids
+from slowapi.errors import RateLimitExceeded
 from starlette.staticfiles import StaticFiles
 
 import database
@@ -17,6 +18,7 @@ from encoding import decode_id, get_hashids
 from i18n import load_translations, get_translator, DEFAULT_LANGUAGE
 from router import api_router, ui_router
 from config import Settings, get_settings
+from limiter import limiter
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -65,6 +67,9 @@ app = FastAPI(
     },
 )
 
+app.state.limiter = limiter
+
+
 settings = get_settings()
 
 # --- Custom Exception Handlers for Robustness ---
@@ -98,6 +103,17 @@ async def generic_exception_handler(request: Request, exc: Exception):
         content={"detail": translator("An unexpected internal error occurred.")},
     )
 
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """
+    Handles RateLimitExceeded errors, returning a 429 Too Many Requests response.
+    """
+    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))
+    return JSONResponse(
+        status_code=429,
+        content={"detail": translator("Rate limit exceeded. Please try again later.")}
+    )
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")

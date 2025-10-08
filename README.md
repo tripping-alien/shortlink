@@ -12,6 +12,7 @@ A simple, high-performance URL shortener built with Python and FastAPI. It uses 
 -   **Link Previews**: Enhances user security by providing a preview page (`/get/<hash>`) to show the destination URL before redirecting.
 -   **Persistent & Scalable Storage**: Uses a file-based **SQLite** database that persists across server restarts.
 -   **Privacy-Focused**: No tracking or analytics. Just simple, fast redirects.
+-   **Spam Protection**: Implements API rate limiting to prevent abuse.
 -   **Automatic Internationalization**: The UI automatically detects the user's browser language and displays one of 9 supported languages.
 -   **Production-Ready**: Includes a health check endpoint and is configured for easy deployment on platforms like Render.
 

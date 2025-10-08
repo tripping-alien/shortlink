@@ -13,6 +13,7 @@ from encoding import decode_id, encode_id, get_hashids
 from i18n import TRANSLATIONS, DEFAULT_LANGUAGE, get_translator
 from models import LinkBase, LinkResponse, ErrorResponse
 from config import TTL, TTL_MAP, Settings, get_settings
+from limiter import limiter
 
 # --- Router Setup ---
 
@@ -225,6 +226,7 @@ async def get_translations(lang_code: str):
         422: {"model": ErrorResponse, "description": "Validation Error: The request body is malformed."},
     }
 )
+@limiter.limit("10/minute")
 async def create_short_link(link_data: LinkBase, request: Request, settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
     """
     Creates a new short link from a long URL.
@@ -364,11 +366,15 @@ async def delete_short_link(short_code: str, request: Request, hashids: Hashids 
         translator = get_translator()
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
-    rows_deleted = await asyncio.to_thread(database.delete_link_by_id_and_token, url_id, token)
-
-    if rows_deleted == 0:
-        translator = get_translator()
+    # For enhanced security, first fetch the record, then perform a constant-time comparison
+    # on the token. This prevents potential timing attacks.
+    record = await asyncio.to_thread(database.get_link_by_id, url_id)
+    
+    if not record or not secrets.compare_digest(token, record["deletion_token"]):
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
+
+    # If the token is valid, proceed with deletion.
+    await asyncio.to_thread(database.delete_link_by_id_and_token, url_id, token)
 
     # Return a 204 No Content response, which is standard for successful deletions.
     return Response(status_code=204)

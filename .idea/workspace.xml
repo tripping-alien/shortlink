@@ -5,8 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng ...">
-      <change beforePath="$PROJECT_DIR$/templates/about.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/limiter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/en/LC_MESSAGES/messages.po" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en/LC_MESSAGES/messages.po" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/router.py" beforeDir="false" afterPath="$PROJECT_DIR$/router.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -238,30 +242,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00467" summary="Workng 7">
-      <option name="closed" value="true" />
-      <created>1759882359750</created>
-      <option name="number" value="00467" />
-      <option name="presentableId" value="LOCAL‎-00467" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759882359750</updated>
-    </task>
-    <task id="LOCAL‎-00468" summary="Workng 7">
-      <option name="closed" value="true" />
-      <created>1759882556475</created>
-      <option name="number" value="00468" />
-      <option name="presentableId" value="LOCAL‎-00468" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759882556475</updated>
-    </task>
-    <task id="LOCAL‎-00469" summary="Workng 7">
-      <option name="closed" value="true" />
-      <created>1759882695905</created>
-      <option name="number" value="00469" />
-      <option name="presentableId" value="LOCAL‎-00469" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759882695905</updated>
     </task>
     <task id="LOCAL‎-00470" summary="Workng 7">
       <option name="closed" value="true" />
@@ -631,7 +611,31 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759906310767</updated>
     </task>
-    <option name="localTasksCounter" value="516" />
+    <task id="LOCAL‎-00516" summary="Workng ...">
+      <option name="closed" value="true" />
+      <created>1759906636914</created>
+      <option name="number" value="00516" />
+      <option name="presentableId" value="LOCAL‎-00516" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759906636914</updated>
+    </task>
+    <task id="LOCAL‎-00517" summary="Workng ...">
+      <option name="closed" value="true" />
+      <created>1759906668813</created>
+      <option name="number" value="00517" />
+      <option name="presentableId" value="LOCAL‎-00517" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759906668813</updated>
+    </task>
+    <task id="LOCAL‎-00518" summary="Workng ...">
+      <option name="closed" value="true" />
+      <created>1759906790348</created>
+      <option name="number" value="00518" />
+      <option name="presentableId" value="LOCAL‎-00518" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759906790348</updated>
+    </task>
+    <option name="localTasksCounter" value="519" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

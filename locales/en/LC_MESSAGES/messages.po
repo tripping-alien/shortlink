@@ -95,6 +95,9 @@ msgstr "Short link not found"
 msgid "Short link has expired"
 msgstr "Short link has expired"
 
+msgid "Rate limit exceeded. Please try again later."
+msgstr "Rate limit exceeded. Please try again later."
+
 # About Page
 msgid "About"
 msgstr "About"

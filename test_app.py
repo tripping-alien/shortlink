@@ -142,7 +142,7 @@ def test_ui_rendering_for_language(client: TestClient):
     """Tests that a language-specific UI page renders correctly."""
     response = client.get("/ui/de")  # Test with German
     assert response.status_code == 200
-    assert "Bijective-Shorty" in response.text
+    assert "Shortlinks" in response.text
     # Check for a piece of German text to confirm the correct translation was loaded
     assert "Link-Kürzer" in response.text
 

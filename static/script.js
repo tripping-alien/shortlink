@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const spinner = submitButton.querySelector('.spinner');
         const resultBox = document.getElementById('result-box');
         const shortUrlLink = document.getElementById('short-url-link');
-        const copyButton = document.getElementById('copy-button');
         const toastContainer = document.getElementById('toast-container');
         const ttlSelect = document.getElementById('ttl-select');
 
@@ -118,16 +117,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fullUrl = data.short_url;
                 const relativePath = new URL(fullUrl).pathname; // Extracts "/get/Bx7vq"
 
-                shortUrlLink.href = relativePath;
+                // Set up the link for display and functionality
+                shortUrlLink.href = fullUrl; // The href should point to the full, live URL
+                shortUrlLink.dataset.relativeHref = relativePath; // Store relative path for local navigation
                 shortUrlLink.dataset.fullUrl = fullUrl; // Store the full URL for the copy button
-                const displayUrl = fullUrl.replace(/^https?:\/\//, '');
-                shortUrlLink.textContent = displayUrl;
+
+                // Build the comic-style link display
+                const urlObject = new URL(fullUrl);
+                const domain = urlObject.hostname;
+                const code = urlObject.pathname;
+                shortUrlLink.innerHTML = `<span class="short-url-domain">${domain}</span><span class="short-url-code">${code}</span>`;
+
                 resultBox.classList.remove('d-none');
                 resultBox.classList.add('fade-in-up');
 
                 // Reset copy button state
-                copyButton.textContent = copyButton.dataset.copyText || 'Copy';
-                copyButton.classList.remove('btn-success', 'copied');
+                shortUrlLink.classList.remove('copied');
 
             } catch (error) {
                 showToast(error.message, 'danger');
@@ -139,17 +144,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // --- Copy Button Handler (now inside the shortenForm check) ---
-        if (copyButton) {
-            copyButton.addEventListener('click', () => {
+        // --- Click-to-Copy Handler ---
+        if (shortUrlLink) {
+            shortUrlLink.addEventListener('click', (event) => {
+                event.preventDefault(); // Prevent navigation
                 const urlToCopy = shortUrlLink.dataset.fullUrl || shortUrlLink.href;
                 navigator.clipboard.writeText(urlToCopy).then(function() {
-                    copyButton.textContent = copyButton.dataset.copiedText || 'Copied!';
-                    copyButton.classList.add('btn-success', 'copied');
-                    // Optional: Revert after a few seconds
+                    const originalHTML = shortUrlLink.innerHTML;
+                    shortUrlLink.innerHTML = `<span class="short-url-code">${shortUrlLink.dataset.copiedText || 'Copied!'}</span>`;
+                    shortUrlLink.classList.add('copied');
+
                     setTimeout(() => {
-                        copyButton.textContent = copyButton.dataset.copyText || 'Copy';
-                        copyButton.classList.remove('btn-success', 'copied');
+                        shortUrlLink.innerHTML = originalHTML;
+                        shortUrlLink.classList.remove('copied');
                     }, 2000);
                 }).catch(function(err) {
                     showToast('Failed to copy link.', 'danger');
@@ -190,11 +197,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) throw new Error('Failed to load translations');
                 const i18n = await response.json();
 
-                if (copyButton) {
-                    copyButton.dataset.copyText = i18n.copy;
-                    copyButton.dataset.copiedText = i18n.copied;
-                    copyButton.textContent = i18n.copy;
-                }
+                // Set translations for the copy functionality
+                shortUrlLink.dataset.copyText = i18n.copy;
+                shortUrlLink.dataset.copiedText = i18n.copied;
 
                 const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
                 if (savedTtl) { ttlSelect.value = savedTtl; }

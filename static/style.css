@@ -142,17 +142,18 @@ body {
 }
 
 .short-url-display:hover {
-    transform: scale(1.02);
+    transform: scale(1.02); /* Keep the subtle grow effect */
+    text-decoration: underline; /* Underline the whole link on hover */
 }
 
 .short-url-domain {
-    color: var(--text-color);
-    opacity: 0.7;
+    color: var(--primary-color); /* Use the same primary color */
+    opacity: 0.8; /* Make it slightly less prominent than the code */
 }
 
 .short-url-code {
     color: var(--primary-color);
-    text-decoration: underline;
+    text-decoration: none; /* Remove the default underline from just this part */
 }
 
 .short-url-display.copied .short-url-code {

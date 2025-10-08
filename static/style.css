@@ -1,26 +1,28 @@
 /* =====================================================================
      1. THEME & BOOTSTRAP OVERRIDES
    ====================================================================== */
-:root {
-    /* Moony Sunshine Beach Theme */
-    --bg-color: #FFFBEB; /* Very Light Cream, like sand */
-    --text-color: #3D4852; /* Dark Slate Gray, like evening shadows */
-    --primary-color: #FFA726; /* Sunshine Orange, for the sun */
-    --primary-color-hover: #FB8C00; /* Darker Orange for hover */
-    --border-color: #D7CCC8; /* Light Brownish Gray, like pebbles */
-    --input-bg: #ffffff; /* Clean white for inputs */
-    --shadow-color: rgba(93, 64, 55, 0.15); /* A soft, warm shadow */
+ :root {
+    /* Material Pop Theme (inspired by Google) */
+    --bg-color: #0d1117; /* Deep Navy Blue, like a night sky */
+    --panel-bg: #f8f9fa; /* Off-white, for the main panel */
+    --text-color: #212529; /* Standard dark text for high contrast */
+    --primary-color: #4285F4; /* Google Blue */
+    --primary-color-hover: #3367D6; /* Darker Google Blue */
+    --secondary-color: #EA4335; /* Google Red, for accents */
+    --border-color: #dee2e6; /* Light grey for borders */
+    --input-bg: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.15);
 
     /* Override Bootstrap variables */
     --bs-body-bg: var(--bg-color);
-    --bs-body-color: var(--text-color);
+    --bs-body-color: var(--text-color); /* This will apply to text inside the panel */
     --bs-body-font-family: 'Fira Code', monospace;
     --bs-primary: var(--primary-color);
-    --bs-primary-rgb: 255, 167, 38;
-    --bs-link-color: var(--primary-color);
-    --bs-link-color-rgb: 255, 167, 38;
+    --bs-primary-rgb: 66, 133, 244;
+    --bs-link-color: var(--primary-color); /* Links inside the panel */
+    --bs-link-color-rgb: 66, 133, 244;
     --bs-link-hover-color: var(--primary-color-hover);
-    --bs-link-hover-color-rgb: 251, 140, 0;
+    --bs-link-hover-color-rgb: 51, 103, 214;
 }
 
 body {
@@ -46,11 +48,10 @@ body {
 
 .container {
     position: relative; /* Needed for absolute positioning of the child switcher */
-    background-color: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background-color: var(--panel-bg);
     border-radius: 0.5rem;
-    box-shadow: 0 8px 32px 0 var(--shadow-color);
+    /* "Slightly 3D" shadow effect */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.07), 0 4px 8px rgba(0,0,0,0.07), 0 8px 16px rgba(0,0,0,0.07), 0 16px 32px rgba(0,0,0,0.07);
     padding: 1.5rem; /* Reduce container padding */
     padding-top: 3.5rem; /* Adjust top padding for the language bar */
 }
@@ -65,24 +66,24 @@ body {
 }
 
 .lead {
-    color: #5a6e82; /* A softer slate gray for lead text */
+    color: #6c757d; /* Standard Bootstrap muted color */
 }
 
 .form-control, .form-select {
     background-color: var(--input-bg);
-    border-color: var(--border-color);
+    border-color: var(--border-color) !important;
 }
 
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-color) !important; /* Use !important to override Bootstrap specificity */
-    box-shadow: 0 0 0 0.25rem rgba(255, 167, 38, 0.25);
+    box-shadow: 0 0 0 0.25rem rgba(66, 133, 244, 0.25);
 }
 
 .btn-primary {
-    --bs-btn-color: #fff;
+    --bs-btn-color: #ffffff; /* White text on orange button */
     --bs-btn-bg: var(--primary-color);
     --bs-btn-border-color: var(--primary-color);
-    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-color: #ffffff;
     --bs-btn-hover-bg: var(--primary-color-hover);
     --bs-btn-hover-border-color: var(--primary-color-hover);
     --bs-btn-active-bg: var(--primary-color-hover);
@@ -96,7 +97,7 @@ body {
     height: 1em;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    border-top-color: #fff;
+    border-top-color: #ffffff;
     animation: spin 1s ease-in-out infinite;
 }
 
@@ -105,13 +106,13 @@ body {
 }
 
 .alert-success {
-    --bs-alert-bg: #FFF3E0; /* Light orange background */
-    --bs-alert-border-color: #FFE0B2;
-    --bs-alert-color: #E65100;
+    --bs-alert-bg: #e6f4ea; /* Google Green light variant */
+    --bs-alert-border-color: #c6e7d3;
+    --bs-alert-color: #1e4620;
 }
 
 .btn-light.copied {
-    background-color: #198754; /* Bootstrap's default success green */
+    background-color: #34A853; /* Google Green */
     color: white;
 }
 
@@ -127,7 +128,7 @@ body {
 }
 
 .language-toggle-btn {
-    background-color: rgba(255, 251, 235, 0.8); /* Match light background */
+    background-color: rgba(248, 249, 250, 0.8); /* Match light panel background */
     border: 1px solid var(--border-color);
     border-top: none;
     border-radius: 0.4rem;
@@ -185,8 +186,8 @@ body {
 
 .language-switcher-fixed a.active {
     filter: grayscale(0%); /* Ensure active flag is in full color */
-    border: 2px solid var(--primary-color);
-    box-shadow: 0 0 8px rgba(255, 167, 38, 0.5);
+    border: 2px solid var(--primary-color); /* Use Google Blue for active border */
+    box-shadow: 0 0 8px rgba(66, 133, 244, 0.5); /* Google Blue shadow */
 }
 
 /* =====================================================================

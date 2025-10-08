@@ -9,9 +9,12 @@ def adapt_datetime_to_timestamp(dt_obj):
     """Converts a timezone-aware datetime object to a UTC timestamp (float)."""
     return dt_obj.astimezone(timezone.utc).timestamp()
 
-def convert_timestamp_to_datetime(ts):
-    """Converts a UTC timestamp (float) back to a timezone-aware datetime object."""
-    return datetime.fromtimestamp(ts, tz=timezone.utc)
+def convert_timestamp_to_datetime(ts_bytes: bytes) -> datetime:
+    """
+    Converts a UTC timestamp stored as bytes in the DB back to a timezone-aware datetime object.
+    The converter receives a byte string from sqlite3.
+    """
+    return datetime.fromtimestamp(float(ts_bytes), tz=timezone.utc)
 
 sqlite3.register_adapter(datetime, adapt_datetime_to_timestamp)
 sqlite3.register_converter("timestamp", convert_timestamp_to_datetime)

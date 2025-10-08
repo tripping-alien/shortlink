@@ -20,7 +20,6 @@ body {
     min-height: 100vh;
     margin: 0;
     padding: 1rem;
-    overflow: hidden; /* Prevent scrollbars from animation */
 }
 
 #background-animation {
@@ -280,19 +279,17 @@ footer a:hover {
     flex-wrap: wrap;
 }
 
+.language-switcher img {
+    width: 32px; /* Slightly larger for better visibility on mobile */
+    height: auto;
+}
+
 .language-switcher a {
     border-radius: 4px;
     border: 1px solid transparent;
     transition: transform 0.2s, box-shadow 0.2s;
     line-height: 0;
     padding: 2px;
-}
-
-.language-switcher img {
-    width: 28px;
-    height: auto;
-    border-radius: 2px;
-    vertical-align: middle;
 }
 
 .language-switcher a:hover {
@@ -333,6 +330,33 @@ footer a:hover {
 
 [dir="rtl"] .language-switcher a {
     margin: 0 0.25rem;
+}
+
+/* =====================================================================
+     RESPONSIVE DESIGN for Mobile
+   ====================================================================== */
+@media (max-width: 600px) {
+    body {
+        padding: 0.5rem; /* Reduce body padding on small screens */
+    }
+
+    .container {
+        padding: 1.5rem; /* Reduce container padding */
+    }
+
+    .display-5 {
+        font-size: 1.75rem; /* Make the main title a bit smaller */
+    }
+
+    .form-info, .ttl-selector {
+        flex-direction: column; /* Stack the TTL info and selector */
+        gap: 0.75rem;
+    }
+
+    .footer-links {
+        flex-direction: column; /* Stack footer links */
+        gap: 0.75rem;
+    }
 }
 
 /* =====================================================================

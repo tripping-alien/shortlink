@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 8">
-      <change afterPath="$PROJECT_DIR$/templates/preview.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/database.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/router.py" beforeDir="false" afterPath="$PROJECT_DIR$/router.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/script.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin_login.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin_login.html" afterDir="false" />
-    </list>
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 9" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -244,22 +235,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00445" summary="Workng">
-      <option name="closed" value="true" />
-      <created>1759877447952</created>
-      <option name="number" value="00445" />
-      <option name="presentableId" value="LOCAL‎-00445" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759877447952</updated>
-    </task>
-    <task id="LOCAL‎-00446" summary="Workng">
-      <option name="closed" value="true" />
-      <created>1759877908595</created>
-      <option name="number" value="00446" />
-      <option name="presentableId" value="LOCAL‎-00446" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759877908595</updated>
     </task>
     <task id="LOCAL‎-00447" summary="Workng">
       <option name="closed" value="true" />
@@ -637,7 +612,23 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759898980506</updated>
     </task>
-    <option name="localTasksCounter" value="494" />
+    <task id="LOCAL‎-00494" summary="Workng 9">
+      <option name="closed" value="true" />
+      <created>1759899813722</created>
+      <option name="number" value="00494" />
+      <option name="presentableId" value="LOCAL‎-00494" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759899813722</updated>
+    </task>
+    <task id="LOCAL‎-00495" summary="Workng 9">
+      <option name="closed" value="true" />
+      <created>1759899905040</created>
+      <option name="number" value="00495" />
+      <option name="presentableId" value="LOCAL‎-00495" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759899905040</updated>
+    </task>
+    <option name="localTasksCounter" value="496" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -655,7 +646,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="lang" />
     <MESSAGE value="lang/themees/tabs" />
     <MESSAGE value="lang/themes/tabs" />
     <MESSAGE value="release" />
@@ -680,7 +670,8 @@
     <MESSAGE value="Workng 6" />
     <MESSAGE value="Workng 7" />
     <MESSAGE value="Workng 8" />
-    <option name="LAST_COMMIT_MESSAGE" value="Workng 8" />
+    <MESSAGE value="Workng 9" />
+    <option name="LAST_COMMIT_MESSAGE" value="Workng 9" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/PythonProject$.coverage" NAME=" Coverage Results" MODIFIED="1758447187993" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

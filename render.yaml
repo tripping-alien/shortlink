@@ -1,0 +1,15 @@
+# render.yaml
+# This file tells Render how to build and run your application.
+
+services:
+  - type: web
+    name: bijective-shorty
+    env: python
+    plan: free # Or your preferred plan
+    buildCommand: "./build.sh"
+    startCommand: "uvicorn app:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11 # Or your preferred Python version
+      - key: HASHIDS_SALT
+        generateValue: true # Let Render generate a secure, random salt for production

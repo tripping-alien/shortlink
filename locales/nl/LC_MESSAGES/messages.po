@@ -114,7 +114,7 @@ msgstr "Kernfuncties"
 msgid "Stateless & Fast"
 msgstr "Stateless & Snel"
 
-msgid "Genereert wiskundig korte codes zonder de noodzaak om reeds bestaande hashes te controleren."
+msgid "Generates short codes mathematically without needing to check for pre-existing hashes."
 msgstr "Genereert wiskundig korte codes zonder de noodzaak om reeds bestaande hashes te controleren."
 
 msgid "Privacy-Focused"

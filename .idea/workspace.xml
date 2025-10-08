@@ -4,7 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 10" />
+    <list default="true" id="50350d4a-48f4-48cb-849b-1dff3eef744e" name="Changes" comment="Workng 10">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytest.ini" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements-dev.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/animation.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/animation.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/script.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/preview.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/preview.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_app.py" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -81,7 +91,7 @@
       <recent name="C:\Users\synec\PycharmProjects\stack\shortlinks" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.app (1)">
+  <component name="RunManager" selected="Python tests.Python tests in test_app.py">
     <configuration name="app (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="PythonProject" />
       <option name="ENV_FILES" value="" />
@@ -210,8 +220,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.app (1)" />
         <item itemvalue="Python tests.Python tests in test_app.py" />
+        <item itemvalue="Python.app (1)" />
         <item itemvalue="Python.setup" />
         <item itemvalue="Python.build_cpp" />
         <item itemvalue="Python.app" />
@@ -235,38 +245,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00461" summary="Workng 6">
-      <option name="closed" value="true" />
-      <created>1759881243209</created>
-      <option name="number" value="00461" />
-      <option name="presentableId" value="LOCAL‎-00461" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759881243209</updated>
-    </task>
-    <task id="LOCAL‎-00462" summary="Workng 6">
-      <option name="closed" value="true" />
-      <created>1759881271378</created>
-      <option name="number" value="00462" />
-      <option name="presentableId" value="LOCAL‎-00462" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759881271378</updated>
-    </task>
-    <task id="LOCAL‎-00463" summary="Workng 6">
-      <option name="closed" value="true" />
-      <created>1759881488357</created>
-      <option name="number" value="00463" />
-      <option name="presentableId" value="LOCAL‎-00463" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759881488357</updated>
-    </task>
-    <task id="LOCAL‎-00464" summary="Workng 6">
-      <option name="closed" value="true" />
-      <created>1759881711662</created>
-      <option name="number" value="00464" />
-      <option name="presentableId" value="LOCAL‎-00464" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759881711662</updated>
     </task>
     <task id="LOCAL‎-00465" summary="Workng 7">
       <option name="closed" value="true" />
@@ -628,7 +606,39 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759904535548</updated>
     </task>
-    <option name="localTasksCounter" value="510" />
+    <task id="LOCAL‎-00510" summary="Workng 10">
+      <option name="closed" value="true" />
+      <created>1759904839511</created>
+      <option name="number" value="00510" />
+      <option name="presentableId" value="LOCAL‎-00510" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759904839511</updated>
+    </task>
+    <task id="LOCAL‎-00511" summary="Workng 10">
+      <option name="closed" value="true" />
+      <created>1759904925683</created>
+      <option name="number" value="00511" />
+      <option name="presentableId" value="LOCAL‎-00511" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759904925683</updated>
+    </task>
+    <task id="LOCAL‎-00512" summary="Workng 10">
+      <option name="closed" value="true" />
+      <created>1759905023993</created>
+      <option name="number" value="00512" />
+      <option name="presentableId" value="LOCAL‎-00512" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759905023993</updated>
+    </task>
+    <task id="LOCAL‎-00513" summary="Workng 10">
+      <option name="closed" value="true" />
+      <created>1759905119379</created>
+      <option name="number" value="00513" />
+      <option name="presentableId" value="LOCAL‎-00513" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759905119379</updated>
+    </task>
+    <option name="localTasksCounter" value="514" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

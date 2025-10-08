@@ -1,9 +1,30 @@
 /**
  * Main script for handling UI interactions.
  */
-
-// Add a class to the body once the DOM is ready to trigger animations
 document.addEventListener('DOMContentLoaded', function() {
+    // --- Dynamic Comic Book Theming Experiment ---
+    const modernTechPalette = {
+        '--bg-color': '#0a0f1e', // Deep navy background
+        '--panel-bg': '#161b29', // Slightly lighter panel
+        '--text-color': '#c9d1d9', // Light grey text
+        '--primary-color': '#00e5ff', // Vibrant Cyan accent
+        '--primary-color-hover': '#00b8d4',
+        '--secondary-color': '#00e5ff', // Use the same cyan for consistency
+        '--border-color': '#30363d', // Subtle border color
+        '--input-bg': '#0d1117', // Match the background for a seamless look
+        '--bs-primary-rgb': '0, 229, 255'
+        }
+
+    const chosenPalette = modernTechPalette;
+
+    // Apply the chosen palette to the root element
+    for (const [key, value] of Object.entries(chosenPalette)) {
+        if (key !== '--animation-color-vec') { // Don't set the animation color as a CSS var
+            document.documentElement.style.setProperty(key, value);
+        }
+    }
+
+    // Add a class to the body once the DOM is ready to trigger animations
     document.body.classList.add('page-loaded');
 });
 

@@ -73,8 +73,6 @@
     <link rel="author" href="/static/humans.txt">
 </head>
 <body>
-    <canvas id="background-animation"></canvas>
-
     <main class="container my-auto">
         <header class="text-center mb-4">
             <h1 class="display-5">{{ _('Private, Secure, and Free Shortlinks') }}</h1>
@@ -94,11 +92,11 @@
 
         <div class="row justify-content-center align-items-center text-center text-muted small gy-2">
             <div class="col-md-auto">
-                <p id="ttl-info-text" class="mb-0">{{ _('Your link is private and will automatically expire in {duration}.').format(duration=_('24 Hours')) }}</p>
+                <p id="ttl-info-text" class="mb-0 ttl-control-label">{{ _('Your link is private and will automatically expire in {duration}.').format(duration=_('24 Hours')) }}</p>
             </div>
             <div class="col-md-auto">
                 <div class="d-flex justify-content-center align-items-center">
-                    <label for="ttl-select" class="me-2">{{ _('Link expires in:') }}</label>
+                    <label for="ttl-select" class="me-2 ttl-control-label">{{ _('Link expires in:') }}</label>
                     <select id="ttl-select" name="ttl" class="form-select form-select-sm" form="shorten-form" style="width: auto;">
                         <option value="1h">{{ _('1 Hour') }}</option>
                         <option value="1d" selected>{{ _('24 Hours') }}</option>
@@ -130,7 +128,6 @@
     <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     <div id="animation-overlay"></div>
 
-    <script src="/static/animation.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="/static/script.js"></script>

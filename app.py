@@ -228,10 +228,17 @@ async def generic_exception_handler(request: Request, exc: Exception):
     )
 
 
-# API Router for versioning and organization
+# --- Routers for API and UI ---
+
+# API Router for versioning and organization.
 api_router = APIRouter(
     prefix="/api/v1",
     tags=["Links"],  # Group endpoints in the docs
+)
+
+# UI Router for serving HTML pages.
+ui_router = APIRouter(
+    tags=["UI"],
 )
 
 # Mount static files and templates
@@ -270,7 +277,7 @@ def get_translator(lang: str = DEFAULT_LANGUAGE):
     return translator
 
 
-@app.get("/", include_in_schema=False)
+@ui_router.get("/", include_in_schema=False)
 async def redirect_to_default_lang(request: Request):
     """Redirects the root path to the default language."""
     lang = DEFAULT_LANGUAGE
@@ -290,11 +297,11 @@ async def redirect_to_default_lang(request: Request):
     return RedirectResponse(url=f"/ui/{lang}")
 
 
-@app.get(
+@ui_router.get(
     "/ui/{lang_code:str}",
     response_class=HTMLResponse,
-    summary="Serve Frontend UI",
-    tags=["UI"])
+    summary="Serve Frontend UI"
+)
 async def read_root(request: Request, lang_code: str):
     if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
         raise HTTPException(status_code=404, detail="Language not supported")
@@ -304,11 +311,10 @@ async def read_root(request: Request, lang_code: str):
     return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 
-@app.get(
+@ui_router.get(
     "/ui/{lang_code:str}/about",
     response_class=HTMLResponse,
-    summary="Serve About Page",
-    tags=["UI"]
+    summary="Serve About Page"
 )
 async def read_about(request: Request, lang_code: str):
     """Serves the about page for a given language."""
@@ -319,7 +325,7 @@ async def read_about(request: Request, lang_code: str):
     return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 
-@app.get("/health", response_class=HTMLResponse, summary="Health Check", tags=["Monitoring"])
+@ui_router.get("/health", response_class=HTMLResponse, summary="Health Check", tags=["Monitoring"])
 async def health_check(request: Request):
     """
     Performs a deep health check on the application and its dependencies,
@@ -357,7 +363,7 @@ async def health_check(request: Request):
     }
     return templates.TemplateResponse("health.html", context, status_code=status_code)
 
-@app.get("/robots.txt", include_in_schema=False)
+@ui_router.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
     content = f"""User-agent: *
 Allow: /$
@@ -376,7 +382,7 @@ Sitemap: https://shortlinks.art/sitemap.xml
     return Response(content=content, media_type="text/plain")
 
 
-@app.get("/sitemap.xml", include_in_schema=False)
+@ui_router.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
     today = date.today().isoformat()
     now = datetime.now(tz=timezone.utc)
@@ -563,10 +569,7 @@ async def get_link_details(short_code: str, request: Request):
 
     # Check for expiration but do not delete it here (let the background task handle it)
     expires_at = record["expires_at"]
-    # Make the retrieved datetime object timezone-aware before comparison
-    if expires_at:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if expires_at and datetime.now(tz=timezone.utc) > expires_at:
+    if expires_at and datetime.now(timezone.utc) > expires_at:
         raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
     return {
@@ -624,7 +627,8 @@ async def delete_short_link(short_code: str, request: Request):
     return Response(status_code=204)
 
 
-app.include_router(api_router)
+app.include_router(api_router)  # API routes are checked first
+app.include_router(ui_router)   # UI routes are checked second
 
 
 # This catch-all route MUST be defined last.
@@ -651,9 +655,6 @@ async def redirect_to_long_url(short_code: str, request: Request):
 
     # Check if the link has an expiration date and if it has passed
     expires_at = record['expires_at']
-    # Make the retrieved datetime object timezone-aware before comparison
-    if expires_at:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at and now > expires_at:
         # The background task will eventually remove it. For now, just deny access.
         raise HTTPException(status_code=404, detail=translator("Short link has expired"))

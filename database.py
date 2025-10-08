@@ -3,6 +3,19 @@ import os
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
+# --- SQLite Type Adapters for Timezone-Aware Datetimes ---
+
+def adapt_datetime_to_timestamp(dt_obj):
+    """Converts a timezone-aware datetime object to a UTC timestamp (float)."""
+    return dt_obj.astimezone(timezone.utc).timestamp()
+
+def convert_timestamp_to_datetime(ts):
+    """Converts a UTC timestamp (float) back to a timezone-aware datetime object."""
+    return datetime.fromtimestamp(ts, tz=timezone.utc)
+
+sqlite3.register_adapter(datetime, adapt_datetime_to_timestamp)
+sqlite3.register_converter("timestamp", convert_timestamp_to_datetime)
+
 # Define the database file path. Use RENDER_DISK_PATH for Render deployment.
 DB_FILE = os.path.join(os.environ.get('RENDER_DISK_PATH', '.'), 'shortlinks.db')
 

@@ -7,10 +7,10 @@
 */
  :root {
     /* Override Bootstrap variables */
-    --bs-body-bg: var(--bg-color);
-    --bs-body-color: var(--text-color);
+    --bs-body-bg: var(--bg-color); /* Set by JS */
+    --bs-body-color: var(--text-color); /* Set by JS */
     --bs-body-font-family: 'Comic Neue', sans-serif;
-    --bs-primary: var(--primary-color);
+    --bs-primary: var(--primary-color); /* Set by JS */
     --bs-link-color: #ffffff; /* White links for high contrast */
     --bs-link-hover-color: #c9d1d9; /* Use main text color for hover */
 }
@@ -77,10 +77,10 @@ body {
 }
 
 .btn-primary {
-    --bs-btn-color: #ffffff;
-    --bs-btn-bg: #34A853; /* Google Green for a "comic" feel */
+    --bs-btn-color: #ffffff; /* White text on the button */
+    --bs-btn-bg: var(--primary-color); /* Use the theme's primary color */
     --bs-btn-border-color: var(--primary-color);
-    --bs-btn-hover-color: #0a0f1e;
+    --bs-btn-hover-color: #ffffff;
     --bs-btn-hover-bg: var(--primary-color-hover);
     --bs-btn-hover-border-color: var(--primary-color-hover);
     --bs-btn-active-bg: var(--primary-color-hover);
@@ -113,6 +113,19 @@ body {
 .alert-success .alert-heading {
     color: var(--text-color);
     opacity: 0.9;
+}
+
+.copy-button {
+    font-size: 1.25rem;
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: all 0.2s ease-in-out;
+}
+
+.copy-button:hover {
+    color: var(--primary-color);
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .short-url-display {
@@ -156,13 +169,9 @@ body {
 /* =====================================================================
      4. FOOTER
    ====================================================================== */
-
-.footer-links {
-    color: var(--bs-link-color); /* Make the pipe separator white too */
-}
-
+ 
 .footer-links a {
-    color: var(--bs-link-color); /* Override .text-muted to make footer links white */
+    color: var(--text-color); /* Use the main text color for high contrast against the light background */
     transition: color 0.2s ease-in-out;
 }
 

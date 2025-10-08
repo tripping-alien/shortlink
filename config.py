@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # A long, random, and secret string. Changing this will change all generated links.
     # For production, this should be set as an environment variable for security.
-    hashids_salt: str = os.environ.get("HASHIDS_SALT", secrets.token_hex(32))
+    hashids_salt: str
     hashids_min_length: int = 5  # Ensures all generated IDs have at least this length.
     hashids_alphabet: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
@@ -49,5 +49,23 @@ def get_settings() -> Settings:
     Returns a cached instance of the Settings class.
     Using lru_cache ensures the Settings are created only once, preventing
     the salt from being regenerated on every import or reload.
+    This function also handles the creation and reading of a stable salt file
+    for development to prevent salt regeneration on auto-reload.
     """
-    return Settings()
+    salt_file = ".salt"
+    
+    # Check for environment variable first (for production)
+    salt = os.environ.get("HASHIDS_SALT")
+    
+    if not salt:
+        # If no env var, check for the .salt file (for stable development)
+        if os.path.exists(salt_file):
+            with open(salt_file, "r") as f:
+                salt = f.read().strip()
+        else:
+            # If no file, generate a new salt and save it
+            salt = secrets.token_hex(32)
+            with open(salt_file, "w") as f:
+                f.write(salt)
+                
+    return Settings(hashids_salt=salt)

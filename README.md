@@ -1,4 +1,4 @@
-A private, secure, and free URL shortener.
+Private, Secure, and Free Shortlinks
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Online-brightgreen?style=for-the-badge)](https://shortlinks.art/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)

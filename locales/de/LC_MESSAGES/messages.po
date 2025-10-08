@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Bijective-Shorty\n"
+"Project-Id-Version: Shortlinks\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-21 12:00+0000\n"
 "PO-Revision-Date: 2024-05-21 12:00+0000\n"
@@ -12,16 +12,16 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 # HTML Title & Branding
-msgid "Private & Easy Link Shortener | Shortlink"
-msgstr "Privater & Einfacher Link-Kürzer | Shortlink"
+msgid "Private, Secure, and Free Shortlinks"
+msgstr "Private, sichere und kostenlose Shortlinks"
 
 # HTML Meta Description
 msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
 msgstr "Ein privater und einfacher Link-Kürzer zum Erstellen temporärer, sicherer und einfacher Kurz-URLs. Schnell, kostenlos und respektiert Ihre Privatsphäre."
 
 # Main heading
-msgid "A Private and Easy Link Shortener"
-msgstr "Ein Privater und Einfacher Link-Kürzer"
+msgid "A privacy-focused, secure, and simple URL shortener."
+msgstr "Ein datenschutzorientierter, sicherer und einfacher URL-Kürzer."
 
 # URL input placeholder
 msgid "Enter a long URL to shorten..."
@@ -99,8 +99,8 @@ msgstr "Ihr Link ist privat und wird niemals ablaufen."
 msgid "About"
 msgstr "Über"
 
-msgid "About Shortlink"
-msgstr "Über Shortlink"
+msgid "About"
+msgstr "Über"
 
 msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
 msgstr "Dieses Projekt ist ein leistungsstarker, datenschutzorientierter URL-Kürzer, der mit FastAPI und einem reinen Python-Technologie-Stack erstellt wurde."

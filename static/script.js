@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // This part of the script is specific to the main page (index.html)
     if (shortenForm) {
         const longUrlInput = document.getElementById('long-url-input');
+
+        // Focus the input field on page load for immediate use
+        longUrlInput.focus();
+
         const submitButton = document.getElementById('submit-button');
         const buttonText = submitButton.querySelector('.button-text');
         const spinner = submitButton.querySelector('.spinner');

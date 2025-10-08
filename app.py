@@ -102,7 +102,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
     translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))
     return JSONResponse(
         status_code=500,
-        content={"detail": "An unexpected internal error occurred."},
+        content={"detail": translator("An unexpected internal error occurred.")},
     )
 
 
@@ -151,11 +151,7 @@ async def redirect_to_long_url(short_code: str, request: Request):
         # This handles cases where the short_code is malformed or invalid
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
     
-    def db_select():
-        with database.get_db_connection() as conn:
-            return conn.execute("SELECT long_url, expires_at FROM links WHERE id = ?", (url_id,)).fetchone()
-            
-    record = await asyncio.to_thread(db_select)
+    record = await asyncio.to_thread(database.get_link_by_id, url_id)
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 

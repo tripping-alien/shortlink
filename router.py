@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import secrets
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -10,7 +10,8 @@ from fastapi.templating import Jinja2Templates
 import database
 from encoding import decode_id, encode_id
 from i18n import TRANSLATIONS, DEFAULT_LANGUAGE, get_translator
-from models import LinkBase, LinkResponse, ErrorResponse, TTL
+from models import LinkBase, LinkResponse, ErrorResponse
+from config import TTL, TTL_MAP
 
 # --- Router Setup ---
 
@@ -31,13 +32,6 @@ templates = Jinja2Templates(directory="templates")
 # --- Constants and Logger ---
 
 logger = logging.getLogger(__name__)
-
-TTL_MAP = {
-    TTL.ONE_HOUR: timedelta(hours=1),
-    TTL.ONE_DAY: timedelta(days=1),
-    TTL.ONE_WEEK: timedelta(weeks=1),
-}
-
 
 # --- UI Routes ---
 
@@ -185,11 +179,7 @@ async def sitemap():
   </url>""")
 
     # 2. Add an entry for each active short link
-    def get_active_links():
-        with database.get_db_connection() as conn:
-            return conn.execute("SELECT id FROM links WHERE expires_at IS NULL OR expires_at > ?", (now,)).fetchall()
-
-    active_links = await asyncio.to_thread(get_active_links)
+    active_links = await asyncio.to_thread(database.get_all_active_links, now)
 
     for link in active_links:
         short_code = encode_id(link['id'])
@@ -249,25 +239,14 @@ async def create_short_link(link_data: LinkBase, request: Request):
     - **TTL**: Links can be set to expire after a specific duration.
     """
     
-    def db_insert():
-        # Calculate the expiration datetime
-        if link_data.ttl == TTL.NEVER:
-            expires_at = None
-        else:
-            expires_at = datetime.now(tz=timezone.utc) + TTL_MAP[link_data.ttl]
-        deletion_token = secrets.token_urlsafe(16)
-            
-        with database.get_db_connection() as conn:
-            cursor = conn.execute(
-                "INSERT INTO links (long_url, expires_at, deletion_token) VALUES (?, ?, ?)",
-                (str(link_data.long_url), expires_at, deletion_token)
-            )
-            new_id = cursor.lastrowid
-            conn.commit()
-            return new_id, expires_at, deletion_token
+    # Calculate the expiration datetime
+    expires_at = None
+    if link_data.ttl != TTL.NEVER:
+        expires_at = datetime.now(tz=timezone.utc) + TTL_MAP[link_data.ttl]
+    deletion_token = secrets.token_urlsafe(16)
 
     try:
-        new_id, expires_at, deletion_token = await asyncio.to_thread(db_insert)
+        new_id = await asyncio.to_thread(database.create_link, str(link_data.long_url), expires_at, deletion_token)
         short_code = encode_id(new_id)
         canonical_url = f"https://shortlinks.art/{short_code}"
         resource_location = canonical_url # The Location header should also be the canonical URL
@@ -322,11 +301,7 @@ async def get_link_details(short_code: str, request: Request):
         # This handles cases where the short_code is malformed or invalid
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
     
-    def db_select():
-        with database.get_db_connection() as conn:
-            return conn.execute("SELECT long_url, expires_at, deletion_token FROM links WHERE id = ?", (url_id,)).fetchone()
-            
-    record = await asyncio.to_thread(db_select)
+    record = await asyncio.to_thread(database.get_link_by_id, url_id)
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
@@ -380,10 +355,7 @@ async def delete_short_link(short_code: str, request: Request):
         translator = get_translator()
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
-    def db_delete():
-        return database.delete_link_by_id_and_token(url_id, token)
-
-    rows_deleted = await asyncio.to_thread(db_delete)
+    rows_deleted = await asyncio.to_thread(database.delete_link_by_id_and_token, url_id, token)
 
     if rows_deleted == 0:
         translator = get_translator()

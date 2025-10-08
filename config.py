@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings
 
 class TTL(str, Enum):
     """Time-to-live options for short links."""
+    ONE_SECOND = "1s"  # Added for testing purposes
     ONE_HOUR = "1h"
     ONE_DAY = "1d"
     ONE_WEEK = "1w"
@@ -17,6 +18,7 @@ class TTL(str, Enum):
 
 TTL_MAP = {
     TTL.ONE_HOUR: timedelta(hours=1),
+    TTL.ONE_SECOND: timedelta(seconds=1),
     TTL.ONE_DAY: timedelta(days=1),
     TTL.ONE_WEEK: timedelta(weeks=1),
 }

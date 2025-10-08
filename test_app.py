@@ -3,7 +3,10 @@ import sys
 import json
 
 import pytest
+import httpx
 from fastapi.testclient import TestClient
+
+from config import settings
 
 # Add the project root to sys.path to resolve module imports correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
@@ -143,6 +146,40 @@ def test_redirect_to_long_url(client: TestClient):
     response = client.get(f"/{short_code}", follow_redirects=False)
     assert response.status_code == 307  # Temporary Redirect
     assert response.headers["location"] == "https://redirect-target.com/"
+
+
+def test_google_link_redirect_is_ok(client: TestClient):
+    """
+    Tests that creating a link to a valid, live site (google.com)
+    and following the redirect results in a 200 OK status.
+    This is an integration test that relies on network access.
+    """
+    # 1. Create a link to google.com
+    create_response = client.post(
+        "/api/v1/links",
+        json={
+            "long_url": "https://google.com",
+            "ttl": "1h"
+        }
+    )
+    assert create_response.status_code == 201
+    data = create_response.json()
+    short_code = data['short_url'].split('/')[-1]
+
+    # 2. Get the redirect response from our app without following it
+    redirect_response = client.get(f"/{short_code}", follow_redirects=False)
+    assert redirect_response.status_code == 307
+    redirect_location = redirect_response.headers.get("location")
+    assert redirect_location == "https://google.com/"
+
+    # 3. Use a real HTTP client to follow the redirect to the live site
+    try:
+        with httpx.Client(follow_redirects=True) as real_client:
+            final_response = real_client.get(redirect_location)
+            assert final_response.status_code == 200
+            assert "Google" in final_response.text
+    except httpx.RequestError as e:
+        pytest.fail(f"Failed to connect to external URL {redirect_location}: {e}")
 
 
 def test_redirect_non_existent_link(client: TestClient):

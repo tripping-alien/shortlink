@@ -48,6 +48,29 @@ def init_db():
         conn.commit()
     print("Database initialized successfully.")
 
+def create_link(long_url: str, expires_at: datetime | None, deletion_token: str) -> int:
+    """Inserts a new link into the database and returns its ID."""
+    with get_db_connection() as conn:
+        cursor = conn.execute(
+            "INSERT INTO links (long_url, expires_at, deletion_token) VALUES (?, ?, ?)",
+            (long_url, expires_at, deletion_token)
+        )
+        new_id = cursor.lastrowid
+        conn.commit()
+        return new_id
+
+def get_link_by_id(link_id: int):
+    """Retrieves a single link's data by its ID."""
+    with get_db_connection() as conn:
+        return conn.execute("SELECT * FROM links WHERE id = ?", (link_id,)).fetchone()
+
+def get_all_active_links(now: datetime):
+    """Retrieves all links that have not expired for the sitemap."""
+    with get_db_connection() as conn:
+        return conn.execute(
+            "SELECT id FROM links WHERE expires_at IS NULL OR expires_at > ?", (now,)
+        ).fetchall()
+
 def delete_link_by_id_and_token(link_id: int, token: str) -> int:
     """Deletes a link from the database only if the ID and deletion_token match."""
     with get_db_connection() as conn:

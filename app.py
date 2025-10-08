@@ -136,7 +136,7 @@ app.include_router(api_router)  # API routes are checked first
 app.include_router(ui_router)   # UI routes are checked second
 
 
-# This catch-all route MUST be defined last.
+# This catch-all route MUST be defined after the routers are included.
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
 async def redirect_to_long_url(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
     """
@@ -151,7 +151,7 @@ async def redirect_to_long_url(short_code: str, request: Request, hashids: Hashi
     if url_id is None:
         # This handles cases where the short_code is malformed or invalid
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
-    
+
     record = await asyncio.to_thread(database.get_link_by_id, url_id)
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))

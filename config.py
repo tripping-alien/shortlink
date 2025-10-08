@@ -5,6 +5,7 @@ import os
 from enum import Enum
 from functools import lru_cache
 from datetime import timedelta
+from pathlib import Path
 import secrets
 from pydantic_settings import BaseSettings
 
@@ -52,7 +53,10 @@ def get_settings() -> Settings:
     This function also handles the creation and reading of a stable salt file
     for development to prevent salt regeneration on auto-reload.
     """
-    salt_file = ".salt"
+    # Use an absolute path relative to this config file to ensure stability
+    # across different execution environments (pytest vs. uvicorn).
+    base_dir = Path(__file__).resolve().parent
+    salt_file = base_dir / ".salt"
     
     # Check for environment variable first (for production)
     salt = os.environ.get("HASHIDS_SALT")

@@ -11,7 +11,7 @@ from config import Settings, get_settings
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
 
 # Import the FastAPI app and other necessary components
-from app import app
+from app import app, get_translator
 from encoding import encode_id, decode_id, get_hashids
 
 
@@ -51,7 +51,40 @@ def client(tmp_path, monkeypatch):
 # ===================================
 # 1. Core Logic Tests
 # ===================================
+def test_create_and_follow_link_to_external_site(client: TestClient):
+    """
+    A full, end-to-end integration test that simulates the entire user journey:
+    1. Create a short link to an external site (google.com).
+    2. "Click" the link by making a GET request.
+    3. Follow the redirect and verify the final destination is reached successfully.
+    """
+    # 1. Create a link to google.com
+    create_response = client.post(
+        "/api/v1/links",
+        json={
+            "long_url": "https://google.com",
+            "ttl": "1h"
+        }
+    )
+    assert create_response.status_code == 201
+    data = create_response.json()
+    short_code = data['short_url'].split('/')[-1]
 
+    # 2. Get the redirect response from our app without following it internally
+    redirect_response = client.get(f"/{short_code}", follow_redirects=False)
+    assert redirect_response.status_code == 307
+    redirect_location = redirect_response.headers.get("location")
+    assert redirect_location == "https://google.com/"
+
+    # 3. Use a real HTTP client to follow the redirect to the live site
+    try:
+        with httpx.Client(follow_redirects=True) as real_client:
+            final_response = real_client.get(redirect_location)
+            assert final_response.status_code == 200
+            assert "Google" in final_response.text
+    except httpx.RequestError as e:
+        pytest.fail(f"Failed to connect to external URL {redirect_location}: {e}")
+        
 def test_encoding_decoding_roundtrip():
     """Tests that encoding and decoding functions are reversible."""
     hashids = get_hashids()
@@ -315,3 +348,33 @@ def test_delete_link_missing_token(client: TestClient):
         json={}
     )
     assert delete_response.status_code == 400  # Bad Request
+
+
+def test_salt_change_invalidates_links(client: TestClient, monkeypatch):
+    """
+    This test is designed to FAIL to prove the "short link not found" bug.
+    It simulates the hashids salt changing after a link has been created,
+    which mimics the race condition in a development server with auto-reload.
+    """
+    # 1. Create a link with the initial salt configuration
+    create_response = client.post(
+        "/api/v1/links",
+        json={"long_url": "https://initial-salt-url.com", "ttl": "1h"}
+    )
+    assert create_response.status_code == 201
+    short_code = create_response.json()['short_url'].split('/')[-1]
+
+    # 2. Simulate a server restart where the salt changes
+    monkeypatch.setenv("HASHIDS_SALT", "a-completely-different-salt")
+
+    # Clear the caches to force re-initialization of settings and hashids
+    get_settings.cache_clear()
+    get_hashids.cache_clear()
+
+    # 3. Attempt to access the original link with the new salt configuration
+    response_after_salt_change = client.get(f"/{short_code}", follow_redirects=False)
+
+    # 4. Assert that the link is now "not found" because the salt mismatch prevents decoding
+    assert response_after_salt_change.status_code == 404
+    translator = get_translator()
+    assert response_after_salt_change.json()["detail"] == translator("Short link not found")

@@ -41,35 +41,30 @@ async def redirect_to_default_lang(request: Request):
     """Redirects the root path to the default language."""
     lang = DEFAULT_LANGUAGE
 
-    # 1. Prioritize the language cookie set by the user.
-    user_lang_cookie = request.cookies.get("lang")
-    if user_lang_cookie and user_lang_cookie in TRANSLATIONS:
-        lang = user_lang_cookie
-    else:
-        # 2. Fallback to browser's Accept-Language header for a good first-time experience.
-        accept_language = request.headers.get("accept-language")
-        if accept_language: # e.g., "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5"
-            # Parse the header to find the best match based on user preference.
-            languages = []
-            for lang_part in accept_language.split(','):
-                parts = lang_part.strip().split(';')
-                lang_code = parts[0].split('-')[0].lower()
-                q = 1.0
-                if len(parts) > 1 and parts[1].startswith('q='):
-                    try:
-                        q = float(parts[1][2:])
-                    except ValueError:
-                        pass
-                languages.append((lang_code, q))
-            
-            # Sort by quality value, descending
-            languages.sort(key=lambda x: x[1], reverse=True)
+    # Use the browser's Accept-Language header to provide a good first-time experience.
+    accept_language = request.headers.get("accept-language")
+    if accept_language: # e.g., "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5"
+        # Parse the header to find the best match based on user preference.
+        languages = []
+        for lang_part in accept_language.split(','):
+            parts = lang_part.strip().split(';')
+            lang_code = parts[0].split('-')[0].lower()
+            q = 1.0
+            if len(parts) > 1 and parts[1].startswith('q='):
+                try:
+                    q = float(parts[1][2:])
+                except ValueError:
+                    pass
+            languages.append((lang_code, q))
+        
+        # Sort by quality value, descending
+        languages.sort(key=lambda x: x[1], reverse=True)
 
-            # Find the first supported language in the user's preferred list
-            for preferred_lang, _ in languages:
-                if preferred_lang in TRANSLATIONS:
-                    lang = preferred_lang
-                    break
+        # Find the first supported language in the user's preferred list
+        for preferred_lang, _ in languages:
+            if preferred_lang in TRANSLATIONS:
+                lang = preferred_lang
+                break
 
     return RedirectResponse(url=f"/ui/{lang}")
 

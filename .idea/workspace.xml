@@ -48,34 +48,34 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py.executor": "Debug",
-    "Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/tests/test_app.py.executor": "Run",
-    "Python tests.Python tests in test_app.py.executor": "Run",
-    "Python.app (1).executor": "Run",
-    "Python.app.executor": "Run",
-    "Python.build_cpp.executor": "Run",
-    "Python.desktop_app.executor": "Run",
-    "Python.setup.executor": "Run",
-    "Python.telegram_ai.executor": "Run",
-    "Python.web (1).executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/synec/PycharmProjects/shortlinks",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/test_app.py.executor&quot;: &quot;Debug&quot;,
+    &quot;Python tests.Python tests in C:/Users/synec/PycharmProjects/stack/shortlinks/tests/test_app.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.Python tests in test_app.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.build_cpp.executor&quot;: &quot;Run&quot;,
+    &quot;Python.desktop_app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.setup.executor&quot;: &quot;Run&quot;,
+    &quot;Python.telegram_ai.executor&quot;: &quot;Run&quot;,
+    &quot;Python.web (1).executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/synec/PycharmProjects/shortlinks&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\synec\PycharmProjects\stack\shortlinks" />
@@ -235,14 +235,6 @@
       <workItem from="1758425240653" duration="1916000" />
       <workItem from="1758427334375" duration="9393000" />
       <workItem from="1758437221260" duration="10450000" />
-    </task>
-    <task id="LOCAL‎-00448" summary="Workng">
-      <option name="closed" value="true" />
-      <created>1759878868792</created>
-      <option name="number" value="00448" />
-      <option name="presentableId" value="LOCAL‎-00448" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1759878868792</updated>
     </task>
     <task id="LOCAL‎-00449" summary="Workng 2">
       <option name="closed" value="true" />
@@ -628,7 +620,15 @@
       <option name="project" value="LOCAL‎" />
       <updated>1759900305292</updated>
     </task>
-    <option name="localTasksCounter" value="497" />
+    <task id="LOCAL‎-00497" summary="Workng 9">
+      <option name="closed" value="true" />
+      <created>1759900405649</created>
+      <option name="number" value="00497" />
+      <option name="presentableId" value="LOCAL‎-00497" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1759900405649</updated>
+    </task>
+    <option name="localTasksCounter" value="498" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

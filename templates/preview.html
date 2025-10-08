@@ -54,8 +54,20 @@
         <p class="destination-url" title="{{ long_url }}">{{ long_url }}</p>
         <div class="d-grid gap-2 mt-4">
             <a href="{{ long_url }}" class="btn btn-proceed" rel="noopener noreferrer">Proceed to Site</a>
-            <a href="javascript:window.history.back();" class="btn btn-outline-secondary">Cancel</a>
+            <button id="cancel-button" class="btn btn-outline-secondary">Cancel</button>
         </div>
     </div>
+
+    <script>
+        document.getElementById('cancel-button').addEventListener('click', () => {
+            // Check if there is a history to go back to
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // If no history, redirect to the homepage as a fallback
+                window.location.href = '/';
+            }
+        });
+    </script>
 </body>
 </html>

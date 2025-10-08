@@ -123,15 +123,27 @@ async def health_check(request: Request):
     return templates.TemplateResponse("health.html", context, status_code=status_code)
 
 
-@ui_router.get("/admin", response_class=HTMLResponse, summary="Admin Panel", include_in_schema=False)
-async def admin_panel(request: Request, key: str = "", settings: Settings = Depends(get_settings)):
+@ui_router.api_route("/admin", methods=["GET", "POST"], response_class=HTMLResponse, summary="Admin Panel", include_in_schema=False)
+async def admin_panel(request: Request, settings: Settings = Depends(get_settings)):
     """
     A simple, secure, read-only admin panel to inspect all links in the database.
-    Access requires a secret key passed as a query parameter.
+    Renders a login form on GET and validates the key on POST.
     """
+    if request.method == "GET":
+        return templates.TemplateResponse("admin_login.html", {"request": request})
+
+    # Handle POST request from the login form
+    try:
+        form_data = await request.form()
+        submitted_key = form_data.get("key")
+    except Exception:
+        return templates.TemplateResponse("admin_login.html", {"request": request, "error": "Invalid form submission."}, status_code=400)
+
     # 1. Secure the endpoint using a constant-time comparison to prevent timing attacks.
-    if not key or not secrets.compare_digest(key, settings.admin_secret_key):
-        raise HTTPException(status_code=404, detail="Not Found")
+    if not submitted_key or not secrets.compare_digest(submitted_key, settings.admin_secret_key):
+        return templates.TemplateResponse("admin_login.html", {"request": request, "error": "Invalid secret key."}, status_code=403)
+
+    # --- Key is valid, proceed to show the admin panel ---
 
     # 2. Fetch all links from the database.
     links_from_db = await asyncio.to_thread(database.get_all_links_for_admin)

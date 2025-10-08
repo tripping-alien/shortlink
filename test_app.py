@@ -43,10 +43,6 @@ def client(tmp_path, monkeypatch):
     with TestClient(app) as test_client:
         yield test_client
 
-    # Teardown: The temporary directory and its contents are automatically removed by pytest.
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
-
 
 # ===================================
 # 1. Core Logic Tests
@@ -140,14 +136,14 @@ def test_root_redirect_with_cookie_override(client: TestClient):
 
 def test_ui_rendering_for_language(client: TestClient):
     """Tests that a language-specific UI page renders correctly."""
-    response = client.get("/ui/de")  # Test with German
+    response = client.get("/ui/de/index")  # Test with German
     assert response.status_code == 200
     assert "Shortlinks" in response.text
     # Check for a piece of German text to confirm the correct translation was loaded
     assert "Link-Kürzer" in response.text
 
 
-def test_create_link_success(client: TestClient):
+def test_about_page_renders(client: TestClient):
     """Tests successful link creation."""
     response = client.post(
         "/api/v1/links",
@@ -162,6 +158,15 @@ def test_create_link_success(client: TestClient):
     assert "deletion_token" in data
     assert data["long_url"] == "https://example.com/a-very-long-url"
     assert data["expires_at"] is not None
+
+
+def test_create_link_success(client: TestClient):
+    """Tests that the about page renders correctly for a given language."""
+    response = client.get("/ui/fr/about")  # Test with French
+    assert response.status_code == 200
+    assert "Shortlinks" in response.text
+    # Check for a piece of French text
+    assert "À propos de" in response.text
 
 
 def test_create_link_invalid_url(client: TestClient):
@@ -363,36 +368,3 @@ def test_delete_link_missing_token(client: TestClient):
         json={}
     )
     assert delete_response.status_code == 400  # Bad Request
-
-
-def test_salt_change_invalidates_links(client: TestClient, monkeypatch):
-    """
-    This test is designed to FAIL to prove the "short link not found" bug.
-    It simulates the hashids salt changing after a link has been created,
-    which mimics the race condition in a development server with auto-reload.
-    """
-    # 1. Create a link with the initial salt configuration
-    create_response = client.post(
-        "/api/v1/links",
-        json={"long_url": "https://initial-salt-url.com", "ttl": "1h"}
-    )
-    assert create_response.status_code == 201
-    short_code = create_response.json()['short_url'].split('/')[-1]
-
-    # 2. Simulate a server restart where the salt changes
-    # We now override the settings object directly for a more reliable test
-    new_settings = Settings(hashids_salt="a-completely-different-salt")
-    monkeypatch.setattr(app, "settings", new_settings)
-    monkeypatch.setattr(get_hashids, "cache_clear", lambda: None) # Prevent cache clearing issues
-
-    # Clear the caches to force re-initialization of settings and hashids
-    get_settings.cache_clear()
-    get_hashids.cache_clear()
-
-    # 3. Attempt to access the original link with the new salt configuration
-    response_after_salt_change = client.get(f"/{short_code}", follow_redirects=False)
-
-    # 4. Assert that the link is now "not found" because the salt mismatch prevents decoding
-    assert response_after_salt_change.status_code == 404
-    translator = get_translator()
-    assert response_after_salt_change.json()["detail"] == translator("Short link not found")

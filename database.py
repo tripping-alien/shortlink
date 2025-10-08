@@ -71,6 +71,14 @@ def get_all_active_links(now: datetime):
             "SELECT id FROM links WHERE expires_at IS NULL OR expires_at > ?", (now,)
         ).fetchall()
 
+def cleanup_expired_links(now: datetime) -> int:
+    """Deletes all links that have expired and returns the count of deleted rows."""
+    with get_db_connection() as conn:
+        cursor = conn.execute("DELETE FROM links WHERE expires_at IS NOT NULL AND expires_at < ?", (now,))
+        conn.commit()
+        return cursor.rowcount
+
+
 def delete_link_by_id_and_token(link_id: int, token: str) -> int:
     """Deletes a link from the database only if the ID and deletion_token match."""
     with get_db_connection() as conn:

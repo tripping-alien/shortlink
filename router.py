@@ -70,31 +70,23 @@ async def redirect_to_default_lang(request: Request):
 
 
 @ui_router.get(
-    "/ui/{lang_code:str}",
+    "/ui/{lang_code:str}/{page_name:str}",
     response_class=HTMLResponse,
-    summary="Serve Frontend UI"
+    summary="Serve a UI Page"
 )
-async def read_root(request: Request, lang_code: str):
+async def serve_ui_page(request: Request, lang_code: str, page_name: str):
+    """
+    Serves a UI page (e.g., 'index' or 'about') for a given language.
+    """
     if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
         raise HTTPException(status_code=404, detail="Language not supported")
 
-    # Pass the translator function to the template context
-    translator = get_translator(lang_code)
-    return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
-
-
-@ui_router.get(
-    "/ui/{lang_code:str}/about",
-    response_class=HTMLResponse,
-    summary="Serve About Page"
-)
-async def read_about(request: Request, lang_code: str):
-    """Serves the about page for a given language."""
-    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-        raise HTTPException(status_code=404, detail="Language not supported")
+    # Validate that the requested page template exists
+    if page_name not in ["index", "about"]:
+        raise HTTPException(status_code=404, detail="Page not found")
 
     translator = get_translator(lang_code)
-    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
+    return templates.TemplateResponse(f"{page_name}.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 
 @ui_router.get("/health", response_class=HTMLResponse, summary="Health Check", tags=["Monitoring"])

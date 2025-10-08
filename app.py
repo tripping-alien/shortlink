@@ -26,14 +26,7 @@ logger = logging.getLogger(__name__)
 async def cleanup_expired_links():
     """Periodically scans the database and removes expired links."""
     now = datetime.now(tz=timezone.utc)
-    
-    def db_cleanup():
-        with database.get_db_connection() as conn:
-            cursor = conn.execute("DELETE FROM links WHERE expires_at IS NOT NULL AND expires_at < ?", (now,))
-            conn.commit()
-            return cursor.rowcount
-            
-    deleted_count = await asyncio.to_thread(db_cleanup)
+    deleted_count = await asyncio.to_thread(database.cleanup_expired_links, now)
     if deleted_count > 0:
         logger.info(f"Cleaned up {deleted_count} expired links.")
 
@@ -80,7 +73,7 @@ settings = get_settings()
 async def value_error_exception_handler(request: Request, exc: ValueError):
     """
     Handles ValueErrors that occur during request processing, typically from
-    invalid short codes in `from_bijective_base6`. Returns a 404 response.
+    invalid short codes. Returns a 404 response.
     """
     logger.warning(f"ValueError handled for request {request.url.path}: {exc}")
     # Use the translator from the request scope if available, otherwise default

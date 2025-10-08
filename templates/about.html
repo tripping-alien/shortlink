@@ -14,23 +14,13 @@
     <canvas id="background-animation"></canvas>
 
     <main class="container my-auto">
-        <!-- Collapsing Language Bar -->
-        <div id="language-bar-container" class="language-bar-container">
-            <button id="language-toggle-btn" class="language-toggle-btn" aria-label="Toggle language menu">
-                <i class="bi bi-translate"></i>
-            </button>
-            <div id="language-switcher" class="language-switcher-fixed">
-                <!-- Flags will be dynamically inserted here by script.js -->
-            </div>
-        </div>
-
         <header class="text-center mb-5">
-            <h1 class="display-5">{{ _('About Shortlinks') }}</h1>
+            <h1 class="display-5">{{ _('About') }}</h1>
         </header>
 
         <section class="about-content">
             <p class="lead text-center">{{ _('This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack.') }}</p>
-            <p class="text-center text-muted">{{ _('It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links.') }}</p>
+            <p class="text-center text-muted">{{ _('It uses a bijective function to convert database IDs into short, non-sequential, and predictable base-6 codes. This method is efficient and avoids the database collisions common in hash-based shorteners.') }}</p>
             <h3 class="text-center mt-5">{{ _('Core Features') }}</h3>
             <div class="row mt-4 text-center">
                 <div class="col-md-6 col-lg-3 mb-4"><h5><i class="bi bi-diagram-2-fill"></i><br>{{ _('Stateless & Fast') }}</h5><p class="small text-muted">{{ _('Generates short codes mathematically without needing to check for pre-existing hashes.') }}</p></div>
@@ -42,7 +32,7 @@
 
         <footer class="mt-5 text-center text-muted small">
             <div class="footer-links mb-3">
-                <a href="/ui/{{ lang_code }}/">{{ _('Back to Home') }}</a> |
+                <a href="/ui/{{ lang_code }}/index">{{ _('Back to Home') }}</a> |
                 <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">{{ _('View on') }} GitHub</a>
             </div>
         </footer>

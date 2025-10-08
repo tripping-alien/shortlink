@@ -100,9 +100,6 @@ msgstr "رابطك خاص ولن تنتهي صلاحيته أبدًا."
 msgid "About"
 msgstr "حول"
 
-msgid "About"
-msgstr "حول"
-
 msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
 msgstr "هذا المشروع هو أداة تقصير روابط عالية الأداء تركز على الخصوصية، مبنية باستخدام FastAPI ومكدس تقنيات بايثون خالص."
 

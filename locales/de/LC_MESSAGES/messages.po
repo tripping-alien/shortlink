@@ -99,9 +99,6 @@ msgstr "Ihr Link ist privat und wird niemals ablaufen."
 msgid "About"
 msgstr "Über"
 
-msgid "About"
-msgstr "Über"
-
 msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
 msgstr "Dieses Projekt ist ein leistungsstarker, datenschutzorientierter URL-Kürzer, der mit FastAPI und einem reinen Python-Technologie-Stack erstellt wurde."
 

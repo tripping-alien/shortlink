@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Shortlinks\n"
+"Project-Id-Version: Private, Secure, and Free Shortlinks\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-21 12:00+0000\n"
 "PO-Revision-Date: 2024-05-21 12:00+0000\n"
@@ -12,16 +12,16 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 # HTML Title & Branding
-msgid "Private & Easy Link Shortener | Shortlink"
-msgstr "Private & Easy Link Shortener | Shortlink"
+msgid "Private, Secure, and Free Shortlinks"
+msgstr "Private, Secure, and Free Shortlinks"
 
 # HTML Meta Description
 msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
 msgstr "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy."
 
 # Main heading
-msgid "A Private and Easy Link Shortener"
-msgstr "A Private and Easy Link Shortener"
+msgid "A privacy-focused, secure, and simple URL shortener."
+msgstr "A privacy-focused, secure, and simple URL shortener."
 
 # URL input placeholder
 msgid "Enter a long URL to shorten..."
@@ -98,9 +98,6 @@ msgstr "Short link has expired"
 # About Page
 msgid "About"
 msgstr "About"
-
-msgid "About Shortlink"
-msgstr "About Shortlink"
 
 msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
 msgstr "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."

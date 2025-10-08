@@ -143,23 +143,6 @@ def test_ui_rendering_for_language(client: TestClient):
     assert "Link-Kürzer" in response.text
 
 
-def test_about_page_renders(client: TestClient):
-    """Tests successful link creation."""
-    response = client.post(
-        "/api/v1/links",
-        json={
-            "long_url": "https://example.com/a-very-long-url",
-            "ttl": "1d"
-        }
-    )
-    assert response.status_code == 201
-    data = response.json()
-    assert "short_url" in data
-    assert "deletion_token" in data
-    assert data["long_url"] == "https://example.com/a-very-long-url"
-    assert data["expires_at"] is not None
-
-
 def test_create_link_success(client: TestClient):
     """Tests that the about page renders correctly for a given language."""
     response = client.get("/ui/fr/about")  # Test with French

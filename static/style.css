@@ -2,25 +2,25 @@
      1. THEME & BOOTSTRAP OVERRIDES
    ====================================================================== */
 :root {
-    /* Day Light Moon Theme */
-    --bg-color: #f0f8ff; /* AliceBlue - a very light, airy blue */
-    --text-color: #2f4f4f; /* DarkSlateGray - for high contrast and readability */
-    --primary-color: #4682B4; /* SteelBlue - a calm, professional blue */
-    --primary-color-hover: #41729f; /* A slightly darker steel blue */
-    --border-color: #dcdcdc; /* Gainsboro - a light gray for subtle borders */
+    /* Moony Sunshine Beach Theme */
+    --bg-color: #FFFBEB; /* Very Light Cream, like sand */
+    --text-color: #3D4852; /* Dark Slate Gray, like evening shadows */
+    --primary-color: #FFA726; /* Sunshine Orange, for the sun */
+    --primary-color-hover: #FB8C00; /* Darker Orange for hover */
+    --border-color: #D7CCC8; /* Light Brownish Gray, like pebbles */
     --input-bg: #ffffff; /* Clean white for inputs */
-    --shadow-color: rgba(44, 62, 80, 0.15); /* A soft, muted shadow */
+    --shadow-color: rgba(93, 64, 55, 0.15); /* A soft, warm shadow */
 
     /* Override Bootstrap variables */
     --bs-body-bg: var(--bg-color);
     --bs-body-color: var(--text-color);
     --bs-body-font-family: 'Fira Code', monospace;
     --bs-primary: var(--primary-color);
-    --bs-primary-rgb: 70, 130, 180;
+    --bs-primary-rgb: 255, 167, 38;
     --bs-link-color: var(--primary-color);
-    --bs-link-color-rgb: 70, 130, 180;
+    --bs-link-color-rgb: 255, 167, 38;
     --bs-link-hover-color: var(--primary-color-hover);
-    --bs-link-hover-color-rgb: 65, 114, 159;
+    --bs-link-hover-color-rgb: 251, 140, 0;
 }
 
 body {
@@ -75,7 +75,7 @@ body {
 
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-color) !important; /* Use !important to override Bootstrap specificity */
-    box-shadow: 0 0 0 0.25rem rgba(70, 130, 180, 0.25);
+    box-shadow: 0 0 0 0.25rem rgba(255, 167, 38, 0.25);
 }
 
 .btn-primary {
@@ -105,9 +105,9 @@ body {
 }
 
 .alert-success {
-    --bs-alert-bg: #e3f2fd; /* Light blue background */
-    --bs-alert-border-color: #bde0fe;
-    --bs-alert-color: #0c5460;
+    --bs-alert-bg: #FFF3E0; /* Light orange background */
+    --bs-alert-border-color: #FFE0B2;
+    --bs-alert-color: #E65100;
 }
 
 .btn-light.copied {
@@ -127,7 +127,7 @@ body {
 }
 
 .language-toggle-btn {
-    background-color: rgba(240, 248, 255, 0.8); /* Match light background */
+    background-color: rgba(255, 251, 235, 0.8); /* Match light background */
     border: 1px solid var(--border-color);
     border-top: none;
     border-radius: 0.4rem;
@@ -144,7 +144,7 @@ body {
 }
 
 .language-switcher-fixed {
-    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
+    background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 0.5rem; /* Reduce padding inside the flag bar */
@@ -186,7 +186,7 @@ body {
 .language-switcher-fixed a.active {
     filter: grayscale(0%); /* Ensure active flag is in full color */
     border: 2px solid var(--primary-color);
-    box-shadow: 0 0 8px rgba(108, 117, 125, 0.5);
+    box-shadow: 0 0 8px rgba(255, 167, 38, 0.5);
 }
 
 /* =====================================================================

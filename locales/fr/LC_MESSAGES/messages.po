@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Shortlinks\n"
+"Project-Id-Version: Private, Secure, and Free Shortlinks\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-21 12:00+0000\n"
 "PO-Revision-Date: 2024-05-21 12:00+0000\n"
@@ -12,16 +12,16 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 # HTML Title & Branding
-msgid "Private & Easy Link Shortener | Shortlink"
-msgstr "Raccourcisseur de Liens Privé & Simple | Shortlink"
+msgid "Private, Secure, and Free Shortlinks"
+msgstr "Raccourcisseur de Liens Privé, Sécurisé et Gratuit"
 
 # HTML Meta Description
 msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
 msgstr "Un raccourcisseur de liens privé et simple pour créer des URL courtes, temporaires, sécurisées et simples. Rapide, gratuit et respecte votre vie privée."
 
 # Main heading
-msgid "A Private and Easy Link Shortener"
-msgstr "Un Raccourcisseur de Liens Privé et Simple"
+msgid "A privacy-focused, secure, and simple URL shortener."
+msgstr "Un raccourcisseur d'URL axé sur la confidentialité, sécurisé et simple."
 
 # URL input placeholder
 msgid "Enter a long URL to shorten..."
@@ -98,45 +98,6 @@ msgstr "Votre lien est privé et n'expirera jamais."
 # About Page
 msgid "About"
 msgstr "À propos"
-
-msgid "About Shortlink"
-msgstr "À propos de Shortlink"
-
-msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
-msgstr "Ce projet est un raccourcisseur d'URL haute performance, axé sur la confidentialité, construit avec FastAPI et une pile technologique purement Python."
-
-msgid "It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links."
-msgstr "Il utilise la bibliothèque Hashids pour convertir les identifiants de base de données séquentiels en codes courts, non séquentiels et uniques. Cette méthode est efficace et assure l'obfuscation de vos liens."
-
-msgid "Core Features"
-msgstr "Fonctionnalités Clés"
-
-msgid "Stateless & Fast"
-msgstr "Sans état et Rapide"
-
-msgid "Generates short codes mathematically without needing to check for pre-existing hashes."
-msgstr "Génère des codes courts mathématiquement sans avoir besoin de vérifier les hachages préexistants."
-
-msgid "Privacy-Focused"
-msgstr "Axé sur la Confidentialité"
-
-msgid "No tracking, no analytics. Just simple, fast redirects."
-msgstr "Pas de suivi, pas d'analyses. Juste des redirections simples et rapides."
-
-msgid "Temporary Links"
-msgstr "Liens Temporaires"
-
-msgid "Set an expiration time for your links, from one hour to one week, or never."
-msgstr "Définissez une durée d'expiration pour vos liens, d'une heure à une semaine, ou jamais."
-
-msgid "Internationalized"
-msgstr "Internationalisé"
-
-msgid "The UI is available in multiple languages."
-msgstr "L'interface utilisateur est disponible en plusieurs langues."
-
-msgid "Back to Home"
-msgstr "Retour à l'accueil"
 
 # SEO Keywords
 msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"

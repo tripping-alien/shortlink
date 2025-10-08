@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Shortlinks\n"
+"Project-Id-Version: Private, Secure, and Free Shortlinks\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-21 12:00+0000\n"
 "PO-Revision-Date: 2024-05-21 12:00+0000\n"
@@ -98,42 +98,6 @@ msgstr "Ihr Link ist privat und wird niemals ablaufen."
 # About Page
 msgid "About"
 msgstr "Über"
-
-msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
-msgstr "Dieses Projekt ist ein leistungsstarker, datenschutzorientierter URL-Kürzer, der mit FastAPI und einem reinen Python-Technologie-Stack erstellt wurde."
-
-msgid "It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links."
-msgstr "Es verwendet die Hashids-Bibliothek, um sequentielle Datenbank-IDs in kurze, nicht-sequenzielle und einzigartige Codes umzuwandeln. Diese Methode ist effizient und bietet eine Verschleierung für Ihre Links."
-
-msgid "Core Features"
-msgstr "Kernfunktionen"
-
-msgid "Stateless & Fast"
-msgstr "Zustandslos & Schnell"
-
-msgid "Generates short codes mathematically without needing to check for pre-existing hashes."
-msgstr "Erzeugt mathematisch kurze Codes, ohne auf bereits vorhandene Hashes prüfen zu müssen."
-
-msgid "Privacy-Focused"
-msgstr "Datenschutzorientiert"
-
-msgid "No tracking, no analytics. Just simple, fast redirects."
-msgstr "Kein Tracking, keine Analysen. Nur einfache, schnelle Weiterleitungen."
-
-msgid "Temporary Links"
-msgstr "Temporäre Links"
-
-msgid "Set an expiration time for your links, from one hour to one week, or never."
-msgstr "Legen Sie eine Ablaufzeit für Ihre Links fest, von einer Stunde bis zu einer Woche, oder niemals."
-
-msgid "Internationalized"
-msgstr "Internationalisiert"
-
-msgid "The UI is available in multiple languages."
-msgstr "Die Benutzeroberfläche ist in mehreren Sprachen verfügbar."
-
-msgid "Back to Home"
-msgstr "Zurück zur Startseite"
 
 # SEO Keywords
 msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"

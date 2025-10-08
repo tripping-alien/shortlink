@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Shortlinks\n"
+"Project-Id-Version: Private, Secure, and Free Shortlinks\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-21 12:00+0000\n"
 "PO-Revision-Date: 2024-05-21 12:00+0000\n"
@@ -12,16 +12,16 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 # HTML Title & Branding
-msgid "Private & Easy Link Shortener | Shortlink"
-msgstr "私密 & 易用的链接缩短器 | Shortlink"
+msgid "Private, Secure, and Free Shortlinks"
+msgstr "私密、安全、免费的短链接"
 
 # HTML Meta Description
 msgid "A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок."
 msgstr "一个私密且易于使用的链接缩短器，用于创建临时、安全和简单的短URL。快速、免费并尊重您的隐私。"
 
 # Main heading
-msgid "A Private and Easy Link Shortener"
-msgstr "私密易用的链接缩短器"
+msgid "A privacy-focused, secure, and simple URL shortener."
+msgstr "一个注重隐私、安全且简单的URL缩短器。"
 
 # URL input placeholder
 msgid "Enter a long URL to shorten..."
@@ -98,45 +98,6 @@ msgstr "您的链接是私密的，永不过期。"
 # About Page
 msgid "About"
 msgstr "关于"
-
-msgid "About Shortlink"
-msgstr "关于 Shortlink"
-
-msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
-msgstr "本项目是一个基于FastAPI和纯Python技术栈构建的高性能、注重隐私的URL缩短器。"
-
-msgid "It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links."
-msgstr "它使用Hashids库将顺序数据库ID转换为简短、非顺序的唯一代码。此方法效率高，并为您的链接提供混淆功能。"
-
-msgid "Core Features"
-msgstr "核心功能"
-
-msgid "Stateless & Fast"
-msgstr "无状态 & 快速"
-
-msgid "Generates short codes mathematically without needing to check for pre-existing hashes."
-msgstr "通过数学方式生成短代码，无需检查预先存在的哈希值。"
-
-msgid "Privacy-Focused"
-msgstr "注重隐私"
-
-msgid "No tracking, no analytics. Just simple, fast redirects."
-msgstr "无跟踪，无分析。只有简单、快速的重定向。"
-
-msgid "Temporary Links"
-msgstr "临时链接"
-
-msgid "Set an expiration time for your links, from one hour to one week, or never."
-msgstr "为您的链接设置一个过期时间，从一小时到一周，或永不过期。"
-
-msgid "Internationalized"
-msgstr "国际化"
-
-msgid "The UI is available in multiple languages."
-msgstr "用户界面支持多种语言。"
-
-msgid "Back to Home"
-msgstr "返回首页"
 
 # SEO Keywords
 msgid "private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener"

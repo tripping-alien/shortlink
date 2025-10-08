@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Shortlinks\n"
+"Project-Id-Version: Private, Secure, and Free Shortlinks\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-21 12:00+0000\n"
 "PO-Revision-Date: 2024-05-21 12:00+0000\n"
@@ -99,9 +99,6 @@ msgstr "رابطك خاص ولن تنتهي صلاحيته أبدًا."
 # About Page
 msgid "About"
 msgstr "حول"
-
-msgid "Back to Home"
-msgstr "العودة إلى الرئيسية"
 
 msgid "An unexpected internal error occurred."
 msgstr "حدث خطأ داخلي غير متوقع."

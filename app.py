@@ -13,9 +13,8 @@ from pydantic_settings import BaseSettings
 from starlette.staticfiles import StaticFiles
 
 import database
-from encoding import from_bijective_base6
+from encoding import decode_id
 from i18n import load_translations, get_translator, DEFAULT_LANGUAGE
-from obfuscation import deobfuscate
 from router import api_router, ui_router
 
 # --- Setup Logging ---
@@ -158,8 +157,10 @@ async def redirect_to_long_url(short_code: str, request: Request):
     now = datetime.now(tz=timezone.utc)
     translator = get_translator()  # Defaults to 'en' for error messages on redirect
     # The ValueError from an invalid short_code is now handled by the exception handler
-    obfuscated_id = from_bijective_base6(short_code)
-    url_id = deobfuscate(obfuscated_id)
+    url_id = decode_id(short_code)
+    if url_id is None:
+        # This handles cases where the short_code is malformed or invalid
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
     
     def db_select():
         with database.get_db_connection() as conn:

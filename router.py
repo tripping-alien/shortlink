@@ -8,8 +8,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 import database
-from encoding import from_bijective_base6, to_bijective_base6, ALPHABET
-from obfuscation import deobfuscate, obfuscate, MAX_ID
+from encoding import decode_id, encode_id
 from i18n import TRANSLATIONS, DEFAULT_LANGUAGE, get_translator
 from models import LinkBase, LinkResponse, ErrorResponse, TTL
 
@@ -193,8 +192,7 @@ async def sitemap():
     active_links = await asyncio.to_thread(get_active_links)
 
     for link in active_links:
-        obfuscated_id = obfuscate(link['id'])
-        short_code = to_bijective_base6(obfuscated_id)
+        short_code = encode_id(link['id'])
         urlset.append(f"""  <url>
     <loc>{base_url}/{short_code}</loc>
     <changefreq>never</changefreq>
@@ -270,13 +268,7 @@ async def create_short_link(link_data: LinkBase, request: Request):
 
     try:
         new_id, expires_at, deletion_token = await asyncio.to_thread(db_insert)
-        
-        # This check is crucial to ensure the ID is within the range our obfuscation supports.
-        if new_id > MAX_ID:
-            raise HTTPException(status_code=507, detail="Insufficient Storage: The service has run out of available short link IDs.")
-            
-        obfuscated_id = obfuscate(new_id)
-        short_code = to_bijective_base6(obfuscated_id)
+        short_code = encode_id(new_id)
         short_url = f"{request.base_url}{short_code}"
         resource_location = short_url
 
@@ -325,8 +317,10 @@ async def get_link_details(short_code: str, request: Request):
     """
     translator = get_translator()  # Defaults to 'en' for API responses
     # The ValueError from an invalid short_code is now handled by the exception handler
-    obfuscated_id = from_bijective_base6(short_code)
-    url_id = deobfuscate(obfuscated_id)
+    url_id = decode_id(short_code)
+    if url_id is None:
+        # This handles cases where the short_code is malformed or invalid
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
     
     def db_select():
         with database.get_db_connection() as conn:
@@ -381,8 +375,10 @@ async def delete_short_link(short_code: str, request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid request body. Expecting JSON with 'deletion_token'.")
 
-    obfuscated_id = from_bijective_base6(short_code)
-    url_id = deobfuscate(obfuscated_id)
+    url_id = decode_id(short_code)
+    if url_id is None:
+        translator = get_translator()
+        raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
     def db_delete():
         return database.delete_link_by_id_and_token(url_id, token)

@@ -6,7 +6,7 @@ import pytest
 import httpx
 from fastapi.testclient import TestClient
 
-from config import settings
+from config import Settings
 
 # Add the project root to sys.path to resolve module imports correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
@@ -15,6 +15,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from app import app
 from encoding import encode_id, decode_id
 
+
+def test_hashids_reversibility():
+    """
+    Tests that hashids encoding and decoding is perfectly reversible.
+    This test ensures the singleton pattern for Hashids is working correctly.
+    """
+    original_id = 12345
+    encoded = encode_id(original_id)
+    decoded = decode_id(encoded)
+    assert decoded == original_id
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
@@ -146,6 +156,29 @@ def test_redirect_to_long_url(client: TestClient):
     response = client.get(f"/{short_code}", follow_redirects=False)
     assert response.status_code == 307  # Temporary Redirect
     assert response.headers["location"] == "https://redirect-target.com/"
+
+
+def test_link_redirects_to_correct_address(client: TestClient):
+    """
+    An important test to ensure a created link redirects to the exact target address.
+    """
+    target_url = "https://a-specific-test-address.com/with/a/path"
+    # 1. Create a link
+    create_response = client.post(
+        "/api/v1/links",
+        json={
+            "long_url": target_url,
+            "ttl": "1h"
+        }
+    )
+    assert create_response.status_code == 201
+    data = create_response.json()
+    short_code = data['short_url'].split('/')[-1]
+
+    # 2. Make a request to the short link and check the redirect location
+    response = client.get(f"/{short_code}", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == target_url
 
 
 def test_google_link_redirect_is_ok(client: TestClient):

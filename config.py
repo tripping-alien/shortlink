@@ -3,7 +3,9 @@ Configuration and constants.
 """
 import os
 from enum import Enum
+from functools import lru_cache
 from datetime import timedelta
+import secrets
 from pydantic_settings import BaseSettings
 
 # --- Enums and Mappings ---
@@ -36,10 +38,16 @@ class Settings(BaseSettings):
 
     # A long, random, and secret string. Changing this will change all generated links.
     # For production, this should be set as an environment variable for security.
-    hashids_salt: str = os.environ.get("HASHIDS_SALT", "a-long-and-secret-salt-for-your-shortener")
+    hashids_salt: str = os.environ.get("HASHIDS_SALT", secrets.token_hex(32))
     hashids_min_length: int = 5  # Ensures all generated IDs have at least this length.
     hashids_alphabet: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
 
-# Create a single, importable instance of the settings
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    """
+    Returns a cached instance of the Settings class.
+    Using lru_cache ensures the Settings are created only once, preventing
+    the salt from being regenerated on every import or reload.
+    """
+    return Settings()

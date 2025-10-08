@@ -3,7 +3,7 @@ import logging
 import secrets
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -11,7 +11,7 @@ import database
 from encoding import decode_id, encode_id
 from i18n import TRANSLATIONS, DEFAULT_LANGUAGE, get_translator
 from models import LinkBase, LinkResponse, ErrorResponse
-from config import TTL, TTL_MAP
+from config import TTL, TTL_MAP, Settings, get_settings
 
 # --- Router Setup ---
 
@@ -142,7 +142,7 @@ Sitemap: https://shortlinks.art/sitemap.xml
 
 
 @ui_router.get("/sitemap.xml", include_in_schema=False)
-async def sitemap():
+async def sitemap(settings: Settings = Depends(get_settings)):
     today = date.today().isoformat()
     now = datetime.now(tz=timezone.utc)
     urlset = []

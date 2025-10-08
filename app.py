@@ -15,13 +15,11 @@ import database
 from encoding import decode_id
 from i18n import load_translations, get_translator, DEFAULT_LANGUAGE
 from router import api_router, ui_router
-
-from config import settings
+from config import Settings, get_settings
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 # --- Background Cleanup Task ---
 async def cleanup_expired_links():
@@ -42,6 +40,7 @@ async def cleanup_expired_links():
 async def run_cleanup_task():
     """Runs the cleanup task in a loop."""
     while True:
+        settings = get_settings()
         await cleanup_expired_links()
         await asyncio.sleep(settings.cleanup_interval_seconds)
 
@@ -73,6 +72,7 @@ app = FastAPI(
     },
 )
 
+settings = get_settings()
 
 # --- Custom Exception Handlers for Robustness ---
 

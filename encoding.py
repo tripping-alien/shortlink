@@ -20,14 +20,14 @@ def get_hashids() -> Hashids:
     return Hashids(salt=settings.hashids_salt, min_length=settings.hashids_min_length, alphabet=settings.hashids_alphabet)
 
 
-def encode_id(n: int) -> str:
+def encode_id(n: int, hashids: Hashids) -> str:
     """Encodes a single integer ID into a short, non-sequential string."""
-    return get_hashids().encode(n)
+    return hashids.encode(n)
 
 
-def decode_id(s: str) -> int | None:
+def decode_id(s: str, hashids: Hashids) -> int | None:
     """Decodes a short string back into an integer ID."""
-    decoded_tuple = get_hashids().decode(s)
+    decoded_tuple = hashids.decode(s)
     if decoded_tuple:
         return decoded_tuple[0]  # hashids.decode returns a tuple, e.g., (123,)
     return None

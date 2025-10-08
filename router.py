@@ -6,9 +6,10 @@ from datetime import date, datetime, timezone
 from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from hashids import Hashids
 
 import database
-from encoding import decode_id, encode_id
+from encoding import decode_id, encode_id, get_hashids
 from i18n import TRANSLATIONS, DEFAULT_LANGUAGE, get_translator
 from models import LinkBase, LinkResponse, ErrorResponse
 from config import TTL, TTL_MAP, Settings, get_settings
@@ -142,7 +143,7 @@ Sitemap: https://shortlinks.art/sitemap.xml
 
 
 @ui_router.get("/sitemap.xml", include_in_schema=False)
-async def sitemap(settings: Settings = Depends(get_settings)):
+async def sitemap():
     today = date.today().isoformat()
     now = datetime.now(tz=timezone.utc)
     urlset = []
@@ -182,7 +183,7 @@ async def sitemap(settings: Settings = Depends(get_settings)):
     active_links = await asyncio.to_thread(database.get_all_active_links, now)
 
     for link in active_links:
-        short_code = encode_id(link['id'])
+        short_code = encode_id(link['id'], get_hashids())
         urlset.append(f"""  <url>
     <loc>{base_url}/{short_code}</loc>
     <changefreq>never</changefreq>
@@ -231,7 +232,7 @@ async def get_translations(lang_code: str):
         422: {"model": ErrorResponse, "description": "Validation Error: The request body is malformed."},
     }
 )
-async def create_short_link(link_data: LinkBase, request: Request):
+async def create_short_link(link_data: LinkBase, request: Request, hashids: Hashids = Depends(get_hashids)):
     """
     Creates a new short link from a long URL.
 
@@ -247,7 +248,7 @@ async def create_short_link(link_data: LinkBase, request: Request):
 
     try:
         new_id = await asyncio.to_thread(database.create_link, str(link_data.long_url), expires_at, deletion_token)
-        short_code = encode_id(new_id)
+        short_code = encode_id(new_id, hashids)
         canonical_url = f"https://shortlinks.art/{short_code}"
         resource_location = canonical_url # The Location header should also be the canonical URL
 
@@ -289,14 +290,14 @@ async def create_short_link(link_data: LinkBase, request: Request):
     name="get_link_details",  # Add a name to the route so we can reference it
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist or has expired."}}
 )
-async def get_link_details(short_code: str, request: Request):
+async def get_link_details(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
     """
     Retrieves the details of a short link, such as the original URL and its
     expiration time, without performing a redirect.
     """
     translator = get_translator()  # Defaults to 'en' for API responses
     # The ValueError from an invalid short_code is now handled by the exception handler
-    url_id = decode_id(short_code)
+    url_id = decode_id(short_code, hashids)
     if url_id is None:
         # This handles cases where the short_code is malformed or invalid
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
@@ -337,7 +338,7 @@ async def get_link_details(short_code: str, request: Request):
     name="delete_short_link",  # Add a name to the route
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist."}}
 )
-async def delete_short_link(short_code: str, request: Request):
+async def delete_short_link(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
     """
     Permanently deletes a short link. Requires the secret deletion token,
     which is provided when the link is created.
@@ -350,7 +351,7 @@ async def delete_short_link(short_code: str, request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid request body. Expecting JSON with 'deletion_token'.")
 
-    url_id = decode_id(short_code)
+    url_id = decode_id(short_code, hashids)
     if url_id is None:
         translator = get_translator()
         raise HTTPException(status_code=404, detail=translator("Short link not found"))

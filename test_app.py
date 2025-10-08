@@ -1,10 +1,18 @@
 import os
 import sys
-import json
 
-import pytest
 import httpx
+import pytest
 from fastapi.testclient import TestClient
+
+from config import Settings, get_settings
+
+# Add the project root to sys.path to resolve module imports correctly
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
+# Import the FastAPI app and other necessary components
+from app import app
+from encoding import encode_id, decode_id, get_hashids
 
 from config import Settings
 

@@ -9,10 +9,11 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.templating import Jinja2Templates
+from hashids import Hashids
 from starlette.staticfiles import StaticFiles
 
 import database
-from encoding import decode_id
+from encoding import decode_id, get_hashids
 from i18n import load_translations, get_translator, DEFAULT_LANGUAGE
 from router import api_router, ui_router
 from config import Settings, get_settings
@@ -137,7 +138,7 @@ app.include_router(ui_router)   # UI routes are checked second
 
 # This catch-all route MUST be defined last.
 @app.get("/{short_code}", summary="Redirect to the original URL", tags=["Redirect"])
-async def redirect_to_long_url(short_code: str, request: Request):
+async def redirect_to_long_url(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
     """
     Redirects to the original URL if the short link exists and has not expired.
     If the link is expired, it is cleaned up and its ID is made available for reuse.
@@ -146,7 +147,7 @@ async def redirect_to_long_url(short_code: str, request: Request):
     now = datetime.now(tz=timezone.utc)
     translator = get_translator()  # Defaults to 'en' for error messages on redirect
     # The ValueError from an invalid short_code is now handled by the exception handler
-    url_id = decode_id(short_code)
+    url_id = decode_id(short_code, hashids)
     if url_id is None:
         # This handles cases where the short_code is malformed or invalid
         raise HTTPException(status_code=404, detail=translator("Short link not found"))

@@ -41,7 +41,7 @@
             float layer1 = line_layer(st, 0.05, 5.0, 0.785) * 0.1;  // 45 degrees
             float layer2 = line_layer(st, 0.08, 7.0, 0.785) * 0.05;
             float layer3 = line_layer(st, -0.06, 6.0, -0.785) * 0.08; // -45 degrees
-            vec3 color = vec3(1.0, 1.0, 1.0) * (layer1 + layer2 + layer3); // White lines for a cloud-like effect
+            vec3 color = vec3(0.275, 0.51, 0.706) * (layer1 + layer2 + layer3); // SteelBlue: rgb(70, 130, 180)
 
             gl_FragColor = vec4(color, 1.0);
         }

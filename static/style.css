@@ -1,31 +1,32 @@
 /* =====================================================================
      1. THEME & BOOTSTRAP OVERRIDES
    ====================================================================== */
-
 :root {
-    --bg-color: #87CEFA; /* Light Sky Blue */
-    --text-color: #2c3e50; /* Dark Slate Blue for readability */
-    --primary-color: #6c757d; /* Muted Grey */
-    --primary-color-hover: #5a6268; /* Darker Grey */
-    --border-color: #B0C4DE; /* Moon: Light Steel Blue for borders */
-    --input-bg: #FFFFFF; /* White clouds */
-    --shadow-color: rgba(44, 62, 80, 0.2); /* Muted Shadow */
+    /* Day Light Moon Theme */
+    --bg-color: #f0f8ff; /* AliceBlue - a very light, airy blue */
+    --text-color: #2f4f4f; /* DarkSlateGray - for high contrast and readability */
+    --primary-color: #4682B4; /* SteelBlue - a calm, professional blue */
+    --primary-color-hover: #41729f; /* A slightly darker steel blue */
+    --border-color: #dcdcdc; /* Gainsboro - a light gray for subtle borders */
+    --input-bg: #ffffff; /* Clean white for inputs */
+    --shadow-color: rgba(44, 62, 80, 0.15); /* A soft, muted shadow */
 
     /* Override Bootstrap variables */
     --bs-body-bg: var(--bg-color);
     --bs-body-color: var(--text-color);
     --bs-body-font-family: 'Fira Code', monospace;
     --bs-primary: var(--primary-color);
-    --bs-primary-rgb: 108, 117, 125;
+    --bs-primary-rgb: 70, 130, 180;
     --bs-link-color: var(--primary-color);
-    --bs-link-color-rgb: 108, 117, 125;
+    --bs-link-color-rgb: 70, 130, 180;
     --bs-link-hover-color: var(--primary-color-hover);
-    --bs-link-hover-color-rgb: 90, 98, 104;
+    --bs-link-hover-color-rgb: 65, 114, 159;
 }
 
 body {
     display: flex;
     align-items: center;
+    font-size: 14px; /* Reduce the base font size for a smaller overall UI */
     min-height: 100vh;
 }
 
@@ -45,13 +46,13 @@ body {
 
 .container {
     position: relative; /* Needed for absolute positioning of the child switcher */
-    background-color: rgba(255, 255, 255, 0.85);
+    background-color: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-radius: 0.5rem;
     box-shadow: 0 8px 32px 0 var(--shadow-color);
-    padding: 2rem;
-    padding-top: 4rem; /* Add space at the top for the language bar */
+    padding: 1.5rem; /* Reduce container padding */
+    padding-top: 3.5rem; /* Adjust top padding for the language bar */
 }
 
 /* =====================================================================
@@ -59,12 +60,12 @@ body {
    ====================================================================== */
 
 .display-5 {
-    color: var(--primary-color);
+    font-size: 2rem; /* Reduce the main heading size */
     text-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .lead {
-    color: #6c757d;
+    color: #5a6e82; /* A softer slate gray for lead text */
 }
 
 .form-control, .form-select {
@@ -73,8 +74,8 @@ body {
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+    border-color: var(--primary-color) !important; /* Use !important to override Bootstrap specificity */
+    box-shadow: 0 0 0 0.25rem rgba(70, 130, 180, 0.25);
 }
 
 .btn-primary {
@@ -104,13 +105,13 @@ body {
 }
 
 .alert-success {
-    --bs-alert-bg: #eef7f0;
-    --bs-alert-border-color: #d1e7dd;
-    --bs-alert-color: #0f5132;
+    --bs-alert-bg: #e3f2fd; /* Light blue background */
+    --bs-alert-border-color: #bde0fe;
+    --bs-alert-color: #0c5460;
 }
 
 .btn-light.copied {
-    background-color: #198754; /* Bootstrap success green */
+    background-color: #198754; /* Bootstrap's default success green */
     color: white;
 }
 
@@ -120,19 +121,18 @@ body {
 
 .language-bar-container {
     position: absolute;
-    top: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0.75rem; /* Move closer to the top edge */
+    left: 1rem;
     z-index: 10;
 }
 
 .language-toggle-btn {
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: rgba(240, 248, 255, 0.8); /* Match light background */
     border: 1px solid var(--border-color);
     border-top: none;
-    border-radius: 0 0 0.5rem 0.5rem;
-    padding: 0.25rem 1rem;
-    font-size: 1.2rem;
+    border-radius: 0.4rem;
+    padding: 0.2rem 0.8rem;
+    font-size: 1rem; /* Reduce icon size */
     color: var(--primary-color);
     cursor: pointer;
     box-shadow: 0 4px 12px var(--shadow-color);
@@ -144,15 +144,15 @@ body {
 }
 
 .language-switcher-fixed {
-    background-color: rgba(255, 255, 255, 0.85);
+    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 0.75rem;
+    padding: 0.5rem; /* Reduce padding inside the flag bar */
     box-shadow: 0 4px 12px var(--shadow-color);
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem; /* Reduce gap between flags */
     flex-wrap: wrap;
     transform: translateY(-100%);
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
@@ -163,7 +163,7 @@ body {
 }
 
 .language-switcher-fixed .flag-icon {
-    width: 28px;
+    width: 24px; /* Make flags smaller */
     height: auto;
     border-radius: 3px;
     vertical-align: middle;
@@ -195,6 +195,11 @@ body {
 [dir="rtl"] {
     text-align: right;
     direction: rtl;
+}
+
+[dir="rtl"] .language-bar-container {
+    left: auto;
+    right: 1rem;
 }
 
 /* =====================================================================

@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     # The public-facing base URL of the application.
     # Used for generating canonical URLs in API responses and sitemaps.
     # For local development, it defaults to localhost. For production, set this env var.
-    base_url: HttpUrl = "http://localhost:8000"
+    base_url: HttpUrl = "https://shortlinks.art"
 
 
 @lru_cache

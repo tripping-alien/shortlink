@@ -289,12 +289,12 @@ async def create_short_link(link_data: LinkBase, request: Request):
             "links": [
                 {
                     "rel": "self",
-                    "href": f"{request.base_url}api/v1/links/{short_code}",
+                    "href": str(request.url_for('get_link_details', short_code=short_code)),
                     "method": "GET"
                 },
                 {
                     "rel": "delete",
-                    "href": f"{request.base_url}api/v1/links/{short_code}",
+                    "href": str(request.url_for('delete_short_link', short_code=short_code)),
                     "method": "DELETE"
                 }
             ]
@@ -314,7 +314,8 @@ async def create_short_link(link_data: LinkBase, request: Request):
 @api_router.get(
     "/links/{short_code}",
     response_model=LinkResponse,
-    summary="Get details for a short link",
+    summary="Get Link Details",
+    name="get_link_details",  # Add a name to the route so we can reference it
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist or has expired."}}
 )
 async def get_link_details(short_code: str, request: Request):
@@ -348,12 +349,12 @@ async def get_link_details(short_code: str, request: Request):
         "links": [
             {
                 "rel": "self",
-                "href": str(request.url),
+                "href": str(request.url_for('get_link_details', short_code=short_code)),
                 "method": "GET"
             },
             {
                 "rel": "delete",
-                "href": str(request.url),
+                "href": str(request.url_for('delete_short_link', short_code=short_code)),
                 "method": "DELETE"
             }
         ]
@@ -363,7 +364,8 @@ async def get_link_details(short_code: str, request: Request):
 @api_router.delete(
     "/links/{short_code}",
     status_code=204,
-    summary="Delete a short link",
+    summary="Delete Link",
+    name="delete_short_link",  # Add a name to the route
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist."}}
 )
 async def delete_short_link(short_code: str, request: Request):

@@ -116,14 +116,14 @@ def test_root_redirect(client: TestClient):
     """Tests that the root path '/' correctly redirects to the default language UI."""
     response = client.get("/", follow_redirects=False)
     assert response.status_code == 307  # Temporary Redirect
-    assert response.headers["location"] == "/ui/en"
+    assert response.headers["location"] == "/ui/en/index"
 
 
 def test_root_redirect_with_accept_language_header(client: TestClient):
     """Tests that the root path '/' redirects based on the Accept-Language header."""
     response = client.get("/", headers={"Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8"}, follow_redirects=False)
     assert response.status_code == 307
-    assert response.headers["location"] == "/ui/de"
+    assert response.headers["location"] == "/ui/de/index"
 
 
 def test_root_redirect_with_cookie_override(client: TestClient):
@@ -131,7 +131,7 @@ def test_root_redirect_with_cookie_override(client: TestClient):
     # Browser asks for German, but cookie is set to French
     response = client.get("/", headers={"Accept-Language": "de-DE,de;q=0.9"}, cookies={"lang": "fr"}, follow_redirects=False)
     assert response.status_code == 307
-    assert response.headers["location"] == "/ui/fr"
+    assert response.headers["location"] == "/ui/fr/index"
 
 
 def test_ui_rendering_for_language(client: TestClient):

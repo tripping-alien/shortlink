@@ -269,12 +269,12 @@ async def create_short_link(link_data: LinkBase, request: Request):
     try:
         new_id, expires_at, deletion_token = await asyncio.to_thread(db_insert)
         short_code = encode_id(new_id)
-        short_url = f"{request.base_url}{short_code}"
-        resource_location = short_url
+        canonical_url = f"https://shortlinks.art/{short_code}"
+        resource_location = canonical_url # The Location header should also be the canonical URL
 
         # Prepare the response object that matches the LinkResponse model
         response_content = {
-            "short_url": str(short_url),
+            "short_url": str(canonical_url),
             "long_url": str(link_data.long_url),
             "expires_at": expires_at.isoformat() if expires_at else None,
             "deletion_token": deletion_token,

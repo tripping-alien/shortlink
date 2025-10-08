@@ -5,11 +5,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 import uvicorn
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.templating import Jinja2Templates
-from pydantic_settings import BaseSettings
 from starlette.staticfiles import StaticFiles
 
 import database
@@ -17,21 +16,11 @@ from encoding import decode_id
 from i18n import load_translations, get_translator, DEFAULT_LANGUAGE
 from router import api_router, ui_router
 
+from config import settings
+
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-
-# --- Configuration Management ---
-class Settings(BaseSettings):
-    """Manages application configuration using environment variables."""
-    # In production, set this to your frontend's domain: "https://your-frontend.com"
-    # The default ["*"] is insecure and for development only.
-    cors_origins: list[str] = ["*"]
-    cleanup_interval_seconds: int = 3600  # Run cleanup task every hour
-
-
-settings = Settings()
 
 
 # --- Background Cleanup Task ---

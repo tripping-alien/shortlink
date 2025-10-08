@@ -9,10 +9,10 @@ from config import settings
 # Initialize the Hashids instance with our secret salt and configuration.
 # This instance is created only once when the module is imported.
 hashids = Hashids(
-    salt=settings.HASHIDS_SALT,
-    min_length=settings.HASHIDS_MIN_LENGTH,
-    alphabet=settings.HASHIDS_ALPHABET
-)
+     salt=settings.hashids_salt,
+     min_length=settings.hashids_min_length,
+     alphabet=settings.hashids_alphabet
+ )
 
 
 def encode_id(n: int) -> str:

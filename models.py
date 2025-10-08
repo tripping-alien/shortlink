@@ -6,6 +6,7 @@ from pydantic import BaseModel, HttpUrl, field_validator, Field
 
 # --- TTL Options ---
 class TTL(str, Enum):
+    ONE_SECOND = "1s" # Added for testing purposes
     ONE_HOUR = "1h"
     ONE_DAY = "1d"
     ONE_WEEK = "1w"

@@ -85,20 +85,6 @@ async def read_root(request: Request, lang_code: str):
     return templates.TemplateResponse("index.html", {"request": request, "_": translator, "lang_code": lang_code})
 
 
-@ui_router.get(
-    "/ui/{lang_code:str}/about",
-    response_class=HTMLResponse,
-    summary="Serve About Page"
-)
-async def read_about(request: Request, lang_code: str):
-    """Serves the about page for a given language."""
-    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
-        raise HTTPException(status_code=404, detail="Language not supported")
-
-    translator = get_translator(lang_code)
-    return templates.TemplateResponse("about.html", {"request": request, "_": translator, "lang_code": lang_code})
-
-
 @ui_router.get("/health", response_class=HTMLResponse, summary="Health Check", tags=["Monitoring"])
 async def health_check(request: Request):
     """
@@ -178,15 +164,6 @@ async def sitemap(settings: Settings = Depends(get_settings), hashids: Hashids =
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
 {generate_hreflang_links("/ui/{lang}/")}
-  </url>""")
-
-    # About Page
-    urlset.append(f"""  <url>
-    <loc>{base_url}/ui/en/about/</loc>
-    <lastmod>{today}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
-{generate_hreflang_links("/ui/{lang}/about/")}
   </url>""")
 
     # 2. Add an entry for each active short link

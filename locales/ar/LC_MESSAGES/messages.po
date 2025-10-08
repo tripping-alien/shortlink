@@ -100,39 +100,6 @@ msgstr "رابطك خاص ولن تنتهي صلاحيته أبدًا."
 msgid "About"
 msgstr "حول"
 
-msgid "This project is a high-performance, privacy-focused URL shortener built with FastAPI and a pure Python technology stack."
-msgstr "هذا المشروع هو أداة تقصير روابط عالية الأداء تركز على الخصوصية، مبنية باستخدام FastAPI ومكدس تقنيات بايثون خالص."
-
-msgid "It uses the Hashids library to convert sequential database IDs into short, non-sequential, and unique codes. This method is efficient and provides obfuscation for your links."
-msgstr "يستخدم مكتبة Hashids لتحويل معرفات قاعدة البيانات المتسلسلة إلى رموز قصيرة وغير متسلسلة وفريدة. هذه الطريقة فعالة وتوفر إخفاءً لروابطك."
-
-msgid "Core Features"
-msgstr "الميزات الأساسية"
-
-msgid "Stateless & Fast"
-msgstr "بدون حالة وسريع"
-
-msgid "Generates short codes mathematically without needing to check for pre-existing hashes."
-msgstr "يولد رموزًا قصيرة رياضيًا دون الحاجة إلى التحقق من وجود تجزئات مسبقة."
-
-msgid "Privacy-Focused"
-msgstr "يركز على الخصوصية"
-
-msgid "No tracking, no analytics. Just simple, fast redirects."
-msgstr "لا تتبع، لا تحليلات. مجرد عمليات إعادة توجيه بسيطة وسريعة."
-
-msgid "Temporary Links"
-msgstr "روابط مؤقتة"
-
-msgid "Set an expiration time for your links, from one hour to one week, or never."
-msgstr "قم بتعيين وقت انتهاء صلاحية لروابطك، من ساعة واحدة إلى أسبوع واحد، أو أبداً."
-
-msgid "Internationalized"
-msgstr "مدعوم دوليًا"
-
-msgid "The UI is available in multiple languages."
-msgstr "واجهة المستخدم متاحة بلغات متعددة."
-
 msgid "Back to Home"
 msgstr "العودة إلى الرئيسية"
 

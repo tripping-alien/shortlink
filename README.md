@@ -62,6 +62,7 @@ This project is configured for easy deployment on a platform like Render.
 3.  **Add Environment Variables**:
     -   `PYTHON_VERSION`: `3.11` (or your desired Python version).
     -   `HASHIDS_SALT`: A long, random, and secret string. This is **critical** for security. You can generate one locally using `python -c "import secrets; print(secrets.token_hex(32))"`.
+    -   `BASE_URL`: The public URL of your web service (e.g., `https://shortlinks.art`).
 4.  **Add a Persistent Disk** to store the `shortlinks.db` file.
     -   **Name**: `data-disk`
     -   **Mount Path**: `/var/data`

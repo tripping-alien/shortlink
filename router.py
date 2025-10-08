@@ -137,7 +137,7 @@ async def health_check(request: Request):
 
 
 @ui_router.get("/robots.txt", include_in_schema=False)
-async def robots_txt():
+async def robots_txt(settings: Settings = Depends(get_settings)):
     """
     Provides a modern, explicit robots.txt file to guide web crawlers.
     """
@@ -145,17 +145,17 @@ async def robots_txt():
 Disallow: /api/
 Disallow: /get/
 Disallow: /health
-Sitemap: https://shortlinks.art/sitemap.xml
+Sitemap: {settings.base_url}/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
 
 
 @ui_router.get("/sitemap.xml", include_in_schema=False)
-async def sitemap(hashids: Hashids = Depends(get_hashids)):
+async def sitemap(settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
     today = date.today().isoformat()
     now = datetime.now(tz=timezone.utc)
     urlset = []
-    base_url = "https://shortlinks.art"
+    base_url = str(settings.base_url).rstrip('/')
 
     # Generate hreflang links for a given path (e.g., "/ui/{lang}/")
     def generate_hreflang_links(path_template: str) -> str:
@@ -246,7 +246,7 @@ async def get_translations(lang_code: str):
         422: {"model": ErrorResponse, "description": "Validation Error: The request body is malformed."},
     }
 )
-async def create_short_link(link_data: LinkBase, request: Request, hashids: Hashids = Depends(get_hashids)):
+async def create_short_link(link_data: LinkBase, request: Request, settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
     """
     Creates a new short link from a long URL.
 
@@ -263,10 +263,11 @@ async def create_short_link(link_data: LinkBase, request: Request, hashids: Hash
     try:
         new_id = await asyncio.to_thread(database.create_link, str(link_data.long_url), expires_at, deletion_token)
         short_code = encode_id(new_id, hashids)
-        
+
         # Define both the preview and direct redirect URLs
-        preview_url = f"https://shortlinks.art/get/{short_code}"
-        redirect_url = f"https://shortlinks.art/{short_code}"
+        base_url = str(settings.base_url).rstrip('/')
+        preview_url = f"{base_url}/get/{short_code}"
+        redirect_url = f"{base_url}/{short_code}"
         resource_location = preview_url # The Location header should point to the new resource
 
         # Prepare the response object that matches the LinkResponse model
@@ -317,7 +318,7 @@ async def create_short_link(link_data: LinkBase, request: Request, hashids: Hash
     name="get_link_details",  # Add a name to the route so we can reference it
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist or has expired."}}
 )
-async def get_link_details(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
+async def get_link_details(short_code: str, request: Request, settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
     """
     Retrieves the details of a short link, such as the original URL and its
     expiration time, without performing a redirect.
@@ -338,8 +339,9 @@ async def get_link_details(short_code: str, request: Request, hashids: Hashids =
     if expires_at and datetime.now(timezone.utc) > expires_at:
         raise HTTPException(status_code=404, detail=translator("Short link has expired"))
 
+    base_url = str(settings.base_url).rstrip('/')
     return {
-        "short_url": f"https://shortlinks.art/{short_code}",  # Use canonical URL
+        "short_url": f"{base_url}/get/{short_code}",  # Return the preview URL as the canonical one
         "long_url": record["long_url"],
         "expires_at": record["expires_at"],
         "deletion_token": record["deletion_token"],

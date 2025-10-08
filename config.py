@@ -7,6 +7,7 @@ from functools import lru_cache
 from datetime import timedelta
 from pathlib import Path
 import secrets
+from pydantic import HttpUrl
 from pydantic_settings import BaseSettings
 
 # --- Enums and Mappings ---
@@ -42,6 +43,11 @@ class Settings(BaseSettings):
     hashids_salt: str
     hashids_min_length: int = 5  # Ensures all generated IDs have at least this length.
     hashids_alphabet: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+
+    # The public-facing base URL of the application.
+    # Used for generating canonical URLs in API responses and sitemaps.
+    # For local development, it defaults to localhost. For production, set this env var.
+    base_url: HttpUrl = "http://localhost:8000"
 
 
 @lru_cache

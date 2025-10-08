@@ -64,11 +64,6 @@ def get_link_by_id(link_id: int):
     with get_db_connection() as conn:
         return conn.execute("SELECT * FROM links WHERE id = ?", (link_id,)).fetchone()
 
-def get_all_links_for_admin():
-    """Retrieves all links from the database for the admin panel, most recent first."""
-    with get_db_connection() as conn:
-        return conn.execute("SELECT id, long_url, expires_at FROM links ORDER BY id DESC").fetchall()
-
 def get_all_active_links(now: datetime):
     """Retrieves all links that have not expired for the sitemap."""
     with get_db_connection() as conn:

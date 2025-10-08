@@ -91,9 +91,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(errorMessage);
                 }
 
-                // Display new result
-                shortUrlLink.href = data.short_url;
-                shortUrlLink.textContent = data.short_url.replace(/^https?:\/\//, ''); // Show clean URL
+                // Use the full URL for the clipboard, but a relative path for the link's href
+                // to ensure it works in the local development environment.
+                const fullUrl = data.short_url;
+                const relativePath = new URL(fullUrl).pathname; // Extracts "/get/Bx7vq"
+
+                shortUrlLink.href = relativePath;
+                shortUrlLink.dataset.fullUrl = fullUrl; // Store the full URL for the copy button
+                const displayUrl = fullUrl.replace(/^https?:\/\//, '');
+                shortUrlLink.textContent = displayUrl;
                 resultBox.classList.remove('d-none');
                 resultBox.classList.add('fade-in-up');
 
@@ -114,7 +120,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- Copy Button Handler (now inside the shortenForm check) ---
         if (copyButton) {
             copyButton.addEventListener('click', () => {
-                navigator.clipboard.writeText(shortUrlLink.href).then(function() {
+                const urlToCopy = shortUrlLink.dataset.fullUrl || shortUrlLink.href;
+                navigator.clipboard.writeText(urlToCopy).then(function() {
                     copyButton.textContent = copyButton.dataset.copiedText || 'Copied!';
                     copyButton.classList.add('btn-success', 'copied');
                     // Optional: Revert after a few seconds

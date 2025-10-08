@@ -123,70 +123,22 @@ async def health_check(request: Request):
     return templates.TemplateResponse("health.html", context, status_code=status_code)
 
 
-@ui_router.api_route("/admin", methods=["GET", "POST"], response_class=HTMLResponse, summary="Admin Panel", include_in_schema=False)
-async def admin_panel(request: Request, settings: Settings = Depends(get_settings)):
-    """
-    A simple, secure, read-only admin panel to inspect all links in the database.
-    Renders a login form on GET and validates the key on POST.
-    """
-    if request.method == "GET":
-        return templates.TemplateResponse("admin_login.html", {"request": request})
-
-    # Handle POST request from the login form
-    try:
-        form_data = await request.form()
-        submitted_key = form_data.get("key")
-    except Exception:
-        return templates.TemplateResponse("admin_login.html", {"request": request, "error": "Invalid form submission."}, status_code=400)
-
-    # 1. Secure the endpoint using a constant-time comparison to prevent timing attacks.
-    if not submitted_key or not secrets.compare_digest(submitted_key, settings.admin_secret_key):
-        return templates.TemplateResponse("admin_login.html", {"request": request, "error": "Invalid secret key."}, status_code=403)
-
-    # --- Key is valid, proceed to show the admin panel ---
-
-    # 2. Fetch all links from the database.
-    links_from_db = await asyncio.to_thread(database.get_all_links_for_admin)
-
-    # 3. Prepare the links for rendering by encoding the short code.
-    links_for_template = []
-    hashids = get_hashids()
-    for link in links_from_db:
-        links_for_template.append({
-            "id": link["id"],
-            "short_code": encode_id(link["id"], hashids),
-            "long_url": link["long_url"],
-            "expires_at": link["expires_at"],
-        })
-
-    # 4. Render the admin template.
-    return templates.TemplateResponse("admin.html", {
-        "request": request,
-        "links": links_for_template
-    })
-
-
 @ui_router.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
-    content = f"""User-agent: *
-Allow: /$
-Allow: /static/
-Disallow: /api
-Disallow: /challenge
-
-# Yandex-specific directives
-Clean-param: ref /
-
-# Yandex-specific directive for the main mirror
-Host: https://shortlinks.art/
-
+    """
+    Provides a modern, explicit robots.txt file to guide web crawlers.
+    """
+    content = """User-agent: *
+Disallow: /api/
+Disallow: /get/
+Disallow: /health
 Sitemap: https://shortlinks.art/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
 
 
 @ui_router.get("/sitemap.xml", include_in_schema=False)
-async def sitemap():
+async def sitemap(hashids: Hashids = Depends(get_hashids)):
     today = date.today().isoformat()
     now = datetime.now(tz=timezone.utc)
     urlset = []
@@ -226,11 +178,17 @@ async def sitemap():
     active_links = await asyncio.to_thread(database.get_all_active_links, now)
 
     for link in active_links:
-        short_code = encode_id(link['id'], get_hashids())
+        short_code = encode_id(link['id'], hashids)
         urlset.append(f"""  <url>
     <loc>{base_url}/{short_code}</loc>
     <changefreq>never</changefreq>
     <priority>0.5</priority>
+  </url>""")
+        # Also add the preview page to the sitemap
+        urlset.append(f"""  <url>
+    <loc>{base_url}/get/{short_code}</loc>
+    <changefreq>never</changefreq>
+    <priority>0.4</priority>
   </url>""")
 
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -292,16 +250,29 @@ async def create_short_link(link_data: LinkBase, request: Request, hashids: Hash
     try:
         new_id = await asyncio.to_thread(database.create_link, str(link_data.long_url), expires_at, deletion_token)
         short_code = encode_id(new_id, hashids)
-        canonical_url = f"https://shortlinks.art/{short_code}"
-        resource_location = canonical_url # The Location header should also be the canonical URL
+        
+        # Define both the preview and direct redirect URLs
+        preview_url = f"https://shortlinks.art/get/{short_code}"
+        redirect_url = f"https://shortlinks.art/{short_code}"
+        resource_location = preview_url # The Location header should point to the new resource
 
         # Prepare the response object that matches the LinkResponse model
         response_content = {
-            "short_url": str(canonical_url),
+            "short_url": str(preview_url), # The primary URL is now the safe preview link
             "long_url": str(link_data.long_url),
             "expires_at": expires_at.isoformat() if expires_at else None,
             "deletion_token": deletion_token,
             "links": [
+                {
+                    "rel": "preview",
+                    "href": str(preview_url),
+                    "method": "GET"
+                },
+                {
+                    "rel": "redirect",
+                    "href": str(redirect_url),
+                    "method": "GET"
+                },
                 {
                     "rel": "self",
                     "href": str(request.url_for('get_link_details', short_code=short_code)),
@@ -437,6 +408,21 @@ async def get_link_address(short_code: str, hashids: Hashids) -> str:
 
     print(f"[DEBUG] Found long_url: {record['long_url']}")
     return record["long_url"]
+
+
+# This route provides a safe preview of the destination URL.
+# It is defined here to ensure it doesn't get shadowed by the catch-all.
+@ui_router.get("/get/{short_code}", summary="Preview Short Link", tags=["Redirect"])
+async def preview_short_link(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
+    """
+    Shows a preview page with the destination URL, allowing the user to
+    confirm before redirecting.
+    """
+    long_url = await get_link_address(short_code, hashids)
+    return templates.TemplateResponse("preview.html", {
+        "request": request,
+        "long_url": long_url
+    })
 
 
 # This catch-all route MUST be the last route defined in this router.

@@ -43,9 +43,6 @@ class Settings(BaseSettings):
     hashids_min_length: int = 5  # Ensures all generated IDs have at least this length.
     hashids_alphabet: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
-    # A secret key to access the admin panel. Set this in your environment for production.
-    admin_secret_key: str = secrets.token_urlsafe(32)
-
 
 @lru_cache
 def get_settings() -> Settings:

@@ -48,10 +48,28 @@ async def redirect_to_default_lang(request: Request):
     else:
         # 2. Fallback to browser's Accept-Language header for a good first-time experience.
         accept_language = request.headers.get("accept-language")
-        if accept_language:
-            browser_lang = accept_language.split(",")[0].split("-")[0].lower()
-            if browser_lang in TRANSLATIONS:
-                lang = browser_lang
+        if accept_language: # e.g., "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5"
+            # Parse the header to find the best match based on user preference.
+            languages = []
+            for lang_part in accept_language.split(','):
+                parts = lang_part.strip().split(';')
+                lang_code = parts[0].split('-')[0].lower()
+                q = 1.0
+                if len(parts) > 1 and parts[1].startswith('q='):
+                    try:
+                        q = float(parts[1][2:])
+                    except ValueError:
+                        pass
+                languages.append((lang_code, q))
+            
+            # Sort by quality value, descending
+            languages.sort(key=lambda x: x[1], reverse=True)
+
+            # Find the first supported language in the user's preferred list
+            for preferred_lang, _ in languages:
+                if preferred_lang in TRANSLATIONS:
+                    lang = preferred_lang
+                    break
 
     return RedirectResponse(url=f"/ui/{lang}")
 

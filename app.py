@@ -324,7 +324,7 @@ async def preview(short_code: str):
             <h1>Preview Link</h1>
             <p>Original URL:</p>
             <p class="url">{escaped_long_url_display}</p>
-            <a class="button" href="{escaped_long_url_href}" target="_blank" rel="noopener noreferrer">Go to Link</a>
+            <a class="button" href="{escaped_long_url_display}" target="_blank" rel="noopener noreferrer">Go to Link</a>
         </div>
     </body>
     </html>

@@ -3,227 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shortlinks - Create Short URLs Instantly</title>
-<meta name="description" content="Create short, memorable links instantly with Shortlinks.art. Share, track, and copy your links in seconds.">
-<meta name="robots" content="index, follow">
+<title>Shortlinks.art - URL Shortener</title>
 
-<!-- Open Graph for Social Sharing -->
-<meta property="og:title" content="Shortlinks - Create Short URLs Instantly">
-<meta property="og:description" content="Create short, memorable links instantly with Shortlinks.art. Share, track, and copy your links in seconds.">
-<meta property="og:url" content="https://shortlinks.art">
-<meta property="og:type" content="website">
-
-<!-- Favicon -->
-<link rel="icon" href="https://shortlinks.art/favicon.ico">
+<!-- Google SEO -->
+<meta name="description" content="Fast and simple URL shortener. Generate short links instantly.">
+<meta name="keywords" content="shorten url, link shortener, short links, fast links">
+<meta name="author" content="Shortlinks.art">
+<link rel="canonical" href="https://shortlinks.art/">
 
 <!-- Adsense Auto Ads -->
 <script data-ad-client="pub-6170587092427912" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 
 <style>
-:root {
+  :root {
     --primary-color: #4f46e5;
     --secondary-color: #6366f1;
     --accent-color: #facc15;
-    --bg-color: #f4f4f9;
-    --text-color: #1f2937;
-    --error-color: #dc2626;
-    --button-hover: #4338ca;
-}
+    --bg-color: #f3f4f6;
+    --text-color: #111827;
+    --button-color: var(--primary-color);
+    --button-hover: var(--secondary-color);
+  }
 
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
+  body {
     margin: 0;
-    padding: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     min-height: 100vh;
-    transition: all 0.3s;
-}
+  }
 
-body.rtl { direction: rtl; text-align: right; }
-
-header { text-align: center; padding: 2rem; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); color: white; font-size: 2rem; font-weight: bold; }
-
-main { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2rem; }
-
-.container {
-    background: white;
+  .container {
+    background: #fff;
     padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    max-width: 500px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     width: 100%;
+    max-width: 480px;
     text-align: center;
-    position: relative;
-}
+  }
 
-input[type="text"], select {
+  h1 {
+    color: var(--primary-color);
+  }
+
+  input, select {
+    padding: 0.8rem;
     width: 100%;
-    padding: 0.75rem;
-    margin-bottom: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
     border: 1px solid #d1d5db;
-    border-radius: 0.5rem;
     font-size: 1rem;
-    text-align: inherit;
-}
+  }
 
-button {
-    background-color: var(--primary-color);
+  button {
+    background: var(--button-color);
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
+    padding: 0.8rem 1.5rem;
     font-size: 1rem;
-    font-weight: bold;
-    border-radius: 0.5rem;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 0.3s;
-    position: relative;
-}
+    margin-top: 0.5rem;
+  }
 
-button:hover { background-color: var(--button-hover); }
+  button:hover {
+    background: var(--button-hover);
+  }
 
-button.loading::after {
-    content: '';
-    position: absolute;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid white;
-    border-top: 2px solid transparent;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-}
+  .short-link {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
 
-@keyframes spin { 0% { transform: translateY(-50%) rotate(0deg); } 100% { transform: translateY(-50%) rotate(360deg); } }
+  .short-link span {
+    overflow-wrap: anywhere;
+  }
 
-#result-box { margin-top: 1rem; display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
-#result-box.show { opacity: 1; }
-#short-url { display: block; margin-bottom: 0.5rem; word-break: break-all; color: var(--secondary-color); font-weight: bold; }
-#copy-btn { background-color: var(--accent-color); color: black; }
-#copy-btn:hover { background-color: #fbbf24; }
-
-#error-box { color: var(--error-color); margin-bottom: 1rem; }
-#toast { position: fixed; bottom: 1rem; right: 1rem; background: var(--primary-color); color: white; padding: 0.75rem 1rem; border-radius: 0.5rem; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+  .copy-btn {
+    background: var(--accent-color);
+    border: none;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #111827;
+  }
 </style>
 </head>
 <body>
-<header>Shortlinks.art</header>
 
-<main>
 <div class="container">
-    <div id="error-box"></div>
+  <h1>Shortlinks.art</h1>
+  <input type="url" id="longUrl" placeholder="Enter your URL here">
+  <select id="ttl">
+    <option value="1h">1 Hour</option>
+    <option value="24h" selected>24 Hours</option>
+    <option value="1w">1 Week</option>
+    <option value="never">Never</option>
+  </select>
+  <input type="text" id="customCode" placeholder="Custom code (optional)">
+  <button id="shortenBtn">Shorten</button>
 
-    <input type="text" id="long-url" placeholder="Enter your long URL here">
-
-    <select id="ttl"></select>
-
-    <select id="lang-select">
-        <option value="en">English</option>
-        <option value="he">עברית</option>
-        <option value="ru">Русский</option>
-    </select>
-
-    <button id="shorten-btn">Shorten</button>
-
-    <div id="result-box">
-        <a id="short-url" href="#" target="_blank"></a>
-        <button id="copy-btn">Copy</button>
+  <div id="result" style="display:none;">
+    <div class="short-link">
+      <span id="shortUrl"></span>
+      <button class="copy-btn" id="copyBtn">Copy</button>
     </div>
+  </div>
 </div>
-</main>
-
-<div id="toast"></div>
 
 <script>
-const shortenBtn = document.getElementById('shorten-btn');
-const longUrlInput = document.getElementById('long-url');
-const ttlSelect = document.getElementById('ttl');
-const langSelect = document.getElementById('lang-select');
-const resultBox = document.getElementById('result-box');
-const shortUrlLink = document.getElementById('short-url');
-const copyBtn = document.getElementById('copy-btn');
-const errorBox = document.getElementById('error-box');
-const toast = document.getElementById('toast');
+const shortenBtn = document.getElementById("shortenBtn");
+const resultDiv = document.getElementById("result");
+const shortUrlSpan = document.getElementById("shortUrl");
+const copyBtn = document.getElementById("copyBtn");
 
-let translations = {};
-const TTL_KEYS = ["ONE_HOUR","ONE_DAY","ONE_WEEK","NEVER"];
-const BASE_URL = "https://shortlinks.art";
+shortenBtn.addEventListener("click", async () => {
+    const longUrl = document.getElementById("longUrl").value.trim();
+    const ttl = document.getElementById("ttl").value;
+    const customCode = document.getElementById("customCode").value.trim() || undefined;
 
-async function loadTranslations(lang) {
+    if (!longUrl) {
+        alert("Please enter a URL.");
+        return;
+    }
+
     try {
-        const res = await fetch(`/api/v1/translations/${lang}`);
-        translations = await res.json();
-
-        shortenBtn.textContent = translations.shorten || "Shorten";
-        ttlSelect.innerHTML = '';
-        TTL_KEYS.forEach(key => {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = translations[`ttl_${key.toLowerCase()}`] || key;
-            ttlSelect.appendChild(opt);
+        const res = await fetch("/api/v1/links", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({long_url: longUrl, ttl: ttl, custom_code: customCode})
         });
-
-        document.body.classList.toggle('rtl', lang === 'he');
-    } catch { translations = {}; }
-}
-
-loadTranslations(langSelect.value);
-langSelect.addEventListener('change', () => loadTranslations(langSelect.value));
-
-function normalizeUrl(url) { if (!/^https?:\/\//i.test(url)) url = 'https://' + url; return url; }
-function isValidUrl(string) { try { new URL(string); return true; } catch (_) { return false; } }
-
-function showToast(message){ toast.textContent = message; toast.style.display='block'; setTimeout(()=>toast.style.display='none',3000); }
-
-// --- Real-time preview ---
-longUrlInput.addEventListener('input', () => {
-    let val = longUrlInput.value.trim();
-    if(val) {
-        shortUrlLink.href = BASE_URL + "/" + encodeURIComponent("abc123"); // placeholder preview
-        shortUrlLink.textContent = BASE_URL + "/" + encodeURIComponent("abc123");
-        resultBox.style.display = 'block';
-        resultBox.classList.add('show');
-    } else {
-        resultBox.classList.remove('show');
-        setTimeout(()=>resultBox.style.display='none',500);
+        const data = await res.json();
+        if (res.ok) {
+            shortUrlSpan.textContent = data.short_url;
+            resultDiv.style.display = "block";
+        } else {
+            alert(data.detail || "Error creating short link");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Failed to connect to the server. Try again later.");
     }
 });
 
-// --- Shorten button ---
-shortenBtn.addEventListener('click', async () => {
-    errorBox.textContent = '';
-    shortenBtn.classList.add('loading');
-
-    let longUrl = longUrlInput.value.trim();
-    if(!longUrl){ errorBox.textContent=translations.enter_valid_url||"Please enter a valid URL"; shortenBtn.classList.remove('loading'); return; }
-    longUrl = normalizeUrl(longUrl);
-    if(!isValidUrl(longUrl)){ errorBox.textContent=translations.invalid_url||"Invalid URL format"; shortenBtn.classList.remove('loading'); return; }
-
-    try{
-        const res = await fetch(`/api/v1/links`, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({long_url:longUrl, ttl:ttlSelect.value})
-        });
-        const data = await res.json();
-        if(!res.ok){ errorBox.textContent = data.detail||translations.default_error||"Error"; return; }
-
-        shortUrlLink.href = data.short_url;
-        shortUrlLink.textContent = data.short_url;
-        resultBox.style.display='block';
-        setTimeout(()=>resultBox.classList.add('show'),50);
-        showToast(translations.link_created||"Link created!");
-    } catch(err){ console.error(err); errorBox.textContent = translations.network_error||"Network error"; }
-    finally{ shortenBtn.classList.remove('loading'); }
-});
-
-copyBtn.addEventListener('click', ()=>{
-    if(shortUrlLink.href){ navigator.clipboard.writeText(shortUrlLink.href).then(()=>showToast(translations.copied||"Copied!")); }
+copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(shortUrlSpan.textContent)
+      .then(() => alert("Copied!"))
+      .catch(() => alert("Failed to copy."));
 });
 </script>
+
 </body>
 </html>

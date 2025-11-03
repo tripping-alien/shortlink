@@ -94,7 +94,7 @@
          IMPORTANT: Replace 'YOUR_PUB_ID' with your actual Google AdSense 
          publisher ID (e.g., 'pub-1234567890123456')
     ====================================================================== -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6170587092427912"
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUB_ID"
          crossorigin="anonymous"></script>
 </head>
 <body>
@@ -105,13 +105,22 @@
         </header>
 
         <form id="shorten-form">
-            <div class="input-group input-group-lg mb-3">
-                <input type="text" id="long-url-input" name="long_url" class="form-control"
-                       placeholder="{{ _('Enter a long URL to shorten...') }}" required>
-                <button type="submit" class="btn btn-primary" id="submit-button">
-                <span class="button-text">{{ _('Shorten') }}</span>
-                <span class="spinner" style="display: none;"></span>
-                </button>
+            <div class="mb-3">
+                <div class="input-group input-group-lg">
+                    <input type="text" id="long-url-input" name="long_url" class="form-control"
+                           placeholder="{{ _('Enter a long URL to shorten...') }}" required>
+                    <button type="submit" class="btn btn-primary" id="submit-button">
+                    <span class="button-text">{{ _('Shorten') }}</span>
+                    <span class="spinner" style="display: none;"></span>
+                    </button>
+                </div>
+                <!-- New input for Custom Short Link Suffix -->
+                <div class="input-group input-group-sm mt-2">
+                    <!-- Display the base URL dynamically for context -->
+                    <span class="input-group-text d-none d-sm-block">{{ base_url }}/</span>
+                    <input type="text" id="custom-short-code-input" name="custom_code" class="form-control"
+                           placeholder="{{ _('Optional: Custom short link suffix (e.g., "my-project")') }}">
+                </div>
             </div>
         </form>
 

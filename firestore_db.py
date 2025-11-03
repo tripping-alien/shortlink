@@ -191,12 +191,7 @@ def delete_link_by_id_and_token(link_id: str, token: str) -> int:
         print(traceback.format_exc())
         raise
 
-# --- Initialize DB on module import ---
-# This ensures 'db' is ready when 'app.py' imports this module.
-# The init_db() function uses the global 'db' and will only run once.
-if firebase_admin:
-    init_db()
-
+# --- Removed synchronous init_db() call to prevent import blocking ---
 
 # --- Local Testing ---
 if __name__ == '__main__':
@@ -213,3 +208,4 @@ if __name__ == '__main__':
     if db:
         print("\n--- Firestore API Test ---")
         # Existing test logic...
+

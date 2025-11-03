@@ -152,7 +152,13 @@ shortenBtn.addEventListener("click", async () => {
         });
         const data = await res.json();
         if(res.ok){
-            shortUrlSpan.textContent = data.short_url;
+            // Prepend the domain to the returned short code / preview URL
+            let fullLink = data.short_url;
+            if (!fullLink.startsWith("http")) {
+                fullLink = "https://shortlinks.art" + (fullLink.startsWith("/") ? "" : "/") + fullLink;
+            }
+
+            shortUrlSpan.textContent = fullLink;
             resultDiv.style.display = "block";
         } else {
             alert(data.detail || "Error creating short link");

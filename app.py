@@ -15,7 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from starlette.staticfiles import StaticFiles
 
 # --- Import Firestore wrapper ---
-import firestore_db
+import database
 
 # --- Other imports from your project ---
 from encoding import decode_id, get_hashids

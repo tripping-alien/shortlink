@@ -3,21 +3,21 @@ import logging
 import random
 import string
 import asyncio
-from typing import Optional, Dict, Any, List, Callable
+from typing import Optional, Dict, Any, List
+from datetime import datetime, timezone # <-- CRITICAL: datetime imports needed for database operations
 
 from firebase_admin import credentials, initialize_app, firestore
 
+# Import the necessary constants from the user's config file
 from config import SHORT_CODE_LENGTH, MAX_ID_GENERATION_RETRIES
 
 # --- Environment Setup and Constants ---
 
 logger = logging.getLogger(__name__)
 
-# Fallback values for environment variables (only used if they are unset/empty)
 CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
-CLIENT_DB_SECRET_FALLBACK = '{}' # Empty JSON object for anonymous/default sign-in
+CLIENT_DB_SECRET_FALLBACK = '{}' 
 
-# Global variables initialized once
 db: firestore.client = None
 APP_ID: str = ""
 
@@ -28,22 +28,22 @@ def get_db_connection():
     if db is None:
         # 1. Get configuration safely
         app_id_env = os.environ.get('APP_ID')
-        # Use a robust fallback: if the environment variable is not set or empty, use the fallback.
         APP_ID = app_id_env if app_id_env else CLIENT_APP_ID_FALLBACK
         
         firebase_config_str = os.environ.get('FIREBASE_CONFIG')
         if not firebase_config_str:
             logger.warning("FIREBASE_CONFIG environment variable is not set. Using fallback credentials.")
-            # In a real deployed environment, you must set FIREBASE_CONFIG or use a service account file.
-            # We use the fallback here to allow local development setup.
             firebase_config_str = CLIENT_DB_SECRET_FALLBACK
 
         try:
-            # 2. Initialize Firebase App
-            cred_dict = firestore.client.from_service_account_info(
-                credentials.Certificate(CLIENT_DB_SECRET_FALLBACK)
-            )
-            initialize_app(cred_dict, name=APP_ID)
+            # 2. Initialize Firebase App (using a minimal service account if env is missing)
+            if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                cred = credentials.ApplicationDefault()
+            else:
+                cred = credentials.Certificate(CLIENT_DB_SECRET_FALLBACK)
+                
+            # NOTE: We use a named app instance to avoid conflicts if other apps are initialized
+            initialize_app(cred, name=APP_ID)
             
             # 3. Get Firestore Client
             db = firestore.client()
@@ -57,9 +57,8 @@ def get_db_connection():
 
 
 def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
-    """Returns the CollectionReference for a public collection, ensuring APP_ID is not empty."""
+    """Returns the CollectionReference for a public collection."""
     if not APP_ID:
-        # Should not happen if get_db_connection runs first, but here for safety.
         raise ValueError("APP_ID is not set. Cannot construct collection path.")
     
     # Path: /artifacts/{appId}/public/data/{collection_name}
@@ -67,10 +66,11 @@ def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
     return get_db_connection().collection(path)
 
 
-# --- Internal Short Code Generation Logic ---
+# --- Internal Short Code Generation Logic (The Fix) ---
 
 def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     """Generates a random short code using alphanumeric characters."""
+    # This generates the short, random string that will be used as the Document ID.
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
@@ -82,31 +82,31 @@ def _is_short_code_unique(short_code: str) -> bool:
 
 def generate_unique_short_code() -> str:
     """
-    Generates a short ID and ensures its uniqueness against the database using a retry loop.
-    Returns the unique short code string.
-    Raises: RuntimeError if failed to find a unique ID after MAX_RETRIES.
+    Generates a unique short code by checking the database and retrying on collision.
+    
+    This is the core fix for the original 'encoding failed' error.
     """
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(MAX_ID_GENERATION_RETRIES):
         new_id = _generate_short_code()
         
-        # Check uniqueness in the database (synchronous call)
         if _is_short_code_unique(new_id):
             return new_id
         
         logger.debug(f"Collision detected for ID: {new_id}. Retrying... (Attempt {attempt + 1})")
 
+    # If all retries fail, raise a specific RuntimeError.
     raise RuntimeError(
-        f"Failed to generate a unique short ID after {MAX_RETRIES} attempts. Link space may be exhausted or highly saturated."
+        f"Failed to generate a unique short ID after {MAX_ID_GENERATION_RETRIES} attempts. Link space may be exhausted."
     )
 
 # --- Public Database Operations ---
 
 def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: str) -> str:
     """
-    Creates a new link document in Firestore using a pre-generated, unique short code
+    Creates a new link document in Firestore using the guaranteed unique short code
     as the Document ID.
     
-    Returns: The unique short code used as the Document ID.
+    Returns: The unique short code.
     """
     # 1. Generate guaranteed unique short code/ID
     short_code = generate_unique_short_code()
@@ -114,7 +114,6 @@ def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: s
     # 2. Prepare data
     data = {
         "long_url": long_url,
-        # Ensure the datetime object is timezone aware (as it comes from router.py)
         "expires_at": expires_at, 
         "deletion_token": deletion_token,
         "created_at": datetime.now(tz=timezone.utc),
@@ -124,7 +123,6 @@ def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: s
     doc_ref = get_collection_ref("links").document(short_code)
     doc_ref.set(data)
 
-    # Return the short code, which is now the document ID
     return short_code
 
 
@@ -135,24 +133,14 @@ def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
     
     if doc.exists:
         data = doc.to_dict()
-        # Ensure ID is included (the short code itself)
         data['id'] = doc.id 
         return data
     return None
 
 def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     """Retrieves all non-expired links for sitemap generation."""
-    
-    # In a real-world scenario, you would use a proper query with a filter here.
-    # Due to Firestore query limitations and index requirements, we simplify to
-    # fetching a few recent links for the sitemap demo.
-    
-    # WARNING: This implementation is for demo/sitemap only and is not scalable.
-    # A real implementation requires a `where('expires_at', '>', now)` clause,
-    # which requires a composite index that cannot be guaranteed in this environment.
-    
     try:
-        # Fetching a small, manageable number of links for sitemap generation
+        # NOTE: Fetching only 10 for sitemap demo due to indexing constraints
         query = get_collection_ref("links").limit(10).stream() 
         links = []
         for doc in query:
@@ -167,8 +155,5 @@ def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
 
 def delete_link_by_id_and_token(short_code: str, token: str):
     """Deletes a link if the short code and deletion token match."""
-    # Note: The security rule should enforce token check on the server side.
-    # The client-side logic in the router provides an extra layer.
     doc_ref = get_collection_ref("links").document(short_code)
     doc_ref.delete()
-    # No return value, a successful delete is assumed if no exception is raised.

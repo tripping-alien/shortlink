@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const copyButton = document.getElementById('copy-button');
     const ttlSelect = document.getElementById('ttl-select');
     const ttlInfoText = document.getElementById('ttl-info-text');
+    
+    // Key for localStorage
+    const LAST_TTL_KEY = 'lastSelectedTTL';
 
     // 1. Fetch Translations
     // Note: The base URL for the API is dynamically determined by the context, 
@@ -73,8 +76,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
         console.error("Could not load translations:", e);
     }
+    
+    // 2. Load TTL from memory and set default
+    const loadTtlPreference = () => {
+        const lastTtl = localStorage.getItem(LAST_TTL_KEY);
+        // Default to '1d' (24 Hours) if no preference is found
+        const defaultTtl = '1d'; 
 
-    // 2. TTL Info Text Handler
+        if (lastTtl && ttlSelect.querySelector(`option[value="${lastTtl}"]`)) {
+            ttlSelect.value = lastTtl;
+        } else {
+            // Set the default selection for the first load
+            ttlSelect.value = defaultTtl;
+        }
+    };
+    loadTtlPreference();
+
+    // 3. TTL Info Text Handler
     const updateTtlInfo = () => {
         const selectedOption = ttlSelect.options[ttlSelect.selectedIndex];
         const ttlValue = selectedOption.value;
@@ -89,20 +107,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             let text = translate('expire_in_duration', 'Your link is private and will automatically expire in {duration}.');
             info.textContent = text.replace('{duration}', durationText);
         }
+        
+        // Save the current selection to localStorage
+        localStorage.setItem(LAST_TTL_KEY, ttlValue);
     };
 
     ttlSelect.addEventListener('change', updateTtlInfo);
     updateTtlInfo(); // Initial call
 
-    // 3. Form Submission Handler
+    // 4. Form Submission Handler
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // 3.1 Get and normalize URL
+        // 4.1 Get and normalize URL
         const rawLongUrl = longUrlInput.value;
         const longUrl = normalizeUrl(rawLongUrl);
 
-        // 3.2 Validate custom code (must be lowercase alphanumeric only)
+        // 4.2 Validate custom code (must be lowercase alphanumeric only)
         let customCode = customCodeInput.value.trim().toLowerCase();
         const customCodePattern = /^[a-z0-9]*$/; 
 
@@ -114,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // 3.3 Prepare payload (only include custom_code if it has content)
+        // 4.3 Prepare payload (only include custom_code if it has content)
         const payload = {
             long_url: longUrl,
             ttl: ttlSelect.value
@@ -124,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             payload.custom_code = customCode;
         }
 
-        // 3.4 UI State: Loading
+        // 4.4 UI State: Loading
         submitButton.disabled = true;
         submitButton.querySelector('.button-text').style.display = 'none';
         submitButton.querySelector('.spinner').classList.add('spinner-border', 'spinner-border-sm');
@@ -132,14 +153,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         resultBox.classList.add('d-none'); // Hide previous result
 
         try {
-            // 3.5 API Call
+            // 4.5 API Call
             const response = await fetch('/api/v1/links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            // 3.6 Handle Response
+            // 4.6 Handle Response
             if (response.ok) {
                 const result = await response.json();
                 
@@ -176,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Network or unexpected error:', error);
             showToast(translate('network_error', 'Failed to connect to the server.'), 'danger');
         } finally {
-            // 3.7 UI State: Reset
+            // 4.7 UI State: Reset
             submitButton.disabled = false;
             submitButton.querySelector('.button-text').style.display = 'inline-block';
             submitButton.querySelector('.spinner').classList.remove('spinner-border', 'spinner-border-sm');
@@ -184,7 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 4. Copy Button Handler
+    // 5. Copy Button Handler
     copyButton.addEventListener('click', (e) => {
         e.preventDefault();
         const textToCopy = shortUrlLink.textContent;

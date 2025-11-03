@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="{{ lang_code }}" dir="{{ 'rtl' if lang_code in ['ar', 'he'] else 'ltr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- =====================================================================
+         1. CORE SEO & BROWSER METADATA
+    ====================================================================== -->
+     <title>{{ _('Private, Secure, and Free Shortlinks') }}</title>
+    <meta name="description" content="{{ _('A private and easy link shortener to create temporary, secure, and simple short URLs. Fast, free, and respects your privacy. | Приватный и простой сокращатель ссылок.') }}">
+    <meta name="keywords" content="{{ _('private link shortener, easy link shortener, secure url shortener, temporary url, free link shortener, custom url, short url, anonymous link shortener') }}">
+    <meta name="author" content="Andrey Lopukhov">
+    <link rel="canonical" href="{{ base_url }}/ui/{{ lang_code }}/">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+
+    <!-- Hreflang tags to indicate language targeting for search engines -->
+    <link rel="alternate" hreflang="en" href="{{ base_url }}/ui/en/" />
+    <link rel="alternate" hreflang="de" href="{{ base_url }}/ui/de/" />
+    <link rel="alternate" hreflang="ru" href="{{ base_url }}/ui/ru/" />
+    <link rel="alternate" hreflang="fr" href="{{ base_url }}/ui/fr/" />
+    <link rel="alternate" hreflang="nl" href="{{ base_url }}/ui/nl/" />
+    <link rel="alternate" hreflang="ar" href="{{ base_url }}/ui/ar/" />
+    <link rel="alternate" hreflang="he" href="{{ base_url }}/ui/he/" />
+    <link rel="alternate" hreflang="zh" href="{{ base_url }}/ui/zh/" />
+    <link rel="alternate" hreflang="ja" href="{{ base_url }}/ui/ja/" />
+    <link rel="alternate" hreflang="x-default" href="{{ base_url }}/ui/en/" />
+
+    <!-- =====================================================================
+         3. OPEN GRAPH (for Facebook, LinkedIn, etc.)
+    ====================================================================== -->
+    <meta property="og:title" content="{{ _('Private, Secure, and Free Shortlinks') }}">
+    <meta property="og:description" content="{{ _('A private and easy link shortener to create temporary, secure, and simple short URLs.') }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ base_url }}/ui/{{ lang_code }}/">
+    <meta property="og:image" content="https://raw.githubusercontent.com/tripping-alien/shortlink/refs/heads/main/assets/screenshot.png">
+    <meta property="og:image:alt" content="A screenshot of the Shortlinks URL shortener interface.">
+    <meta property="og:locale" content="{{ lang_code }}">
+
+    <!-- =====================================================================
+         4. TWITTER CARD (for Twitter/X)
+    ====================================================================== -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ _('Private, Secure, and Free Shortlinks') }}">
+    <meta name="twitter:description" content="{{ _('A private and easy link shortener to create temporary, secure, and simple short URLs.') }}">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/tripping-alien/shortlink/refs/heads/main/assets/screenshot.png">
+
+    <!-- =====================================================================
+         5. JSON-LD SCHEMA (for Rich Snippets)
+    ====================================================================== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Shortlinks",
+      "applicationCategory": "Utilities",
+      "operatingSystem": "Web",
+      "url": "{{ base_url }}",
+      "abstract": "{{ _('A private and easy link shortener for creating temporary and secure short URLs. Приватный и простой сокращатель ссылок.') }}",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <!-- Google Fonts for Comic Theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Link to your CSS and other files -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Assuming style.css is in /static/ -->
+    <link rel="stylesheet" href="/static/style.css"> 
+    <link rel="author" href="/static/humans.txt">
+
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-980223758">
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-980223758');
+</script>
+
+    <!-- =====================================================================
+         6. ADSENSE AUTO ADS SCRIPT
+         
+         IMPORTANT: Replace 'YOUR_PUB_ID' with your actual Google AdSense 
+         publisher ID (e.g., 'pub-1234567890123456')
+    ====================================================================== -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6170587092427912"
+         crossorigin="anonymous"></script>
+</head>
+<body>
+    <main class="container my-auto">
+        <header class="text-center mb-4">
+            <h1 class="display-5">{{ _('Private, Secure, and Free Shortlinks') }}</h1>
+            <p class="lead">{{ _('A privacy-focused, secure, and simple URL shortener.') }}</p>
+        </header>
+
+        <form id="shorten-form">
+            <div class="mb-3">
+                <div class="input-group input-group-lg">
+                    <input type="text" id="long-url-input" name="long_url" class="form-control"
+                           placeholder="{{ _('Enter a long URL to shorten...') }}" required>
+                    <button type="submit" class="btn btn-primary" id="submit-button">
+                    <span class="button-text">{{ _('Shorten') }}</span>
+                    <span class="spinner" style="display: none;"></span>
+                    </button>
+                </div>
+                <!-- New input for Custom Short Link Suffix - ID is critical for JS -->
+                <div class="input-group input-group-sm mt-2">
+                    <!-- Display the base URL dynamically for context -->
+                    <span class="input-group-text d-none d-sm-block">{{ base_url }}/</span>
+                    <input type="text" id="custom-short-code-input" name="custom_code" class="form-control"
+                           placeholder="{{ _('Optional: Custom short link suffix (a-z, 0-9)') }}">
+                </div>
+            </div>
+        </form>
+
+        <div class="row justify-content-center align-items-center text-center small gy-2 mt-2">
+            <div class="col-12 col-md-auto">
+                <p id="ttl-info-text" class="mb-0 ttl-control-label">{{ _('Your link is private and will automatically expire in {duration}.').format(duration=_('24 Hours')) }}</p>
+            </div>
+            <div class="col-12 col-md-auto">
+                <div class="d-flex justify-content-center align-items-center mt-1 mt-md-0">
+                    <label for="ttl-select" class="me-2 ttl-control-label">{{ _('Link expires in:') }}</label>
+                    <select id="ttl-select" name="ttl" class="form-select form-select-sm" form="shorten-form" style="width: auto;">
+                        <option value="1h">{{ _('1 Hour') }}</option>
+                        <option value="1d" selected>{{ _('24 Hours') }}</option>
+                        <option value="1w">{{ _('1 Week') }}</option>
+                        <option value="never">{{ _('Never') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-box" class="alert alert-success mt-4 d-none" role="alert">
+            <h5 class="alert-heading">{{ _('Your short link:') }}</h5>
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="#" id="short-url-link" class="short-url-display" target="_blank" rel="noopener noreferrer">
+                    <!-- The link will be dynamically inserted here by script.js -->
+                </a>
+                <button id="copy-button" class="btn copy-button" data-copy-text="{{ _('Copy') }}" data-copied-text="{{ _('Copied!') }}" title="{{ _('Copy') }}">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+        </div>
+
+        <footer class="mt-5 text-center text-muted small">
+            <div class="footer-links mb-3">
+                <a href="https://github.com/tripping-alien/shortlink" target="_blank" rel="noopener noreferrer">{{ _('View on') }} GitHub</a>
+                <a href="https://github.com/tripping-alien/shortlink/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">{{ _('Released under the') }} MIT License</a>
+            </div>
+
+        </footer>
+    </main>
+
+    <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+    <div id="animation-overlay"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

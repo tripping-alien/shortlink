@@ -230,30 +230,50 @@ async def preview(short_code: str):
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
     long_url = link["long_url"]
+
     return f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Preview - {short_code}</title>
+<meta name="description" content="Preview for short link {short_code} on Shortlinks.art">
 <meta name="robots" content="noindex">
 <style>
-body{{font-family:Arial,sans-serif;text-align:center;padding:50px;background:#f3f4f6;}}
-h1{{color:#4f46e5;}}
-p{{font-size:1.1rem;word-wrap:break-word;}}
-a.button{{display:inline-block;margin-top:20px;padding:10px 20px;background:#4f46e5;color:white;text-decoration:none;border-radius:8px;}}
-a.button:hover{{background:#6366f1;}}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+:root {{
+  --primary:#4f46e5;
+  --secondary:#6366f1;
+  --accent:#facc15;
+  --bg-gradient: linear-gradient(135deg,#667eea,#764ba2);
+  --card-bg:#fff;
+  --text:#111827;
+  --btn-hover:#5a56e0;
+}}
+
+*{{box-sizing:border-box;}}
+body{{margin:0;font-family:'Inter',sans-serif;background:var(--bg-gradient);display:flex;justify-content:center;align-items:center;min-height:100vh;color:var(--text);padding:1rem;}}
+.container{{background:var(--card-bg);padding:2rem;border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,0.12);width:100%;max-width:480px;text-align:center;}}
+h1{{color:var(--primary);margin-bottom:0.5rem;font-size:2rem;}}
+p{{margin-bottom:1rem;word-break:break-word;}}
+a.button{{display:inline-block;padding:0.8rem 1.5rem;background:var(--primary);color:#fff;text-decoration:none;font-weight:600;border-radius:12px;transition:all 0.2s ease;margin-top:1rem;}}
+a.button:hover{{background:var(--btn-hover);}}
+.short-link-box{{margin-top:1rem;padding:0.8rem 1rem;background:#f3f4f6;border-radius:12px;word-break:break-all;box-shadow:0 4px 12px rgba(0,0,0,0.08);}}
+@media(max-width:480px){{h1{{font-size:1.5rem;}}}}
 </style>
 </head>
 <body>
+<div class="container">
 <h1>Preview Link</h1>
-<p>Original URL:</p>
-<p>{long_url}</p>
-<a class="button" href="{BASE_URL}/r/{short_code}" target="_blank" rel="noopener noreferrer">Go to Link</a>
+<p class="short-link-box">{long_url}</p>
+<a class="button" href="/r/{short_code}" target="_blank">Go to Link</a>
+</div>
 </body>
 </html>
 """
-
+    
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
     link = get_link(short_code)

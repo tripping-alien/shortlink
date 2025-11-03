@@ -29,6 +29,48 @@ TTL_MAP = {
 db: firestore.Client = None
 APP_INSTANCE = None
 
+import threading
+import time
+
+@app.on_event("startup")
+def start_cleanup_thread():
+    thread = threading.Thread(target=cleanup_worker, daemon=True)
+    thread.start()
+    print("[CLEANUP] Background cleanup worker started.")
+
+def cleanup_worker():
+    while True:
+        try:
+            deleted = cleanup_expired_links()
+            print(f"[CLEANUP] Deleted {deleted} expired links.")
+        except Exception as e:
+            print(f"[CLEANUP ERROR] {e}")
+        time.sleep(1800)  # 30 minutes
+
+def cleanup_expired_links():
+    db = init_firebase()
+    collection = db.collection("links")
+    now = datetime.now(timezone.utc)
+
+    expired_docs = (
+        collection
+        .where("expires_at", "<", now)
+        .limit(100)
+        .stream()
+    )
+
+    batch = db.batch()
+    count = 0
+
+    for doc in expired_docs:
+        batch.delete(doc.reference)
+        count += 1
+
+    if count > 0:
+        batch.commit()
+
+    return count
+
 def init_firebase():
     global db, APP_INSTANCE
     if db:

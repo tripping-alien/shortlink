@@ -209,37 +209,97 @@ async def preview(short_code: str):
     link = get_link(short_code)
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
+    
     expires_at = link.get("expires_at")
-    if expires_at and expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=410, detail="Link expired")
+    expired_text = ""
+    if expires_at:
+        now = datetime.now(timezone.utc)
+        if expires_at < now:
+            raise HTTPException(status_code=410, detail="Link expired")
+        expired_text = f"<p>Expires at: {expires_at.strftime('%Y-%m-%d %H:%M UTC')}</p>"
+    
     long_url = link["long_url"]
-    return f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Preview - {short_code}</title>
-<meta name="robots" content="noindex">
-<style>
-body{{font-family:Arial,sans-serif;background:#f3f4f6;color:#111827;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;}}
-.container{{background:#fff;padding:2rem;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);text-align:center;max-width:480px;width:100%;}}
-h1{{color:#4f46e5;margin-bottom:1rem;}}
-p{{word-break:break-all;}}
-a.button{{display:inline-block;padding:10px 20px;background:#4f46e5;color:white;text-decoration:none;border-radius:8px;margin-top:20px;transition:0.3s;}}
-a.button:hover{{background:#6366f1;}}
-</style>
-</head>
-<body>
-<div class="container">
-<h1>Preview Link</h1>
-<p>Original URL:</p>
-<p>{long_url}</p>
-<a class="button" href="/r/{link['short_code']}" target="_blank">Go to Link</a>
-</div>
-</body>
-</html>
-"""
+    domain = long_url.split("//")[-1].split("/")[0]
+    favicon_url = f"https://www.google.com/s2/favicons?domain={domain}"
 
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Preview - {short_code}</title>
+        <meta name="robots" content="noindex">
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                background: #f3f4f6;
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }}
+            .card {{
+                background: white;
+                padding: 2rem;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                text-align: center;
+                max-width: 480px;
+                width: 90%;
+            }}
+            h1 {{
+                color: #4f46e5;
+                margin-bottom: 1rem;
+            }}
+            .link-info {{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                margin: 1rem 0;
+                font-size: 1.1rem;
+                word-break: break-all;
+            }}
+            .link-info img {{
+                width: 24px;
+                height: 24px;
+                border-radius: 4px;
+            }}
+            .button {{
+                display: inline-block;
+                padding: 0.8rem 1.5rem;
+                background: #4f46e5;
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: bold;
+                margin-top: 1rem;
+                transition: background 0.2s;
+            }}
+            .button:hover {{
+                background: #6366f1;
+            }}
+            .expires {{
+                color: #6b7280;
+                font-size: 0.9rem;
+                margin-top: 0.5rem;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>Preview Link</h1>
+            <div class="link-info">
+                <img src="{favicon_url}" alt="favicon">
+                <span>{long_url}</span>
+            </div>
+            {f'<div class="expires">{expired_text}</div>' if expired_text else ''}
+            <a class="button" href="{BASE_URL}/r/{short_code}" target="_blank">Go to Link</a>
+        </div>
+    </body>
+    </html>
+    """
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
     link = get_link(short_code)

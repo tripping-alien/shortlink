@@ -70,6 +70,12 @@ async def health_check():
     """Simple health check endpoint."""
     return {"status": "ok"}
 
+@app.get("/")
+async def root_redirect():
+    """Redirects the root URL to the default English UI page."""
+    # Using a 307 Temporary Redirect to send the user to the default language UI
+    return RedirectResponse(url="/ui/en/", status_code=307)
+
 
 @app.get("/ui/{lang_code}/", response_class=HTMLResponse)
 async def serve_index(request: Request, lang_code: str):

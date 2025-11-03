@@ -4,11 +4,12 @@ import random
 import string
 import asyncio
 import json 
-import tempfile # <-- IMPORTANT: Needed for creating a temporary file
+import tempfile 
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone 
 
-from firebase_admin import credentials, initialize_app, firestore
+from firebase_admin import credentials, initialize_app, firestore, get_app
+from firebase_admin import exceptions # Import exceptions for better error handling
 
 # Import the necessary constants from the user's config file
 from config import SHORT_CODE_LENGTH, MAX_ID_GENERATION_RETRIES
@@ -21,10 +22,11 @@ CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
 
 db: firestore.client = None
 APP_ID: str = ""
+APP_INSTANCE = None # NEW: Global to hold the initialized App instance
 
 def get_db_connection():
     """Initializes and returns the Firestore client (runs once)."""
-    global db, APP_ID
+    global db, APP_ID, APP_INSTANCE
 
     if db is None:
         # 1. Get configuration safely
@@ -39,20 +41,15 @@ def get_db_connection():
             
             # 2. Determine Credential Source
             if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                # Option 1: Running in environment with standard Service Account file path set
                 cred = credentials.ApplicationDefault()
                 logger.info("Using GOOGLE_APPLICATION_CREDENTIALS path.")
             elif firebase_config_str:
-                # Option 2: Config provided as JSON string (from FIREBASE_CONFIG env var)
-                # FIX for older firebase-admin versions (like 7.1.0): 
-                # Write the JSON string to a temporary file path, then load the certificate from the file.
-                
-                # Use tempfile.NamedTemporaryFile for a secure way to handle the file
+                # Write the JSON string to a temporary file path
                 with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
                     tmp_file.write(firebase_config_str)
-                    temp_file_path = tmp_file.name # Store the path for cleanup
+                    temp_file_path = tmp_file.name 
                 
-                # Now load credentials using the file path, which is supported by all versions
+                # Load credentials using the file path
                 cred = credentials.Certificate(temp_file_path)
                 logger.info(f"Using FIREBASE_CONFIG JSON string via temporary file: {temp_file_path}")
             
@@ -62,10 +59,17 @@ def get_db_connection():
                 raise ValueError("Firebase configuration is missing.")
 
             # 4. Initialize Firebase App (using a named app instance)
-            initialize_app(cred, name=APP_ID)
+            try:
+                # Check if the named app already exists (prevents accidental re-init)
+                APP_INSTANCE = get_app(APP_ID)
+                logger.info(f"Reusing existing Firebase App instance: {APP_ID}")
+            except ValueError:
+                # If not, initialize it
+                APP_INSTANCE = initialize_app(cred, name=APP_ID)
+                logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
-            # 5. Get Firestore Client
-            db = firestore.client()
+            # 5. Get Firestore Client, explicitly using the NAMED APP INSTANCE
+            db = firestore.client(app=APP_INSTANCE) # <-- CRITICAL FIX HERE
             logger.info("Firebase Firestore client initialized successfully.")
             
         except Exception as e:
@@ -98,10 +102,11 @@ def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
     
     # Path: /artifacts/{appId}/public/data/{collection_name}
     path = f"artifacts/{APP_ID}/public/data/{collection_name}"
+    # get_db_connection() ensures db is initialized
     return get_db_connection().collection(path)
 
 
-# --- Internal Short Code Generation Logic ---
+# --- Internal Short Code Generation Logic (Unchanged) ---
 
 def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     """Generates a random short code using alphanumeric characters."""
@@ -132,7 +137,7 @@ def generate_unique_short_code() -> str:
         f"Failed to generate a unique short ID after {MAX_ID_GENERATION_RETRIES} attempts. Link space may be exhausted."
     )
 
-# --- Public Database Operations ---
+# --- Public Database Operations (Unchanged) ---
 
 def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: str) -> str:
     """

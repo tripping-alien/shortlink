@@ -20,10 +20,22 @@ db: Optional[firestore.client] = None
 
 # --- Firestore Configuration ---
 FIREBASE_PROJECT_ID = 'web2-9a703'
+# This is a safe, non-empty ID to use if the environment variable is unset or empty.
 CLIENT_APP_ID_FALLBACK = '1:912785521871:web:424284b2b6b4dbd4214bba'
-# Use ENV variable or fallback for dynamic pathing
-APP_ID = os.environ.get('APP_ID', CLIENT_APP_ID_FALLBACK)
+
+# --- FIX: Ensure APP_ID is never an empty string ---
+APP_ID = os.environ.get('APP_ID')
+
+# If the environment variable APP_ID is not set or is an empty string, use the fallback.
+if not APP_ID:
+    APP_ID = CLIENT_APP_ID_FALLBACK
+    print(f"Using fallback APP_ID: {APP_ID}")
+else:
+    print(f"Using environment APP_ID: {APP_ID}")
+
+# Construct the collection path using the guaranteed non-empty APP_ID
 COLLECTION_PATH = f"artifacts/{APP_ID}/public/data/links"
+# ---------------------------------------------------
 
 
 # --- Initialize Firestore using ENV or Local JSON ---
@@ -84,7 +96,6 @@ def init_db():
 def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: str) -> str:
     """
     Creates a new document using doc().set() to explicitly control the DocumentReference.
-    This fixes the Attribute Error related to the return value of .add().
     """
     if db is None:
         raise ConnectionError("Database not initialized.")

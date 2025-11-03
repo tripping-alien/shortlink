@@ -205,6 +205,21 @@ async def index():
     </html>
     """
 
+@app.get("/r/{short_code}")
+async def redirect_to_link(short_code: str):
+    if not DB_INITIALIZED:
+        raise HTTPException(status_code=503, detail="Database not initialized.")
+    link_data = database.get_link_by_id(short_code)
+    if not link_data:
+        raise HTTPException(status_code=404, detail="Short link not found.")
+    
+    # Check expiration
+    expires_at = link_data.get("expires_at")
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Short link has expired.")
+    
+    return RedirectResponse(url=link_data["long_url"], status_code=307)
+
 @app.post("/api/v1/links")
 async def api_create_link(payload: Dict[str, Any]):
     long_url = payload.get("long_url")

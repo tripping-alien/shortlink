@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     # Used for generating canonical URLs in API responses and sitemaps.
     # For local development, it defaults to localhost. For production, set this env var.
     base_url: HttpUrl = "https://shortlinks.art"
-
+    BASE_URL = "https://shortlinks.art"
 
 @lru_cache
 def get_settings() -> Settings:

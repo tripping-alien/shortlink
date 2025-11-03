@@ -267,7 +267,70 @@ body {
         transform: translateY(0);
     }
 }
+/* =========================
+   STYLE A — POLISHED CLEAN
+   ========================= */
 
+/* Softer comic panel (less harsh border + shadow) */
+.container {
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+
+/* Reduce the comic "pop" look in the inputs */
+.form-control, .form-select {
+    border-width: 2px;
+    border-radius: 10px;
+}
+
+/* Smooth input focus instead of bold inversion */
+.form-control:focus, .form-select:focus {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color);
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Softer button styling */
+.btn-primary {
+    border-radius: 10px !important;
+    font-weight: 600;
+}
+
+/* Shorten the shorten button (already added, now polished) */
+#submit-button {
+    padding: 0.45rem 0.9rem !important;
+    font-size: 1rem !important;
+}
+
+/* Title remains playful, but slightly refined */
+.display-5 {
+    text-shadow: none;
+    letter-spacing: 1px;
+}
+
+/* Make the success message more modern */
+.alert-success {
+    border-width: 2px;
+    box-shadow: none;
+    border-radius: 8px;
+    background-color: #fffef5;
+}
+
+/* Short link result — cleaner + less bouncy */
+.short-url-display {
+    border-radius: 8px;
+    transition: transform 0.15s ease;
+}
+.short-url-display:hover {
+    transform: scale(1.01);
+}
+
+/* Copy button more subtle */
+.copy-button:hover {
+    transform: none;
+}
 /* =====================================================================
      6. RESPONSIVE DESIGN (for Mobile)
    ====================================================================== */

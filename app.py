@@ -1,5 +1,6 @@
 import os
 import secrets
+import html
 import string
 import random
 from datetime import datetime, timedelta, timezone
@@ -284,7 +285,17 @@ async def preview(short_code: str):
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
+    
     long_url = link["long_url"]
+    
+    # --- FIX ---
+    # Escape the URL for security (XSS) and to ensure the HTML is valid
+    # html.escape(..., quote=True) is for use inside attributes like 'href'
+    escaped_long_url_href = html.escape(long_url, quote=True)
+    # html.escape(...) is for displaying as text
+    escaped_long_url_display = html.escape(long_url)
+    # --- END FIX ---
+
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -295,25 +306,30 @@ async def preview(short_code: str):
         <meta name="robots" content="noindex">
         <meta name="description" content="Preview link before visiting">
         <style>
-            body {{ font-family: Arial,sans-serif; margin:0; background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; }}
+            body {{ font-family: Arial,sans-serif; margin:0; background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; box-sizing: border-box; }}
             .card {{ background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); width:100%; max-width:500px; text-align:center; }}
             h1 {{ margin-top:0; color:#4f46e5; }}
             p.url {{ word-break: break-word; font-weight:bold; color:#111827; }}
             a.button {{ display:inline-block; margin-top:20px; padding:12px 24px; background:#4f46e5; color:white; text-decoration:none; border-radius:8px; font-weight:bold; }}
             a.button:hover {{ background:#6366f1; }}
-            @media(max-width:500px){{ .card {{ padding:1rem; }} a.button {{ width:100%; }} }}
+            @media(max-width:500px){{ 
+                .card {{ padding:1.5rem; }} 
+                /* --- FIX: Added box-sizing to prevent overflow on mobile --- */
+                a.button {{ width:100%; box-sizing: border-box; }} 
+            }}
         </style>
     </head>
     <body>
         <div class="card">
             <h1>Preview Link</h1>
             <p>Original URL:</p>
-            <p class="url">{long_url}</p>
-            <a class="button" href="{BASE_URL}/r/{short_code}" target="_blank">Go to Link</a>
+            <p class="url">{escaped_long_url_display}</p>
+            <a class="button" href="{escaped_long_url_href}" target="_blank" rel="noopener noreferrer">Go to Link</a>
         </div>
     </body>
     </html>
     """
+
 
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):

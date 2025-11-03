@@ -406,9 +406,7 @@ p {{
 const copyBtn = document.getElementById("copyBtn");
 const originalUrl = document.getElementById("originalUrl").textContent;
 copyBtn.addEventListener("click",()=>{
-  navigator.clipboard.writeText(originalUrl)
-    .then(()=>alert("Copied!"))
-    .catch(()=>alert("Failed to copy."));
+  navigator.clipboard.writeText(originalUrl).catch(()=>alert("Failed to copy."));
 });
 </script>
 </body>

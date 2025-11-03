@@ -4,7 +4,7 @@ import random
 import string
 import asyncio
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timezone # <-- CRITICAL: datetime imports needed for database operations
+from datetime import datetime, timezone 
 
 from firebase_admin import credentials, initialize_app, firestore
 
@@ -22,7 +22,7 @@ db: firestore.client = None
 APP_ID: str = ""
 
 def get_db_connection():
-    """Initializes and returns the Firestore client."""
+    """Initializes and returns the Firestore client (runs once)."""
     global db, APP_ID
 
     if db is None:
@@ -36,13 +36,12 @@ def get_db_connection():
             firebase_config_str = CLIENT_DB_SECRET_FALLBACK
 
         try:
-            # 2. Initialize Firebase App (using a minimal service account if env is missing)
+            # 2. Initialize Firebase App 
             if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
                 cred = credentials.ApplicationDefault()
             else:
                 cred = credentials.Certificate(CLIENT_DB_SECRET_FALLBACK)
                 
-            # NOTE: We use a named app instance to avoid conflicts if other apps are initialized
             initialize_app(cred, name=APP_ID)
             
             # 3. Get Firestore Client
@@ -55,6 +54,15 @@ def get_db_connection():
 
     return db
 
+# --- FIX: Added the missing function referenced by app.py's lifespan event ---
+def init_db():
+    """
+    Explicitly initializes the database connection.
+    This function is called by the application's lifespan event (e.g., in app.py).
+    """
+    get_db_connection()
+# --- END FIX ---
+
 
 def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
     """Returns the CollectionReference for a public collection."""
@@ -66,11 +74,10 @@ def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
     return get_db_connection().collection(path)
 
 
-# --- Internal Short Code Generation Logic (The Fix) ---
+# --- Internal Short Code Generation Logic ---
 
 def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     """Generates a random short code using alphanumeric characters."""
-    # This generates the short, random string that will be used as the Document ID.
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
@@ -83,8 +90,6 @@ def _is_short_code_unique(short_code: str) -> bool:
 def generate_unique_short_code() -> str:
     """
     Generates a unique short code by checking the database and retrying on collision.
-    
-    This is the core fix for the original 'encoding failed' error.
     """
     for attempt in range(MAX_ID_GENERATION_RETRIES):
         new_id = _generate_short_code()
@@ -94,7 +99,6 @@ def generate_unique_short_code() -> str:
         
         logger.debug(f"Collision detected for ID: {new_id}. Retrying... (Attempt {attempt + 1})")
 
-    # If all retries fail, raise a specific RuntimeError.
     raise RuntimeError(
         f"Failed to generate a unique short ID after {MAX_ID_GENERATION_RETRIES} attempts. Link space may be exhausted."
     )
@@ -108,10 +112,8 @@ def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: s
     
     Returns: The unique short code.
     """
-    # 1. Generate guaranteed unique short code/ID
     short_code = generate_unique_short_code()
     
-    # 2. Prepare data
     data = {
         "long_url": long_url,
         "expires_at": expires_at, 
@@ -119,7 +121,6 @@ def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: s
         "created_at": datetime.now(tz=timezone.utc),
     }
 
-    # 3. Write data using the short_code as the Document ID
     doc_ref = get_collection_ref("links").document(short_code)
     doc_ref.set(data)
 
@@ -140,7 +141,6 @@ def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
 def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     """Retrieves all non-expired links for sitemap generation."""
     try:
-        # NOTE: Fetching only 10 for sitemap demo due to indexing constraints
         query = get_collection_ref("links").limit(10).stream() 
         links = []
         for doc in query:

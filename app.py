@@ -257,28 +257,86 @@ async def preview(short_code: str):
                 align-items: center;
                 justify-content: center;
                 gap: 0.5rem;
+@app.get("/preview/{short_code}", response_class=HTMLResponse)
+async def preview(short_code: str):
+    link = get_link(short_code)
+    if not link:
+        raise HTTPException(status_code=404, detail="Link not found")
+
+    expires_at = link.get("expires_at")
+    expired_text = ""
+    if expires_at:
+        now = datetime.now(timezone.utc)
+        if expires_at < now:
+            raise HTTPException(status_code=410, detail="Link expired")
+        expired_text = f"<p>Expires at: {expires_at.strftime('%Y-%m-%d %H:%M UTC')}</p>"
+
+    long_url = link["long_url"]
+    domain = long_url.split("//")[-1].split("/")[0]
+    favicon_url = f"https://www.google.com/s2/favicons?domain={domain}"
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Preview - {short_code}</title>
+        <meta name="robots" content="noindex">
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: linear-gradient(135deg, #6366f1, #4f46e5);
+            }}
+            .card {{
+                background: white;
+                padding: 2rem;
+                border-radius: 16px;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+                text-align: center;
+                max-width: 480px;
+                width: 90%;
+                animation: fadeIn 0.5s ease-out;
+            }}
+            @keyframes fadeIn {{
+                from {{ opacity: 0; transform: translateY(-20px); }}
+                to {{ opacity: 1; transform: translateY(0); }}
+            }}
+            h1 {{
+                color: #4f46e5;
+                margin-bottom: 1rem;
+            }}
+            .link-info {{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
                 margin: 1rem 0;
                 font-size: 1.1rem;
                 word-break: break-all;
             }}
             .link-info img {{
-                width: 24px;
-                height: 24px;
+                width: 28px;
+                height: 28px;
                 border-radius: 4px;
             }}
             .button {{
                 display: inline-block;
-                padding: 0.8rem 1.5rem;
-                background: #4f46e5;
-                color: white;
+                padding: 0.8rem 1.8rem;
+                background: #facc15;
+                color: #111827;
                 text-decoration: none;
-                border-radius: 8px;
+                border-radius: 10px;
                 font-weight: bold;
                 margin-top: 1rem;
-                transition: background 0.2s;
+                transition: all 0.2s;
             }}
             .button:hover {{
-                background: #6366f1;
+                background: #eab308;
             }}
             .expires {{
                 color: #6b7280;
@@ -300,12 +358,13 @@ async def preview(short_code: str):
     </body>
     </html>
     """
+    
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
-    link = get_link(short_code)
+    link = get_link(short_code)  # Make sure this uses the Firebase get_link() above
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
-    expires_at = link.get("expires_at")
+    expires_at = link.get('expires_at')
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
     return RedirectResponse(url=link["long_url"])

@@ -18,7 +18,7 @@ from starlette.staticfiles import StaticFiles
 # Ensure this module contains the rewritten Firestore CRUD functions:
 # init_db, create_link, get_link_by_id, get_all_active_links,
 # cleanup_expired_links, delete_link_by_id_and_token
-import firestore_db
+import database
 
 # --- Other imports from your project (Assuming these files exist) ---
 from encoding import decode_id, get_hashids

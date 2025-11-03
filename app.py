@@ -187,17 +187,18 @@ navigator.clipboard.writeText(shortUrlSpan.textContent).then(()=>alert("Copied!"
 </body>
 </html>
 """
-    
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
-    link = get_link(short_code)  # Make sure this uses the Firebase get_link() above
+    link = get_link(short_code)  # Use the correct function
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
-    expires_at = link.get('expires_at')
+    
+    expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
+    
+    # Redirect the user to the original URL
     return RedirectResponse(url=link["long_url"])
-
 @app.post("/api/v1/links")
 async def api_create_link(payload: Dict[str, Any]):
     long_url = payload.get("long_url")

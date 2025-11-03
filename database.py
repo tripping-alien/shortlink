@@ -3,6 +3,7 @@ import logging
 import random
 import string
 import asyncio
+import json # <-- NEW: Needed to parse JSON string from environment variable
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone 
 
@@ -30,38 +31,50 @@ def get_db_connection():
         app_id_env = os.environ.get('APP_ID')
         APP_ID = app_id_env if app_id_env else CLIENT_APP_ID_FALLBACK
         
+        # Get the Firebase config string (which should be the JSON content)
         firebase_config_str = os.environ.get('FIREBASE_CONFIG')
-        if not firebase_config_str:
-            logger.warning("FIREBASE_CONFIG environment variable is not set. Using fallback credentials.")
-            firebase_config_str = CLIENT_DB_SECRET_FALLBACK
 
         try:
-            # 2. Initialize Firebase App 
+            cred = None
+            
+            # 2. Determine Credential Source
             if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                # Option 1: Running in environment with standard Service Account file path set
                 cred = credentials.ApplicationDefault()
+                logger.info("Using GOOGLE_APPLICATION_CREDENTIALS path.")
+            elif firebase_config_str and firebase_config_str != CLIENT_DB_SECRET_FALLBACK:
+                # Option 2: Config provided as JSON string (from FIREBASE_CONFIG env var)
+                # FIX: Parse JSON string and initialize credentials from dictionary
+                config_json = json.loads(firebase_config_str)
+                cred = credentials.Certificate.from_service_account_info(config_json)
+                logger.info("Using FIREBASE_CONFIG JSON string from environment.")
             else:
-                cred = credentials.Certificate(CLIENT_DB_SECRET_FALLBACK)
-                
+                # Option 3: Fallback failure - required environment variable is missing
+                logger.error("FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS is not set. Cannot connect to Firebase.")
+                # Raise an explicit error if config is missing to avoid the FileNotFoundError
+                raise ValueError("Firebase configuration is missing.")
+
+            # 3. Initialize Firebase App (using a named app instance)
             initialize_app(cred, name=APP_ID)
             
-            # 3. Get Firestore Client
+            # 4. Get Firestore Client
             db = firestore.client()
             logger.info("Firebase Firestore client initialized successfully.")
             
         except Exception as e:
+            # Capture errors like missing config, JSON parsing errors, and Firebase Admin errors
             logger.error(f"Error initializing Firebase or Firestore: {e}")
-            raise RuntimeError("Database connection failure.")
+            raise RuntimeError("Database connection failure.") from e
 
     return db
 
-# --- FIX: Added the missing function referenced by app.py's lifespan event ---
+
 def init_db():
     """
     Explicitly initializes the database connection.
     This function is called by the application's lifespan event (e.g., in app.py).
     """
     get_db_connection()
-# --- END FIX ---
 
 
 def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
@@ -83,6 +96,8 @@ def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
 
 def _is_short_code_unique(short_code: str) -> bool:
     """Checks the database to see if a short code already exists."""
+    # Ensure connection is established before querying
+    db_conn = get_db_connection()
     doc_ref = get_collection_ref("links").document(short_code)
     doc = doc_ref.get()
     return not doc.exists

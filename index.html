@@ -15,7 +15,111 @@
 <script data-ad-client="pub-6170587092427912" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 
 <style>
-/* copy your CSS from the all-in-one file here */
+  :root {
+    --primary-color: #4f46e5;
+    --secondary-color: #6366f1;
+    --accent-color: #f59e0b;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-color: #111827;
+    --input-bg: #f9fafb;
+    --input-border: #d1d5db;
+    --button-color: var(--primary-color);
+    --button-hover: var(--secondary-color);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', Arial, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+
+  .container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .container:hover { transform: translateY(-4px); }
+
+  h1 {
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  input, select {
+    padding: 0.75rem 1rem;
+    width: 100%;
+    margin: 0.5rem 0;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    font-size: 1rem;
+    background: var(--input-bg);
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  button {
+    background: var(--button-color);
+    color: white;
+    border: none;
+    padding: 0.85rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    width: 100%;
+    transition: background 0.2s;
+  }
+
+  button:hover { background: var(--button-hover); }
+
+  .short-link {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 1rem;
+    background: var(--input-bg);
+    border-radius: 10px;
+    word-break: break-all;
+  }
+
+  .copy-btn {
+    background: var(--accent-color);
+    border: none;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #111827;
+    transition: background 0.2s;
+  }
+
+  .copy-btn:hover { background: #d97706; }
+
+  @media(max-width: 500px) {
+    .container { padding: 1.5rem; }
+    h1 { font-size: 1.75rem; }
+    button { padding: 0.7rem 1rem; }
+  }
 </style>
 </head>
 <body>

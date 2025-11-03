@@ -1,46 +1,69 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shortlink</title>
 
-  <title>Shortlink Generator</title>
-
+  <!-- Fonts & Bootstrap icons (optional) -->
   <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Bangers&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-  <link rel="stylesheet" href="/static/style.css">
+  <!-- Your CSS file (replace or paste) -->
+  <link rel="stylesheet" href="./style.css">
 </head>
-<body class="d-flex justify-content-center p-3">
+<body>
+  <main class="container my-auto">
+    <header class="text-center mb-3">
+      <h1 class="display-5">Shortlink Generator</h1>
+      <p class="lead">Private • Fast • Temporary</p>
+    </header>
 
-<div class="container text-center" style="max-width:600px;">
-  
-  <button id="themeToggle" class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2">🌙</button>
+    <form id="shorten-form" class="mb-2" onsubmit="return false;">
+      <div class="input-group input-group-lg mb-2">
+        <input id="long-url-input" type="text" class="form-control" placeholder="Enter a long URL (example.com or https://example.com)" required>
+        <button id="submit-button" class="btn btn-primary" type="button">
+          <span class="button-text">Shorten</span>
+          <span class="spinner" style="display:none;"></span>
+        </button>
+      </div>
 
-  <h1 class="display-5 mb-3">Shortlink Generator</h1>
+      <div class="input-group input-group-sm mb-2">
+        <span class="input-group-text d-none d-sm-block">base/</span>
+        <input id="custom-short-code-input" type="text" class="form-control" placeholder="Optional custom suffix (a-z, 0-9)">
+      </div>
 
-  <input id="urlInput" type="url" class="form-control mb-3" placeholder="https://example.com">
+      <div class="d-flex justify-content-between align-items-center small mb-2">
+        <div id="ttl-info-text" class="ttl-control-label">Expires in: <strong id="ttl-readable">24 Hours</strong></div>
+        <select id="ttl-select" class="form-select form-select-sm" style="width:auto;">
+          <option value="1h">1 Hour</option>
+          <option value="1d" selected>24 Hours</option>
+          <option value="1w">1 Week</option>
+          <option value="never">Never</option>
+        </select>
+      </div>
+    </form>
 
-  <input id="customCode" type="text" class="form-control mb-3" placeholder="Optional custom code (a-z, 0-9)" />
+    <div id="result-box" class="alert alert-success mt-3 d-none" role="alert">
+      <h5 class="alert-heading">Your short link:</h5>
+      <div class="d-flex justify-content-between align-items-center">
+        <a id="short-url-link" class="short-url-display" href="#" target="_blank" rel="noopener noreferrer"></a>
+        <button id="copy-button" class="btn copy-button" title="Copy">
+          <i class="bi bi-clipboard"></i>
+        </button>
+      </div>
+    </div>
 
-  <select id="ttl" class="form-select mb-3">
-    <option value="one_hour">1 Hour</option>
-    <option value="one_day" selected>24 Hours</option>
-    <option value="one_week">1 Week</option>
-    <option value="never">Never Expire</option>
-  </select>
+    <div id="error-box" class="text-danger small mt-2" style="display:none;"></div>
 
-  <button id="shortenBtn" class="btn btn-primary w-100">Shorten</button>
+    <footer class="mt-4 text-center text-muted small">
+      <div class="footer-links">Open-source • Self-hosted</div>
+    </footer>
+  </main>
 
-  <div id="resultContainer" class="mt-4" style="display:none;">
-    <a id="shortUrlDisplay" class="short-url-display"></a>
-    <button id="copyBtn" class="btn btn-outline-secondary copy-button mt-2">Copy</button>
-  </div>
+  <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
 
-  <div id="errorMsg" class="text-danger mt-3" style="display:none;"></div>
-
-</div>
-
-<script src="./script.js"></script>
+  <!-- Load script last from project root -->
+  <script src="./script.js"></script>
 </body>
 </html>

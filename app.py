@@ -2,6 +2,8 @@ import secrets
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
+# Import Path for reliable path handling
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -28,7 +30,10 @@ def _(text: str) -> str:
     return text
 
 # Setup templates and static files
-templates = Jinja2Templates(directory=".")
+# MODIFIED: Use the directory of the current file (app.py) as the template directory.
+# This ensures that Jinja2 always finds 'index.html' if it's placed next to app.py.
+BASE_DIR = Path(__file__).parent
+templates = Jinja2Templates(directory=str(BASE_DIR))
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -86,6 +91,7 @@ async def serve_index(request: Request, lang_code: str):
         "lang_code": lang_code, 
         "_": _ # Mock translation function
     }
+    # Templates.TemplateResponse uses the directory defined above (BASE_DIR)
     return templates.TemplateResponse("index.html", context)
 
 @app.post("/api/v1/links", response_model=ShortLinkResponse, status_code=201)

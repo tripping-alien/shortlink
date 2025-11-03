@@ -24,18 +24,13 @@ FIREBASE_PROJECT_ID = 'web2-9a703'
 CLIENT_APP_ID_FALLBACK = '1:912785521871:web:424284b2b6b4dbd4214bba'
 
 # --- FIX: Ensure APP_ID is never an empty string ---
-APP_ID = os.environ.get('APP_ID')
-
-# If the environment variable APP_ID is not set or is an empty string, use the fallback.
-if not APP_ID:
-    APP_ID = CLIENT_APP_ID_FALLBACK
-    print(f"Using fallback APP_ID: {APP_ID}")
-else:
-    print(f"Using environment APP_ID: {APP_ID}")
+# Use the environment variable, but fall back to the CLIENT_APP_ID_FALLBACK if it's unset or empty.
+APP_ID = os.environ.get('APP_ID') or CLIENT_APP_ID_FALLBACK
+print(f"Using determined APP_ID: {APP_ID}")
+# ---------------------------------------------------
 
 # Construct the collection path using the guaranteed non-empty APP_ID
 COLLECTION_PATH = f"artifacts/{APP_ID}/public/data/links"
-# ---------------------------------------------------
 
 
 # --- Initialize Firestore using ENV or Local JSON ---
@@ -211,9 +206,6 @@ def delete_link_by_id_and_token(link_id: str, token: str) -> int:
         print(traceback.format_exc())
         raise
 
-# Note: The synchronous init_db() call at the end of the module has been removed 
-# and is now correctly managed by FastAPI's lifespan hook in app.py.
-
 # --- Local Testing ---
 if __name__ == '__main__':
     from datetime import timedelta
@@ -229,4 +221,3 @@ if __name__ == '__main__':
     if db:
         print("\n--- Firestore API Test ---")
         # Existing test logic...
-

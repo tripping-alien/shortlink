@@ -274,12 +274,25 @@ a.button:hover{{background:var(--btn-hover);}}
 </html>
 """
     
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
+from datetime import datetime, timezone
+
+# Assumes you already have get_link(code) implemented
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
+    # Fetch the link document from Firebase
     link = get_link(short_code)
+    
     if not link:
+        # Link not found
         raise HTTPException(status_code=404, detail="Link not found")
+    
+    # Check expiration
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
-    return RedirectResponse(url=link["long_url"])
+    
+    # Redirect to the original URL
+    long_url = link["long_url"]
+    return RedirectResponse(url=long_url, status_code=302)

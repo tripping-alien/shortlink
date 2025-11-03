@@ -7,3 +7,4 @@ setuptools
 hashids
 slowapi
 firebase-admin
+google-cloud-firestore

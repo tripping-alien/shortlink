@@ -204,23 +204,25 @@ copyBtn.addEventListener("click",()=>{
 </html>
 """
 
+BASE_URL = "https://shortlinks.art"
+
 @app.post("/api/v1/links")
-async def api_create_link(payload: Dict[str, Any]):
+async def api_create_link(payload: dict):
     long_url = payload.get("long_url")
     ttl = payload.get("ttl", "24h")
     custom_code = payload.get("custom_code")
+    
     if not long_url:
         raise HTTPException(status_code=400, detail="Missing long_url")
+    
     try:
-        link = create_link(long_url, ttl, custom_code)
+        link = create_link_in_db(long_url, ttl, custom_code)
+        # Return full URL
         short_url = f"{BASE_URL}/r/{link['short_code']}"
         preview_url = f"{BASE_URL}/preview/{link['short_code']}"
         return {"short_url": short_url, "preview_url": preview_url}
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(short_code: str):
     link = get_link(short_code)

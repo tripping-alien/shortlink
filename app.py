@@ -65,6 +65,12 @@ def calculate_expiration(ttl_string: str) -> Optional[datetime]:
 
 # --- Routes ---
 
+@app.get("/health")
+async def health_check():
+    """Simple health check endpoint."""
+    return {"status": "ok"}
+
+
 @app.get("/ui/{lang_code}/", response_class=HTMLResponse)
 async def serve_index(request: Request, lang_code: str):
     """Serves the main shortener UI (index.html)."""

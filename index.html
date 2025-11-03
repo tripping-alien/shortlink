@@ -3,245 +3,227 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shortlinks.art | URL Shortener</title>
+<title>Shortlinks - Create Short URLs Instantly</title>
+<meta name="description" content="Create short, memorable links instantly with Shortlinks.art. Share, track, and copy your links in seconds.">
+<meta name="robots" content="index, follow">
 
-<!-- Google SEO / Meta -->
-<meta name="description" content="Shorten URLs instantly with Shortlinks.art! Share short links easily and track them.">
-<meta name="keywords" content="shorten url, url shortener, shortlinks, links, short url">
-<meta name="author" content="Shortlinks.art">
-<meta property="og:title" content="Shortlinks.art | URL Shortener">
-<meta property="og:description" content="Shorten URLs instantly with Shortlinks.art!">
+<!-- Open Graph for Social Sharing -->
+<meta property="og:title" content="Shortlinks - Create Short URLs Instantly">
+<meta property="og:description" content="Create short, memorable links instantly with Shortlinks.art. Share, track, and copy your links in seconds.">
 <meta property="og:url" content="https://shortlinks.art">
 <meta property="og:type" content="website">
 
+<!-- Favicon -->
+<link rel="icon" href="https://shortlinks.art/favicon.ico">
+
 <!-- Adsense Auto Ads -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=pub-6170587092427912"
-     crossorigin="anonymous"></script>
+<script data-ad-client="pub-6170587092427912" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 
 <style>
 :root {
-    --primary-color: #1a3c6e;
-    --primary-hover: #335ca6;
-    --bg-light: #f0f4ff;
-    --bg-card: #ffffff;
-    --bg-dark: #121212;
-    --card-dark: #1e1e1e;
-    --text-light: #ffffff;
-    --text-dark: #000000;
+    --primary-color: #4f46e5;
+    --secondary-color: #6366f1;
+    --accent-color: #facc15;
+    --bg-color: #f4f4f9;
+    --text-color: #1f2937;
+    --error-color: #dc2626;
+    --button-hover: #4338ca;
 }
 
 body {
     font-family: 'Segoe UI', sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     margin: 0;
     padding: 0;
-    transition: background 0.3s, color 0.3s;
-    background: var(--bg-light);
-    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: all 0.3s;
 }
 
-body.dark-mode {
-    background: var(--bg-dark);
-    color: var(--text-light);
-}
+body.rtl { direction: rtl; text-align: right; }
+
+header { text-align: center; padding: 2rem; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); color: white; font-size: 2rem; font-weight: bold; }
+
+main { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2rem; }
 
 .container {
-    background: var(--bg-card);
+    background: white;
     padding: 2rem;
-    border-radius: 16px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    max-width: 400px;
-    width: 90%;
+    border-radius: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    max-width: 500px;
+    width: 100%;
     text-align: center;
-    transition: background 0.3s, color 0.3s;
+    position: relative;
 }
 
-body.dark-mode .container {
-    background: var(--card-dark);
-}
-
-h1 {
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-}
-
-input[type="url"] {
+input[type="text"], select {
     width: 100%;
-    padding: 0.8rem;
+    padding: 0.75rem;
     margin-bottom: 1rem;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
     font-size: 1rem;
-}
-
-select, button {
-    padding: 0.6rem 1rem;
-    margin: 0.5rem 0;
-    border-radius: 8px;
-    border: none;
-    font-size: 1rem;
-}
-
-select {
-    background: var(--bg-light);
-    width: 100%;
-}
-
-body.dark-mode select {
-    background: #2a2a2a;
-    color: var(--text-light);
+    text-align: inherit;
 }
 
 button {
-    background: var(--primary-color);
+    background-color: var(--primary-color);
     color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 0.5rem;
     cursor: pointer;
-    width: 100%;
+    transition: background 0.3s;
+    position: relative;
 }
 
-button:hover {
-    background: var(--primary-hover);
+button:hover { background-color: var(--button-hover); }
+
+button.loading::after {
+    content: '';
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid white;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
-.result-box {
-    display: none;
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #eef3ff;
-    border-radius: 8px;
-}
+@keyframes spin { 0% { transform: translateY(-50%) rotate(0deg); } 100% { transform: translateY(-50%) rotate(360deg); } }
 
-body.dark-mode .result-box {
-    background: #2a2a2a;
-}
+#result-box { margin-top: 1rem; display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+#result-box.show { opacity: 1; }
+#short-url { display: block; margin-bottom: 0.5rem; word-break: break-all; color: var(--secondary-color); font-weight: bold; }
+#copy-btn { background-color: var(--accent-color); color: black; }
+#copy-btn:hover { background-color: #fbbf24; }
 
-.result-box a {
-    color: var(--primary-color);
-    word-break: break-all;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.copy-btn {
-    background: var(--primary-color);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.copy-btn:hover {
-    background: var(--primary-hover);
-}
-
-.error-box {
-    color: red;
-    margin-top: 0.5rem;
-}
-
-.dark-toggle {
-    margin-top: 1rem;
-    cursor: pointer;
-    text-decoration: underline;
-    font-size: 0.9rem;
-    color: var(--primary-color);
-}
+#error-box { color: var(--error-color); margin-bottom: 1rem; }
+#toast { position: fixed; bottom: 1rem; right: 1rem; background: var(--primary-color); color: white; padding: 0.75rem 1rem; border-radius: 0.5rem; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
 </style>
 </head>
 <body>
+<header>Shortlinks.art</header>
 
+<main>
 <div class="container">
-    <h1>Shortlinks.art</h1>
-    <input type="url" id="long-url" placeholder="Enter your long URL" required>
-    
-    <select id="ttl">
-        <option value="1_hour">1 Hour</option>
-        <option value="24_hours">24 Hours</option>
-        <option value="1_week">1 Week</option>
-        <option value="never">Never</option>
-    </select>
-    
-    <button id="shorten-btn">Shorten</button>
-    
-    <div class="result-box" id="result-box">
-        <a href="#" id="short-url" target="_blank"></a>
-        <button class="copy-btn" id="copy-btn">Copy</button>
-    </div>
-    
-    <div class="error-box" id="error-box"></div>
+    <div id="error-box"></div>
 
-    <div class="dark-toggle" id="dark-toggle">Toggle Dark Mode</div>
+    <input type="text" id="long-url" placeholder="Enter your long URL here">
+
+    <select id="ttl"></select>
+
+    <select id="lang-select">
+        <option value="en">English</option>
+        <option value="he">עברית</option>
+        <option value="ru">Русский</option>
+    </select>
+
+    <button id="shorten-btn">Shorten</button>
+
+    <div id="result-box">
+        <a id="short-url" href="#" target="_blank"></a>
+        <button id="copy-btn">Copy</button>
+    </div>
 </div>
+</main>
+
+<div id="toast"></div>
 
 <script>
 const shortenBtn = document.getElementById('shorten-btn');
 const longUrlInput = document.getElementById('long-url');
 const ttlSelect = document.getElementById('ttl');
+const langSelect = document.getElementById('lang-select');
 const resultBox = document.getElementById('result-box');
 const shortUrlLink = document.getElementById('short-url');
 const copyBtn = document.getElementById('copy-btn');
 const errorBox = document.getElementById('error-box');
-const darkToggle = document.getElementById('dark-toggle');
+const toast = document.getElementById('toast');
 
-shortenBtn.addEventListener('click', async () => {
-    errorBox.textContent = '';
-    resultBox.style.display = 'none';
-    
-    const longUrl = longUrlInput.value.trim();
-    const ttl = ttlSelect.value;
+let translations = {};
+const TTL_KEYS = ["ONE_HOUR","ONE_DAY","ONE_WEEK","NEVER"];
+const BASE_URL = "https://shortlinks.art";
 
-    if (!longUrl) {
-        errorBox.textContent = "Please enter a valid URL.";
-        return;
-    }
-
+async function loadTranslations(lang) {
     try {
-        const response = await fetch(`/api/v1/links`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ long_url: longUrl, ttl: ttl })
+        const res = await fetch(`/api/v1/translations/${lang}`);
+        translations = await res.json();
+
+        shortenBtn.textContent = translations.shorten || "Shorten";
+        ttlSelect.innerHTML = '';
+        TTL_KEYS.forEach(key => {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = translations[`ttl_${key.toLowerCase()}`] || key;
+            ttlSelect.appendChild(opt);
         });
 
-        const data = await response.json();
-        console.log('Backend response:', data);
+        document.body.classList.toggle('rtl', lang === 'he');
+    } catch { translations = {}; }
+}
 
-        if (!response.ok) {
-            errorBox.textContent = data.detail || "Error creating short link.";
-            return;
-        }
+loadTranslations(langSelect.value);
+langSelect.addEventListener('change', () => loadTranslations(langSelect.value));
+
+function normalizeUrl(url) { if (!/^https?:\/\//i.test(url)) url = 'https://' + url; return url; }
+function isValidUrl(string) { try { new URL(string); return true; } catch (_) { return false; } }
+
+function showToast(message){ toast.textContent = message; toast.style.display='block'; setTimeout(()=>toast.style.display='none',3000); }
+
+// --- Real-time preview ---
+longUrlInput.addEventListener('input', () => {
+    let val = longUrlInput.value.trim();
+    if(val) {
+        shortUrlLink.href = BASE_URL + "/" + encodeURIComponent("abc123"); // placeholder preview
+        shortUrlLink.textContent = BASE_URL + "/" + encodeURIComponent("abc123");
+        resultBox.style.display = 'block';
+        resultBox.classList.add('show');
+    } else {
+        resultBox.classList.remove('show');
+        setTimeout(()=>resultBox.style.display='none',500);
+    }
+});
+
+// --- Shorten button ---
+shortenBtn.addEventListener('click', async () => {
+    errorBox.textContent = '';
+    shortenBtn.classList.add('loading');
+
+    let longUrl = longUrlInput.value.trim();
+    if(!longUrl){ errorBox.textContent=translations.enter_valid_url||"Please enter a valid URL"; shortenBtn.classList.remove('loading'); return; }
+    longUrl = normalizeUrl(longUrl);
+    if(!isValidUrl(longUrl)){ errorBox.textContent=translations.invalid_url||"Invalid URL format"; shortenBtn.classList.remove('loading'); return; }
+
+    try{
+        const res = await fetch(`/api/v1/links`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({long_url:longUrl, ttl:ttlSelect.value})
+        });
+        const data = await res.json();
+        if(!res.ok){ errorBox.textContent = data.detail||translations.default_error||"Error"; return; }
 
         shortUrlLink.href = data.short_url;
         shortUrlLink.textContent = data.short_url;
-        resultBox.style.display = 'block';
-
-    } catch (err) {
-        console.error(err);
-        errorBox.textContent = "Network error. Please try again.";
-    }
+        resultBox.style.display='block';
+        setTimeout(()=>resultBox.classList.add('show'),50);
+        showToast(translations.link_created||"Link created!");
+    } catch(err){ console.error(err); errorBox.textContent = translations.network_error||"Network error"; }
+    finally{ shortenBtn.classList.remove('loading'); }
 });
 
-copyBtn.addEventListener('click', () => {
-    if (shortUrlLink.href) {
-        navigator.clipboard.writeText(shortUrlLink.href)
-            .then(() => {
-                copyBtn.textContent = "Copied!";
-                setTimeout(() => copyBtn.textContent = "Copy", 2000);
-            })
-            .catch(() => {
-                copyBtn.textContent = "Failed";
-                setTimeout(() => copyBtn.textContent = "Copy", 2000);
-            });
-    }
-});
-
-// Dark mode toggle
-darkToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
+copyBtn.addEventListener('click', ()=>{
+    if(shortUrlLink.href){ navigator.clipboard.writeText(shortUrlLink.href).then(()=>showToast(translations.copied||"Copied!")); }
 });
 </script>
-
 </body>
 </html>

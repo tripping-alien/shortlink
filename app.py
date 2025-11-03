@@ -295,104 +295,122 @@ async def preview(short_code: str):
     </body>
     </html>
     """
+    from fastapi.responses import HTMLResponse
+from datetime import datetime, timezone
+
+BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
+
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(short_code: str):
-    link = get_link(short_code)
+    link = get_link(short_code)  # Your existing DB function
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
 
+    # Check expiration
     expires_at = link.get("expires_at")
-    expired_text = ""
-    if expires_at:
-        now = datetime.now(timezone.utc)
-        if expires_at < now:
-            raise HTTPException(status_code=410, detail="Link expired")
-        expired_text = f"<p>Expires at: {expires_at.strftime('%Y-%m-%d %H:%M UTC')}</p>"
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Link expired")
 
     long_url = link["long_url"]
-    domain = long_url.split("//")[-1].split("/")[0]
-    favicon_url = f"https://www.google.com/s2/favicons?domain={domain}"
+    expires_str = (
+        expires_at.strftime("%Y-%m-%d %H:%M UTC") if expires_at else "Never"
+    )
 
-    return f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Preview - {short_code}</title>
-        <meta name="robots" content="noindex">
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                margin: 0;
-                min-height: 100vh;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                background: linear-gradient(135deg, #6366f1, #4f46e5);
-            }}
-            .card {{
-                background: white;
-                padding: 2rem;
-                border-radius: 16px;
-                box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-                text-align: center;
-                max-width: 480px;
-                width: 90%;
-                animation: fadeIn 0.5s ease-out;
-            }}
-            @keyframes fadeIn {{
-                from {{ opacity: 0; transform: translateY(-20px); }}
-                to {{ opacity: 1; transform: translateY(0); }}
-            }}
-            h1 {{
-                color: #4f46e5;
-                margin-bottom: 1rem;
-            }}
-            .link-info {{
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-                margin: 1rem 0;
-                font-size: 1.1rem;
-                word-break: break-all;
-            }}
-            .link-info img {{
-                width: 28px;
-                height: 28px;
-                border-radius: 4px;
-            }}
-            .button {{
-                display: inline-block;
-                padding: 0.8rem 1.8rem;
-                background: #facc15;
-                color: #111827;
-                text-decoration: none;
-                border-radius: 10px;
-                font-weight: bold;
-                margin-top: 1rem;
-                transition: all 0.2s;
-            }}
-            .button:hover {{
-                background: #eab308;
-            }}
-            .expires {{
-                color: #6b7280;
-                font-size: 0.9rem;
-                margin-top: 0.5rem;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h1>Preview Link</h1>
-            <div class="link-info">
-                <img src="{favicon_url}" alt="favicon">
-                <span>{long_url}</span>
-            </div>
-            {f'<div class="expires">{expired_text}</div>' if expired_text else ''}
-            <a class="button" href="{BASE_URL}/r/{short_code}" target="_blank">Go to Link</a>
-        </div>
-    </body>
-    </html>
-    """
+    return HTMLResponse(f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview - {short_code}</title>
+<meta name="description" content="Preview your short link before visiting.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{BASE_URL}/preview/{short_code}">
+<style>
+:root {{
+  --primary: #4f46e5;
+  --secondary: #6366f1;
+  --accent: #facc15;
+  --bg: linear-gradient(135deg,#e0f2fe,#f0f9ff);
+  --text: #111827;
+  --card-bg: #fff;
+}}
+body {{
+  margin:0;
+  font-family:'Segoe UI',Arial,sans-serif;
+  background: var(--bg);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  padding:1rem;
+}}
+.card {{
+  background: var(--card-bg);
+  padding:2rem;
+  border-radius:16px;
+  max-width:480px;
+  width:100%;
+  box-shadow:0 12px 28px rgba(0,0,0,0.15);
+  text-align:center;
+}}
+h1 {{
+  color: var(--primary);
+  margin-bottom:0.5rem;
+}}
+p {{
+  margin:0.5rem 0;
+  word-break: break-word;
+}}
+.button {{
+  display:inline-block;
+  padding:0.8rem 1.5rem;
+  margin-top:1rem;
+  border-radius:8px;
+  color:white;
+  background: var(--primary);
+  text-decoration:none;
+  transition:0.3s;
+}}
+.button:hover {{ background: var(--secondary); }}
+.copy-btn {{
+  margin-top:0.5rem;
+  padding:0.5rem 1rem;
+  background: var(--accent);
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  color: var(--text);
+}}
+.ttl {{
+  margin-top:0.5rem;
+  font-size:0.9rem;
+  color:#6b7280;
+}}
+@media (max-width:500px){{
+  .card {{ padding:1.5rem; }}
+  .button, .copy-btn {{ width:100%; }}
+}}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Preview Link</h1>
+  <p>Original URL:</p>
+  <p id="originalUrl">{long_url}</p>
+  <p class="ttl">Expires: {expires_str}</p>
+  <button class="copy-btn" id="copyBtn">Copy URL</button>
+  <a class="button" href="{BASE_URL}/r/{short_code}" target="_blank" rel="noopener noreferrer">Go to Link</a>
+</div>
+<script>
+const copyBtn = document.getElementById("copyBtn");
+const originalUrl = document.getElementById("originalUrl").textContent;
+copyBtn.addEventListener("click",()=>{
+  navigator.clipboard.writeText(originalUrl)
+    .then(()=>alert("Copied!"))
+    .catch(()=>alert("Failed to copy."));
+});
+</script>
+</body>
+</html>
+    """)

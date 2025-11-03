@@ -11,6 +11,8 @@ from pydantic import HttpUrl
 from pydantic_settings import BaseSettings
 
 # --- Enums and Mappings ---
+SHORT_CODE_LENGTH = 6
+MAX_ID_GENERATION_RETRIES = 10 # Max attempts to find a unique ID
 
 class TTL(str, Enum):
     """Time-to-live options for short links."""

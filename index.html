@@ -3,177 +3,210 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortlinks.art | URL Shortener</title>
 
-<title>Shortlink Generator | Create Custom Short URLs</title>
-<meta name="description" content="Generate short, memorable links instantly. Create custom short codes, set expiration times, and share safely.">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://shortlinks.art">
+<!-- Google SEO / Meta -->
+<meta name="description" content="Shorten URLs instantly with Shortlinks.art! Share short links easily and track them.">
+<meta name="keywords" content="shorten url, url shortener, shortlinks, links, short url">
+<meta name="author" content="Shortlinks.art">
+<meta property="og:title" content="Shortlinks.art | URL Shortener">
+<meta property="og:description" content="Shorten URLs instantly with Shortlinks.art!">
+<meta property="og:url" content="https://shortlinks.art">
+<meta property="og:type" content="website">
 
 <!-- Adsense Auto Ads -->
-<script data-ad-client="pub-6170587092427912" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=pub-6170587092427912"
+     crossorigin="anonymous"></script>
 
 <style>
-/* --- Color Palette & Styles --- */
 :root {
-    --primary: #4f46e5;
-    --secondary: #facc15;
-    --accent: #10b981;
-    --bg: #f3f4f6;
-    --card-bg: #ffffff;
-    --text: #111827;
-    --text-light: #6b7280;
+    --primary-color: #1a3c6e;
+    --primary-hover: #335ca6;
+    --bg-light: #f0f4ff;
+    --bg-card: #ffffff;
+    --bg-dark: #121212;
+    --card-dark: #1e1e1e;
+    --text-light: #ffffff;
+    --text-dark: #000000;
 }
 
 body {
-    margin: 0;
     font-family: 'Segoe UI', sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
     min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s, color 0.3s;
+    background: var(--bg-light);
+    color: var(--text-dark);
 }
 
-header {
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--primary);
-    color: white;
-    text-align: center;
-    font-size: 1.5rem;
-    font-weight: bold;
+body.dark-mode {
+    background: var(--bg-dark);
+    color: var(--text-light);
 }
 
-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem 1rem;
-    width: 100%;
-    max-width: 500px;
-}
-
-.card {
-    background-color: var(--card-bg);
+.container {
+    background: var(--bg-card);
     padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    transition: background 0.3s, color 0.3s;
 }
 
-input, select, button {
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    border: 1px solid #d1d5db;
-    font-size: 1rem;
+body.dark-mode .container {
+    background: var(--card-dark);
+}
+
+h1 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+input[type="url"] {
     width: 100%;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+select, button {
+    padding: 0.6rem 1rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+}
+
+select {
+    background: var(--bg-light);
+    width: 100%;
+}
+
+body.dark-mode select {
+    background: #2a2a2a;
+    color: var(--text-light);
 }
 
 button {
-    background-color: var(--primary);
+    background: var(--primary-color);
     color: white;
-    border: none;
     cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s ease;
+    width: 100%;
 }
 
 button:hover {
-    background-color: #4338ca;
+    background: var(--primary-hover);
 }
 
 .result-box {
     display: none;
     margin-top: 1rem;
-    background-color: var(--accent);
-    color: white;
     padding: 1rem;
-    border-radius: 0.75rem;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    background: #eef3ff;
+    border-radius: 8px;
+}
+
+body.dark-mode .result-box {
+    background: #2a2a2a;
 }
 
 .result-box a {
+    color: var(--primary-color);
+    word-break: break-all;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.copy-btn {
+    background: var(--primary-color);
     color: white;
-    text-decoration: underline;
-    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
 }
 
-.error {
+.copy-btn:hover {
+    background: var(--primary-hover);
+}
+
+.error-box {
     color: red;
-    font-size: 0.9rem;
+    margin-top: 0.5rem;
 }
 
-@media (max-width: 500px) {
-    .card {
-        padding: 1rem;
-    }
+.dark-toggle {
+    margin-top: 1rem;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    color: var(--primary-color);
 }
 </style>
 </head>
 <body>
 
-<header>Shortlink Generator</header>
-
-<main>
-    <div class="card">
-        <input type="url" id="long-url" placeholder="Enter your long URL here" required>
-        <input type="text" id="custom-code" placeholder="Custom short code (optional)">
-        <select id="ttl-select">
-            <option value="1h">1 Hour</option>
-            <option value="1d" selected>24 Hours</option>
-            <option value="1w">1 Week</option>
-            <option value="never">Never</option>
-        </select>
-        <button id="shorten-btn">Shorten</button>
-        <div class="error" id="error-box"></div>
-
-        <div class="result-box" id="result-box">
-            <a href="#" target="_blank" id="short-url-link"></a>
-            <button id="copy-btn">Copy</button>
-        </div>
+<div class="container">
+    <h1>Shortlinks.art</h1>
+    <input type="url" id="long-url" placeholder="Enter your long URL" required>
+    
+    <select id="ttl">
+        <option value="1_hour">1 Hour</option>
+        <option value="24_hours">24 Hours</option>
+        <option value="1_week">1 Week</option>
+        <option value="never">Never</option>
+    </select>
+    
+    <button id="shorten-btn">Shorten</button>
+    
+    <div class="result-box" id="result-box">
+        <a href="#" id="short-url" target="_blank"></a>
+        <button class="copy-btn" id="copy-btn">Copy</button>
     </div>
-</main>
+    
+    <div class="error-box" id="error-box"></div>
+
+    <div class="dark-toggle" id="dark-toggle">Toggle Dark Mode</div>
+</div>
 
 <script>
+const shortenBtn = document.getElementById('shorten-btn');
 const longUrlInput = document.getElementById('long-url');
-const customCodeInput = document.getElementById('custom-code');
-const ttlSelect = document.getElementById('ttl-select');
-const submitBtn = document.getElementById('shorten-btn');
-const errorBox = document.getElementById('error-box');
+const ttlSelect = document.getElementById('ttl');
 const resultBox = document.getElementById('result-box');
-const shortUrlLink = document.getElementById('short-url-link');
+const shortUrlLink = document.getElementById('short-url');
 const copyBtn = document.getElementById('copy-btn');
+const errorBox = document.getElementById('error-box');
+const darkToggle = document.getElementById('dark-toggle');
 
-submitBtn.addEventListener('click', async () => {
-    errorBox.textContent = "";
+shortenBtn.addEventListener('click', async () => {
+    errorBox.textContent = '';
+    resultBox.style.display = 'none';
+    
     const longUrl = longUrlInput.value.trim();
-    const customCode = customCodeInput.value.trim();
     const ttl = ttlSelect.value;
 
     if (!longUrl) {
-        errorBox.textContent = "Please enter a URL!";
+        errorBox.textContent = "Please enter a valid URL.";
         return;
     }
 
     try {
-        const response = await fetch("/api/v1/links", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                long_url: longUrl,
-                custom_code: customCode || undefined,
-                ttl: ttl
-            })
+        const response = await fetch(`/api/v1/links`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ long_url: longUrl, ttl: ttl })
         });
 
         const data = await response.json();
+        console.log('Backend response:', data);
 
         if (!response.ok) {
             errorBox.textContent = data.detail || "Error creating short link.";
@@ -182,31 +215,32 @@ submitBtn.addEventListener('click', async () => {
 
         shortUrlLink.href = data.short_url;
         shortUrlLink.textContent = data.short_url;
-        resultBox.style.display = "flex";
+        resultBox.style.display = 'block';
 
     } catch (err) {
-        errorBox.textContent = "Network error. Try again later.";
         console.error(err);
+        errorBox.textContent = "Network error. Please try again.";
     }
 });
 
 copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(shortUrlLink.href).then(() => {
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => copyBtn.textContent = "Copy", 2000);
-    });
+    if (shortUrlLink.href) {
+        navigator.clipboard.writeText(shortUrlLink.href)
+            .then(() => {
+                copyBtn.textContent = "Copied!";
+                setTimeout(() => copyBtn.textContent = "Copy", 2000);
+            })
+            .catch(() => {
+                copyBtn.textContent = "Failed";
+                setTimeout(() => copyBtn.textContent = "Copy", 2000);
+            });
+    }
 });
-</script>
 
-<!-- Structured Data for SEO -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Shortlink Generator",
-  "url": "https://shortlinks.art/",
-  "description": "Generate short, memorable links instantly. Create custom short codes, set expiration times, and share safely."
-}
+// Dark mode toggle
+darkToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+});
 </script>
 
 </body>

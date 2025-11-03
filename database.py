@@ -3,7 +3,8 @@ import logging
 import random
 import string
 import asyncio
-import json # <-- NEW: Needed to parse JSON string from environment variable
+import json 
+import tempfile # <-- IMPORTANT: Needed for creating a temporary file
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone 
 
@@ -17,7 +18,6 @@ from config import SHORT_CODE_LENGTH, MAX_ID_GENERATION_RETRIES
 logger = logging.getLogger(__name__)
 
 CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
-CLIENT_DB_SECRET_FALLBACK = '{}' 
 
 db: firestore.client = None
 APP_ID: str = ""
@@ -31,9 +31,9 @@ def get_db_connection():
         app_id_env = os.environ.get('APP_ID')
         APP_ID = app_id_env if app_id_env else CLIENT_APP_ID_FALLBACK
         
-        # Get the Firebase config string (which should be the JSON content)
         firebase_config_str = os.environ.get('FIREBASE_CONFIG')
 
+        temp_file_path = None
         try:
             cred = None
             
@@ -42,29 +42,43 @@ def get_db_connection():
                 # Option 1: Running in environment with standard Service Account file path set
                 cred = credentials.ApplicationDefault()
                 logger.info("Using GOOGLE_APPLICATION_CREDENTIALS path.")
-            elif firebase_config_str and firebase_config_str != CLIENT_DB_SECRET_FALLBACK:
+            elif firebase_config_str:
                 # Option 2: Config provided as JSON string (from FIREBASE_CONFIG env var)
-                # FIX: Parse JSON string and initialize credentials from dictionary
-                config_json = json.loads(firebase_config_str)
-                cred = credentials.Certificate.from_service_account_info(config_json)
-                logger.info("Using FIREBASE_CONFIG JSON string from environment.")
-            else:
-                # Option 3: Fallback failure - required environment variable is missing
+                # FIX for older firebase-admin versions (like 7.1.0): 
+                # Write the JSON string to a temporary file path, then load the certificate from the file.
+                
+                # Use tempfile.NamedTemporaryFile for a secure way to handle the file
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
+                    tmp_file.write(firebase_config_str)
+                    temp_file_path = tmp_file.name # Store the path for cleanup
+                
+                # Now load credentials using the file path, which is supported by all versions
+                cred = credentials.Certificate(temp_file_path)
+                logger.info(f"Using FIREBASE_CONFIG JSON string via temporary file: {temp_file_path}")
+            
+            # 3. Handle missing configuration
+            if cred is None:
                 logger.error("FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS is not set. Cannot connect to Firebase.")
-                # Raise an explicit error if config is missing to avoid the FileNotFoundError
                 raise ValueError("Firebase configuration is missing.")
 
-            # 3. Initialize Firebase App (using a named app instance)
+            # 4. Initialize Firebase App (using a named app instance)
             initialize_app(cred, name=APP_ID)
             
-            # 4. Get Firestore Client
+            # 5. Get Firestore Client
             db = firestore.client()
             logger.info("Firebase Firestore client initialized successfully.")
             
         except Exception as e:
-            # Capture errors like missing config, JSON parsing errors, and Firebase Admin errors
             logger.error(f"Error initializing Firebase or Firestore: {e}")
             raise RuntimeError("Database connection failure.") from e
+        finally:
+            # 6. Clean up the temp file
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                    logger.debug(f"Cleaned up temporary credential file at {temp_file_path}")
+                except Exception as cleanup_e:
+                    logger.warning(f"Failed to clean up temporary credential file: {cleanup_e}")
 
     return db
 
@@ -97,7 +111,7 @@ def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
 def _is_short_code_unique(short_code: str) -> bool:
     """Checks the database to see if a short code already exists."""
     # Ensure connection is established before querying
-    db_conn = get_db_connection()
+    get_db_connection()
     doc_ref = get_collection_ref("links").document(short_code)
     doc = doc_ref.get()
     return not doc.exists

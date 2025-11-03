@@ -32,7 +32,6 @@ APP_INSTANCE = None
 import threading
 import time
 
-@app.on_event("startup")
 def start_cleanup_thread():
     thread = threading.Thread(target=cleanup_worker, daemon=True)
     thread.start()
@@ -409,3 +408,5 @@ async def redirect_link(short_code: str):
         absolute_url = long_url
 
     return RedirectResponse(url=absolute_url)
+    
+start_cleanup_thread()

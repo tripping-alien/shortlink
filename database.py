@@ -39,7 +39,7 @@ def init_db():
             firebase_admin.get_app()
         except ValueError:
             # Use local JSON in the same folder by default
-            cred_path = os.environ.get('FIREBASE_CREDENTIALS_PATH', './serviceAccountKey.json')
+            cred_path = './serviceAccountKey.json'
             if not os.path.exists(cred_path):
                 raise FileNotFoundError(f"Service account JSON not found at {cred_path}")
             cred = credentials.Certificate(cred_path)

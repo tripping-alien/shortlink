@@ -126,9 +126,24 @@ async def health():
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
+@app.post("/api/v1/links")
+async def api_create_link(payload: Dict[str, Any]):
+    long_url = payload.get("long_url")
+    ttl = payload.get("ttl", "24h")
+    custom_code = payload.get("custom_code")
+    if not long_url:
+        raise HTTPException(status_code=400, detail="Missing long_url")
+    try:
+        link = create_link_in_db(long_url, ttl, custom_code)
+        return {"short_url": link["short_url"]}
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    return """
+    return f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -136,15 +151,72 @@ async def index():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shortlinks.art - URL Shortener</title>
     <meta name="description" content="Fast and simple URL shortener with previews.">
-    <meta name="keywords" content="shorten url, link shortener, short links">
     <style>
-        body { font-family: Arial,sans-serif; background: #f3f4f6; color:#111827; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
-        .container { background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); width:100%; max-width:480px; text-align:center; }
-        input, select { padding:0.8rem; width:100%; margin:0.5rem 0; border-radius:8px; border:1px solid #d1d5db; font-size:1rem; }
-        button { background:#4f46e5; color:white; border:none; padding:0.8rem 1.5rem; font-size:1rem; border-radius:8px; cursor:pointer; margin-top:0.5rem; }
-        button:hover { background:#6366f1; }
-        .short-link { margin-top:1rem; display:flex; justify-content:space-between; align-items:center; padding:0.6rem; background:#f9fafb; border-radius:8px; }
-        .copy-btn { background:#facc15; border:none; padding:0.5rem 0.8rem; border-radius:6px; cursor:pointer; color:#111827; }
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f3f4f6;
+            color: #111827;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }}
+        .container {{
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+        }}
+        input, select {{
+            padding: 0.8rem;
+            width: 100%;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }}
+        button {{
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            width: 100%;
+        }}
+        button:hover {{
+            background: #6366f1;
+        }}
+        .short-link {{
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            word-break: break-word;
+        }}
+        .copy-btn {{
+            background: #facc15;
+            border: none;
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #111827;
+        }}
+        @media(max-width:500px){{
+            .container {{ padding: 1rem; }}
+            button {{ font-size: 0.9rem; }}
+        }}
     </style>
     </head>
     <body>
@@ -166,57 +238,43 @@ async def index():
         </div>
       </div>
     </div>
+
     <script>
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
     const shortUrlSpan = document.getElementById("shortUrl");
     const copyBtn = document.getElementById("copyBtn");
 
-    shortenBtn.addEventListener("click", async () => {
+    shortenBtn.addEventListener("click", async () => {{
         const longUrl = document.getElementById("longUrl").value.trim();
         const ttl = document.getElementById("ttl").value;
         const customCode = document.getElementById("customCode").value.trim() || undefined;
-        if (!longUrl) { alert("Please enter a URL."); return; }
-        try {
-            const res = await fetch("/api/v1/links", {
+        if (!longUrl) {{ alert("Please enter a URL."); return; }}
+        try {{
+            const res = await fetch("/api/v1/links", {{
                 method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body: JSON.stringify({long_url:longUrl, ttl:ttl, custom_code:customCode})
-            });
+                headers:{{"Content-Type":"application/json"}},
+                body: JSON.stringify({{long_url:longUrl, ttl:ttl, custom_code:customCode}})
+            }});
             const data = await res.json();
-            if (res.ok) {
+            if (res.ok) {{
                 shortUrlSpan.textContent = data.short_url;
                 resultDiv.style.display = "block";
-            } else {
+            }} else {{
                 alert(data.detail || "Error creating short link");
-            }
-        } catch(err) { console.error(err); alert("Failed to connect to the server."); }
-    });
+            }}
+        }} catch(err) {{ console.error(err); alert("Failed to connect to the server."); }}
+    }});
 
-    copyBtn.addEventListener("click", () => {
+    copyBtn.addEventListener("click", () => {{
         navigator.clipboard.writeText(shortUrlSpan.textContent)
             .then(() => alert("Copied!"))
             .catch(() => alert("Failed to copy."));
-    });
+    }});
     </script>
     </body>
     </html>
     """
-
-@app.post("/api/v1/links")
-async def api_create_link(payload: Dict[str, Any]):
-    long_url = payload.get("long_url")
-    ttl = payload.get("ttl", "24h")
-    custom_code = payload.get("custom_code")
-    if not long_url:
-        raise HTTPException(status_code=400, detail="Missing long_url")
-    try:
-        link = create_link_in_db(long_url, ttl, custom_code)
-        return {"short_url": link["short_url"]}
-    except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(short_code: str):
@@ -232,15 +290,18 @@ async def preview(short_code: str):
     <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Preview - {short_code}</title>
         <meta name="robots" content="noindex">
         <meta name="description" content="Preview link before visiting">
         <style>
-            body {{ font-family: Arial,sans-serif; text-align:center; background:#f3f4f6; color:#111827; padding:50px; }}
-            .card {{ display:inline-block; background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); }}
-            a.button {{ display:block; margin-top:20px; padding:12px 24px; background:#4f46e5; color:white; text-decoration:none; border-radius:8px; font-weight:bold; }}
+            body {{ font-family: Arial,sans-serif; margin:0; background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; }}
+            .card {{ background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); width:100%; max-width:500px; text-align:center; }}
+            h1 {{ margin-top:0; color:#4f46e5; }}
+            p.url {{ word-break: break-word; font-weight:bold; color:#111827; }}
+            a.button {{ display:inline-block; margin-top:20px; padding:12px 24px; background:#4f46e5; color:white; text-decoration:none; border-radius:8px; font-weight:bold; }}
             a.button:hover {{ background:#6366f1; }}
-            p.url {{ word-break: break-all; font-weight:bold; }}
+            @media(max-width:500px){{ .card {{ padding:1rem; }} a.button {{ width:100%; }} }}
         </style>
     </head>
     <body>

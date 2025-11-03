@@ -271,7 +271,53 @@ body {
 /* =====================================================================
      6. RESPONSIVE DESIGN (for Mobile)
    ====================================================================== */
+/* =========================
+   UI LAYOUT IMPROVEMENTS
+   ========================= */
 
+/* Softer gradient BEHIND the comic background grid */
+body {
+    background:
+        linear-gradient(135deg, #fafbfd 0%, #eef1ff 100%),
+        radial-gradient(var(--border-color) 1px, transparent 1px);
+    background-size: auto, 20px 20px;
+}
+
+/* Reduce container size so UI feels tighter */
+.container {
+    max-width: 640px;
+    padding: 1rem 1.25rem;
+}
+
+/* Smaller header spacing */
+header.text-center {
+    margin-bottom: 1rem !important;
+}
+
+/* Make main input chunk tighter */
+.input-group-lg .form-control {
+    padding: 0.55rem 0.9rem;
+}
+
+/* Shorten the button (this is what you asked for) */
+#submit-button {
+    padding: 0.55rem 0.9rem !important;
+    font-size: 1rem !important;
+}
+
+/* Reduce spacing around TTL row */
+#ttl-select {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+.ttl-control-label {
+    font-size: 0.85rem;
+}
+
+/* Result box spacing fix */
+#result-box {
+    padding: 0.75rem 1rem;
+}
 @media (max-width: 576px) {
     .display-5 {
         font-size: 2.5rem; /* Slightly smaller heading on mobile */

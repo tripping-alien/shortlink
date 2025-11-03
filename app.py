@@ -129,31 +129,39 @@ async def index():
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shortlinks.art - Fast URL Shortener</title>
-<meta name="description" content="Fast and secure URL shortener. Shorten links instantly.">
-<meta name="keywords" content="short url, link shortener, shortlinks, fast links">
+<title>Shortlinks.art - Fast & Secure URL Shortener</title>
+<meta name="description" content="Shortlinks.art - shorten links instantly, fast, secure, and shareable.">
+<meta name="keywords" content="url shortener, short links, fast links, shareable links">
 <meta name="author" content="Shortlinks.art">
 <link rel="canonical" href="https://shortlinks.art/">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
 :root {
   --primary:#4f46e5; --secondary:#6366f1; --accent:#facc15;
-  --bg:#f3f4f6; --text:#111827;
+  --bg-gradient: linear-gradient(135deg,#667eea,#764ba2);
+  --card-bg:#fff; --text:#111827; --input-bg:#f9fafb; --btn-hover:#5a56e0;
 }
-body { margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); display:flex; justify-content:center; align-items:center; min-height:100vh; }
-.container { background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); width:90%; max-width:480px; text-align:center; }
-h1 { color:var(--primary); margin-bottom:1rem; }
-input, select { padding:0.8rem; width:100%; margin:0.5rem 0; border-radius:8px; border:1px solid #d1d5db; font-size:1rem; }
-button { background:var(--primary); color:#fff; border:none; padding:0.8rem 1.5rem; font-size:1rem; border-radius:8px; cursor:pointer; margin-top:0.5rem; }
-button:hover { background:var(--secondary); }
-.short-link { margin-top:1rem; display:flex; justify-content:space-between; align-items:center; padding:0.6rem; background:#f9fafb; border-radius:8px; }
-.copy-btn { background:var(--accent); border:none; padding:0.5rem 0.8rem; border-radius:6px; cursor:pointer; color:#111827; }
-@media(max-width:500px){ .container{padding:1rem;} input,select,button{font-size:0.9rem;} }
+
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Inter',sans-serif;background:var(--bg-gradient);display:flex;justify-content:center;align-items:center;min-height:100vh;color:var(--text);}
+.container{background:var(--card-bg);padding:2rem;border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,0.12);width:90%;max-width:500px;text-align:center;}
+h1{color:var(--primary);margin-bottom:1rem;font-size:2rem;}
+p.subtitle{color:#6b7280;margin-bottom:2rem;}
+input, select{width:100%;padding:0.8rem 1rem;margin:0.5rem 0;border-radius:12px;border:1px solid #d1d5db;background:var(--input-bg);font-size:1rem;}
+button{width:100%;padding:0.8rem;margin-top:1rem;font-size:1rem;border:none;border-radius:12px;background:var(--primary);color:#fff;cursor:pointer;transition:all 0.2s ease;}
+button:hover{background:var(--btn-hover);}
+.short-link{margin-top:1rem;padding:0.6rem 1rem;background:#f3f4f6;border-radius:12px;display:flex;justify-content:space-between;align-items:center;word-break:break-all;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.copy-btn{background:var(--accent);border:none;padding:0.5rem 0.8rem;border-radius:8px;cursor:pointer;color:#111827;transition:all 0.2s ease;}
+.copy-btn:hover{opacity:0.85;}
+@media(max-width:480px){h1{font-size:1.5rem;}}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>Shortlinks.art</h1>
-<input type="url" id="longUrl" placeholder="Enter your URL here">
+<p class="subtitle">Fast, secure & shareable URL shortener</p>
+<input type="url" id="longUrl" placeholder="Enter your URL here" required>
 <select id="ttl">
 <option value="1h">1 Hour</option>
 <option value="24h" selected>24 Hours</option>
@@ -161,7 +169,7 @@ button:hover { background:var(--secondary); }
 <option value="never">Never</option>
 </select>
 <input type="text" id="customCode" placeholder="Custom code (optional)">
-<button id="shortenBtn">Shorten</button>
+<button id="shortenBtn">Shorten URL</button>
 <div id="result" style="display:none;">
 <div class="short-link">
 <span id="shortUrl"></span>
@@ -174,19 +182,23 @@ const shortenBtn=document.getElementById("shortenBtn");
 const resultDiv=document.getElementById("result");
 const shortUrlSpan=document.getElementById("shortUrl");
 const copyBtn=document.getElementById("copyBtn");
+
 shortenBtn.addEventListener("click",async()=>{
-  const longUrl=document.getElementById("longUrl").value.trim();
-  const ttl=document.getElementById("ttl").value;
-  const customCode=document.getElementById("customCode").value.trim()||undefined;
-  if(!longUrl){alert("Please enter a URL.");return;}
-  try{
-    const res=await fetch("/api/v1/links",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({long_url:longUrl,ttl:ttl,custom_code:customCode})});
-    const data=await res.json();
-    if(res.ok){shortUrlSpan.textContent=data.short_url;resultDiv.style.display="block";}
-    else{alert(data.detail||"Error creating short link");}
-  }catch(err){console.error(err);alert("Failed to connect to the server.");}
+    const longUrl=document.getElementById("longUrl").value.trim();
+    const ttl=document.getElementById("ttl").value;
+    const customCode=document.getElementById("customCode").value.trim()||undefined;
+    if(!longUrl){alert("Please enter a URL.");return;}
+    try{
+        const res=await fetch("/api/v1/links",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({long_url:longUrl,ttl:ttl,custom_code:customCode})});
+        const data=await res.json();
+        if(res.ok){shortUrlSpan.textContent=data.short_url;resultDiv.style.display="flex";}
+        else{alert(data.detail||"Error creating short link");}
+    }catch(err){console.error(err);alert("Failed to connect to server.");}
 });
-copyBtn.addEventListener("click",()=>{navigator.clipboard.writeText(shortUrlSpan.textContent).then(()=>alert("Copied!")).catch(()=>alert("Failed to copy."));});
+
+copyBtn.addEventListener("click",()=>{
+    navigator.clipboard.writeText(shortUrlSpan.textContent).then(()=>alert("Copied!")).catch(()=>alert("Failed to copy."));
+});
 </script>
 </body>
 </html>

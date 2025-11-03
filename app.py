@@ -34,11 +34,11 @@ async def cleanup_expired_links_task(settings: Settings):
         now = datetime.now(tz=timezone.utc)
         
         # Check if DB is initialized before attempting cleanup
-        if firestore_db.db is not None:
+        if database.db is not None:
             deleted_count = 0
             try:
                 # Cleanup is a synchronous operation, run in a thread
-                deleted_count = await asyncio.to_thread(firestore_db.cleanup_expired_links, now)
+                deleted_count = await asyncio.to_thread(database.cleanup_expired_links, now)
             except Exception as e:
                 logger.error(f"Error during background cleanup: {e}", exc_info=True)
             
@@ -56,8 +56,8 @@ async def lifespan(app: FastAPI):
     load_translations()
 
     print("Initializing Firestore database...")
-    # The init_db function is now called, and on failure, firestore_db.db will be None
-    firestore_db.init_db()
+    # The init_db function is now called, and on failure, database.db will be None
+    database.init_db()
 
     # Start cleanup task only if settings can be retrieved
     try:
@@ -120,7 +120,7 @@ templates.env.globals['_'] = _
 async def health_check():
     """Checks the application's responsiveness and database connection status."""
     # Check if the app is responsive
-    if firestore_db.db is None:
+    if database.db is None:
         # If the DB client is None, the app is running but the DB is unhealthy.
         return JSONResponse({"status": "error", "message": "Database not connected"}, status_code=503)
         
@@ -138,13 +138,13 @@ async def get_valid_link_or_404(short_code: str, hashids: Hashids = Depends(get_
     if url_id is None:
         raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
 
-    record = await asyncio.to_thread(firestore_db.get_link_by_id, url_id)
+    record = await asyncio.to_thread(database.get_link_by_id, url_id)
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
     expires_at = record['expires_at']
     if expires_at and datetime.now(timezone.utc) > expires_at:
-        # Note: Your firestore_db.get_link_by_id already handles expiry internally
+        # Note: Your database.get_link_by_id already handles expiry internally
         pass # Leaving this check here for redundancy if needed
 
     return record
@@ -173,19 +173,19 @@ async def api_create_link(request: Request):
     expires_at_str = data.get("expires_at")
     deletion_token = data.get("deletion_token")
     expires_at = datetime.fromisoformat(expires_at_str) if expires_at_str else None
-    new_id = await asyncio.to_thread(firestore_db.create_link, long_url, expires_at, deletion_token)
+    new_id = await asyncio.to_thread(database.create_link, long_url, expires_at, deletion_token)
     return JSONResponse({"id": new_id}, status_code=201)
 
 @app.get("/links/active")
 async def api_get_active_links():
-    links = await asyncio.to_thread(firestore_db.get_all_active_links, datetime.now(timezone.utc))
+    links = await asyncio.to_thread(database.get_all_active_links, datetime.now(timezone.utc))
     return JSONResponse({"active_links": links})
 
 @app.delete("/links/{link_id}")
 async def api_delete_link(link_id: str, token: str):
     if not token:
         raise HTTPException(status_code=400, detail="Missing deletion token")
-    result = await asyncio.to_thread(firestore_db.delete_link_by_id_and_token, link_id, token)
+    result = await asyncio.to_thread(database.delete_link_by_id_and_token, link_id, token)
     if result == 0:
         raise HTTPException(status_code=404, detail="Not found or invalid token")
     return JSONResponse({"deleted": True})

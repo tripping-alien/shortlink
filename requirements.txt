@@ -5,5 +5,7 @@ jinja2
 httpx
 setuptools
 hashids
+pydantic
+pydantic-settings
 slowapi
 google-cloud-firestore

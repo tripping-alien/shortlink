@@ -187,6 +187,16 @@ navigator.clipboard.writeText(shortUrlSpan.textContent).then(()=>alert("Copied!"
 </body>
 </html>
 """
+    
+@app.get("/r/{short_code}")
+async def redirect_link(short_code: str):
+    link = get_link(short_code)  # Make sure this uses the Firebase get_link() above
+    if not link:
+        raise HTTPException(status_code=404, detail="Link not found")
+    expires_at = link.get('expires_at')
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Link expired")
+    return RedirectResponse(url=link["long_url"])
 
 @app.post("/api/v1/links")
 async def api_create_link(payload: Dict[str, Any]):
@@ -211,17 +221,11 @@ async def preview(short_code: str):
         raise HTTPException(status_code=404, detail="Link not found")
     
     expires_at = link.get("expires_at")
-    expired_text = ""
-    if expires_at:
-        now = datetime.now(timezone.utc)
-        if expires_at < now:
-            raise HTTPException(status_code=410, detail="Link expired")
-        expired_text = f"<p>Expires at: {expires_at.strftime('%Y-%m-%d %H:%M UTC')}</p>"
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Link expired")
     
     long_url = link["long_url"]
-    domain = long_url.split("//")[-1].split("/")[0]
-    favicon_url = f"https://www.google.com/s2/favicons?domain={domain}"
-
+    
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -231,32 +235,65 @@ async def preview(short_code: str):
         <meta name="robots" content="noindex">
         <style>
             body {{
-                font-family: Arial, sans-serif;
-                background: #f3f4f6;
                 margin: 0;
+                font-family: Arial, sans-serif;
+                min-height: 100vh;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                min-height: 100vh;
+                background: linear-gradient(135deg, #6366f1, #4f46e5);
+                color: #111827;
             }}
             .card {{
                 background: white;
                 padding: 2rem;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                border-radius: 16px;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.15);
                 text-align: center;
                 max-width: 480px;
                 width: 90%;
+                animation: fadeIn 0.5s ease-out;
             }}
             h1 {{
                 color: #4f46e5;
                 margin-bottom: 1rem;
             }}
-            .link-info {{
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
+            p {{
+                word-break: break-word;
+                font-size: 1.1rem;
+            }}
+            a.button {{
+                display: inline-block;
+                margin-top: 1.5rem;
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
+                font-weight: bold;
+                color: white;
+                background-color: #6366f1;
+                border-radius: 8px;
+                text-decoration: none;
+                transition: background 0.3s ease;
+            }}
+            a.button:hover {{
+                background-color: #4f46e5;
+            }}
+            @keyframes fadeIn {{
+                from {{ opacity: 0; transform: translateY(-20px); }}
+                to {{ opacity: 1; transform: translateY(0); }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>Preview Link</h1>
+            <p><strong>Short Code:</strong> {short_code}</p>
+            <p><strong>Original URL:</strong></p>
+            <p>{long_url}</p>
+            <a class="button" href="{BASE_URL}/r/{short_code}" target="_blank">Go to Link</a>
+        </div>
+    </body>
+    </html>
+    """
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(short_code: str):
     link = get_link(short_code)
@@ -358,13 +395,3 @@ async def preview(short_code: str):
     </body>
     </html>
     """
-    
-@app.get("/r/{short_code}")
-async def redirect_link(short_code: str):
-    link = get_link(short_code)  # Make sure this uses the Firebase get_link() above
-    if not link:
-        raise HTTPException(status_code=404, detail="Link not found")
-    expires_at = link.get('expires_at')
-    if expires_at and expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=410, detail="Link expired")
-    return RedirectResponse(url=link["long_url"])

@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // This part of the script is specific to the main page (index.html)
     if (shortenForm) {
         const longUrlInput = document.getElementById('long-url-input');
+        // Ensuring this element is grabbed by ID as defined in index.html
         const customCodeInput = document.getElementById('custom-short-code-input');
 
         // Focus the input field on page load for immediate use
@@ -50,8 +51,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const ttlSelect = document.getElementById('ttl-select');
 
         // --- Default Translations for Fallback ---
-        // This helps prevent "Could not load settings" errors by providing 
-        // essential fallbacks if the API call fails.
         const defaultI18n = {
             copy: 'Copy',
             copied: 'Copied!',
@@ -61,7 +60,8 @@ document.addEventListener('DOMContentLoaded', function() {
             expire_never: 'Your link will not expire.',
             expire_in_duration: 'Your link is private and will automatically expire in {duration}.',
             default_error: 'An unexpected error occurred.',
-            network_error: 'Failed to connect to the server. Check your network or try again later.'
+            network_error: 'Failed to connect to the server. Check your network or try again later.',
+            invalid_custom_code: 'Custom suffix must only contain lowercase letters (a-z), numbers (0-9), and hyphens (-).'
         };
         let i18n = defaultI18n; // Use the default until translations are loaded
 
@@ -103,18 +103,30 @@ document.addEventListener('DOMContentLoaded', function() {
             spinner.style.display = 'inline-block';
             submitButton.disabled = true;
 
-            // --- FIX: Only include custom_code if it has a trimmed value ---
-            const customCode = customCodeInput.value.trim();
+            const customCode = customCodeInput.value.trim().toLowerCase(); // Normalize to lowercase on client for safety
+            
+            // --- NEW CLIENT-SIDE VALIDATION ---
+            // If custom code is provided, validate it against safe URL characters (lowercase and hyphen).
+            if (customCode && !/^[a-z0-9-]+$/.test(customCode)) {
+                showToast(i18n.invalid_custom_code, 'danger');
+                
+                // Restore button state and exit
+                spinner.style.display = 'none';
+                submitButton.disabled = false;
+                buttonText.classList.remove('d-none');
+                return; 
+            }
             
             const payload = {
                 long_url: longUrlInput.value,
                 ttl: ttlSelect.value,
             };
 
+            // Only include custom_code if it has a non-empty value
             if (customCode) {
                 payload.custom_code = customCode;
             }
-            // --- END FIX ---
+            // --- END NEW LOGIC ---
 
             try {
                 const response = await fetch('/api/v1/links', {
@@ -133,19 +145,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) {
                     let errorMessage = i18n.default_error;
                     
-                    // Fix for "Invalid short code format" and other validation errors
+                    // Enhanced error message parsing
                     if (data.detail) {
-                        // Handle Pydantic validation error format (list of dicts)
                         if (Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg) {
-                            // Extract messages for all validation errors
                             errorMessage = data.detail.map(d => d.msg).join('; ');
                         } else if (typeof data.detail === 'string') {
                             errorMessage = data.detail;
                         } else if (data.detail.msg) {
-                            // Handle simple error messages like the short code format
                             errorMessage = data.detail.msg;
                         } else if (typeof data.detail === 'object') {
-                            // Catch all for other JSON error responses (stringify for debug)
                              errorMessage = JSON.stringify(data.detail);
                         }
                     }
@@ -240,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        // 3. Fix for "Could not load settings" (yellow) on start
+        // Fix for "Could not load settings" (yellow) on start
         (async function initMainPage() {
             const langCode = document.documentElement.lang || 'en';
             try {
@@ -253,6 +261,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Set translations for the copy button tooltips
                 copyButton.dataset.copyText = i18n.copy;
                 copyButton.dataset.copiedText = i18n.copied;
+                
+                // Update client-side validation message with i18n if available
+                i18n.invalid_custom_code = i18n.invalid_custom_code || defaultI18n.invalid_custom_code;
 
             } catch (error) {
                 // If translation loading fails, we silently fall back to defaultI18n 

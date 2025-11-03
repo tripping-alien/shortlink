@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // This part of the script is specific to the main page (index.html)
     if (shortenForm) {
         const longUrlInput = document.getElementById('long-url-input');
-        const customCodeInput = document.getElementById('custom-short-code-input'); // <-- NEW: Get the custom code input
+        const customCodeInput = document.getElementById('custom-short-code-input');
 
         // Focus the input field on page load for immediate use
         longUrlInput.focus();
@@ -103,12 +103,18 @@ document.addEventListener('DOMContentLoaded', function() {
             spinner.style.display = 'inline-block';
             submitButton.disabled = true;
 
+            // --- FIX: Only include custom_code if it has a trimmed value ---
+            const customCode = customCodeInput.value.trim();
+            
             const payload = {
                 long_url: longUrlInput.value,
                 ttl: ttlSelect.value,
-                // Add custom_code to payload if it's not empty
-                custom_code: customCodeInput.value.trim() || undefined // <-- NEW: Include custom code
             };
+
+            if (customCode) {
+                payload.custom_code = customCode;
+            }
+            // --- END FIX ---
 
             try {
                 const response = await fetch('/api/v1/links', {
@@ -127,10 +133,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) {
                     let errorMessage = i18n.default_error;
                     
-                    // 2. Fix for "Invalid short code format" and other validation errors
+                    // Fix for "Invalid short code format" and other validation errors
                     if (data.detail) {
                         // Handle Pydantic validation error format (list of dicts)
                         if (Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg) {
+                            // Extract messages for all validation errors
                             errorMessage = data.detail.map(d => d.msg).join('; ');
                         } else if (typeof data.detail === 'string') {
                             errorMessage = data.detail;
@@ -138,16 +145,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Handle simple error messages like the short code format
                             errorMessage = data.detail.msg;
                         } else if (typeof data.detail === 'object') {
-                            // Catch all for other JSON error responses
+                            // Catch all for other JSON error responses (stringify for debug)
                              errorMessage = JSON.stringify(data.detail);
                         }
                     }
                     throw new Error(errorMessage);
                 }
 
-                // 1. Clear the custom URL field after successful shortening
+                // Clear the input fields after successful shortening
                 longUrlInput.value = '';
-                customCodeInput.value = ''; // <-- FIX: Clear the custom code input
+                customCodeInput.value = '';
 
                 // Use the full URL for the clipboard, but a relative path for the link's href
                 const fullUrl = data.short_url;

@@ -22,7 +22,7 @@ CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
 
 db: firestore.client = None
 APP_ID: str = ""
-APP_INSTANCE = None # NEW: Global to hold the initialized App instance
+APP_INSTANCE = None # Global to hold the initialized App instance
 
 def get_db_connection():
     """Initializes and returns the Firestore client (runs once)."""
@@ -69,7 +69,7 @@ def get_db_connection():
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
             # 5. Get Firestore Client, explicitly using the NAMED APP INSTANCE
-            db = firestore.client(app=APP_INSTANCE) # <-- CRITICAL FIX HERE
+            db = firestore.client(app=APP_INSTANCE)
             logger.info("Firebase Firestore client initialized successfully.")
             
         except Exception as e:
@@ -106,7 +106,7 @@ def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
     return get_db_connection().collection(path)
 
 
-# --- Internal Short Code Generation Logic (Unchanged) ---
+# --- Internal Short Code Generation Logic ---
 
 def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     """Generates a random short code using alphanumeric characters."""
@@ -137,7 +137,7 @@ def generate_unique_short_code() -> str:
         f"Failed to generate a unique short ID after {MAX_ID_GENERATION_RETRIES} attempts. Link space may be exhausted."
     )
 
-# --- Public Database Operations (Unchanged) ---
+# --- Public Database Operations ---
 
 def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: str) -> str:
     """
@@ -148,12 +148,14 @@ def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: s
     """
     short_code = generate_unique_short_code()
     
+    # Firestore doesn't store None, so we only include expires_at if it's set.
     data = {
         "long_url": long_url,
-        "expires_at": expires_at, 
         "deletion_token": deletion_token,
         "created_at": datetime.now(tz=timezone.utc),
     }
+    if expires_at:
+        data["expires_at"] = expires_at
 
     doc_ref = get_collection_ref("links").document(short_code)
     doc_ref.set(data)
@@ -175,11 +177,15 @@ def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
 def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     """Retrieves all non-expired links for sitemap generation."""
     try:
+        # Fetch links that either don't have an expiration time, OR whose expiration time is in the future.
+        # Note: A separate query for links without 'expires_at' might be needed depending on Firestore index rules.
+        # For simplicity, we stream all and filter in memory, relying on client-side filtering for 'never' links.
         query = get_collection_ref("links").limit(10).stream() 
         links = []
         for doc in query:
             data = doc.to_dict()
             expires_at = data.get('expires_at')
+            # Link is active if expires_at is None (never expires) OR if expiration is in the future
             if not expires_at or expires_at > now:
                 links.append({'id': doc.id, **data})
         return links
@@ -191,3 +197,29 @@ def delete_link_by_id_and_token(short_code: str, token: str):
     """Deletes a link if the short code and deletion token match."""
     doc_ref = get_collection_ref("links").document(short_code)
     doc_ref.delete()
+
+def cleanup_expired_links(now: datetime):
+    """
+    Deletes all short link documents that have passed their expiration time.
+    
+    This function specifically targets links where the 'expires_at' field exists
+    and is less than or equal to the current time, leaving 'never-expire' links untouched.
+    """
+    logger.info("Starting cleanup of expired links...")
+    links_ref = get_collection_ref("links")
+    
+    # Query for documents where the 'expires_at' timestamp is less than or equal to 'now'.
+    # This correctly ignores documents that do not have the 'expires_at' field (i.e., never-expire links).
+    expired_query = links_ref.where('expires_at', '<=', now).stream()
+    
+    deleted_count = 0
+    
+    for doc in expired_query:
+        try:
+            doc.reference.delete()
+            deleted_count += 1
+        except Exception as e:
+            logger.error(f"Failed to delete expired link {doc.id}: {e}")
+
+    logger.info(f"Cleanup finished. Deleted {deleted_count} expired links.")
+    return deleted_count

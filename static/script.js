@@ -1,283 +1,215 @@
-/**
- * Main script for handling UI interactions.
- */
-document.addEventListener('DOMContentLoaded', function() {
-    // --- Dynamic Comic Book Theming Experiment ---
-    const comicPalette = {
-        '--bg-color': '#f0f4f8', // A very light, cool grey background
-        '--panel-bg': '#ffffff', // Keep panel white for a clean look
-        '--text-color': '#212529', // Standard dark text for high contrast
-        '--primary-color': '#0052cc', // A more classic, slightly desaturated blue
-        '--primary-color-hover': '#0039cb',
-        '--secondary-color': '#d50000', // A bold comic red for accents
-        '--border-color': '#000000', // Strong black for outlines
-        '--input-bg': '#f1f3f5', // A very light grey for the default input state
-        '--bs-primary-rgb': '0, 82, 204',
-        '--animation-color-vec': [0.0, 0.32, 0.8] // Matching blue for the (currently disabled) animation
-        }
+// Global translation map setup outside of main logic
+let translations = {};
 
-    const chosenPalette = comicPalette;
+// Function to safely access the global translations
+const translate = (key, fallback = key) => translations[key] || fallback;
 
-    // Apply the chosen palette to the root element
-    for (const [key, value] of Object.entries(chosenPalette)) {
-        if (key !== '--animation-color-vec') { // Don't set the animation color as a CSS var
-            document.documentElement.style.setProperty(key, value);
-        }
+// Utility to show Bootstrap Toasts
+const showToast = (message, type = 'info') => {
+    const toastContainer = document.getElementById('toast-container');
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = toastHtml;
+    const toastEl = tempDiv.firstChild;
+    toastContainer.appendChild(toastEl);
+    
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+};
+
+
+// Function to ensure URL has a protocol (scheme)
+const normalizeUrl = (url) => {
+    // Trim whitespace
+    let normalized = url.trim();
+
+    // Check if it's a relative path (starts with /)
+    if (normalized.startsWith('/')) {
+        return normalized;
     }
 
-    // Add a class to the body once the DOM is ready to trigger animations
-    document.body.classList.add('page-loaded');
-});
+    // Check if it already has http:// or https://
+    if (!normalized.match(/^[a-zA-Z]+:\/\//)) {
+        // If no scheme is present, assume https://
+        normalized = 'https://' + normalized;
+    }
+    return normalized;
+};
 
-document.addEventListener('DOMContentLoaded', function() {
-    const shortenForm = document.getElementById('shorten-form');
 
-    // This part of the script is specific to the main page (index.html)
-    if (shortenForm) {
-        const longUrlInput = document.getElementById('long-url-input');
-        // Ensuring this element is grabbed by ID as defined in index.html
-        const customCodeInput = document.getElementById('custom-short-code-input');
+// Main execution block
+document.addEventListener('DOMContentLoaded', async () => {
+    const form = document.getElementById('shorten-form');
+    const longUrlInput = document.getElementById('long-url-input');
+    const customCodeInput = document.getElementById('custom-short-code-input');
+    const submitButton = document.getElementById('submit-button');
+    const resultBox = document.getElementById('result-box');
+    const shortUrlLink = document.getElementById('short-url-link');
+    const copyButton = document.getElementById('copy-button');
+    const ttlSelect = document.getElementById('ttl-select');
+    const ttlInfoText = document.getElementById('ttl-info-text');
 
-        // Focus the input field on page load for immediate use
-        longUrlInput.focus();
+    // 1. Fetch Translations
+    // Note: The base URL for the API is dynamically determined by the context, 
+    // but in a browser context, we can often rely on relative paths.
+    try {
+        const langCodeMatch = window.location.pathname.match(/\/ui\/(\w{2})\//);
+        const langCode = langCodeMatch ? langCodeMatch[1] : 'en';
+        const response = await fetch(`/api/v1/translations/${langCode}`);
+        if (response.ok) {
+            translations = await response.json();
+        }
+    } catch (e) {
+        console.error("Could not load translations:", e);
+    }
 
-        const submitButton = document.getElementById('submit-button');
-        const buttonText = submitButton.querySelector('.button-text');
-        const spinner = submitButton.querySelector('.spinner');
-        const resultBox = document.getElementById('result-box');
-        const shortUrlLink = document.getElementById('short-url-link');
-        const copyButton = document.getElementById('copy-button');
-        const toastContainer = document.getElementById('toast-container');
-        const ttlSelect = document.getElementById('ttl-select');
+    // 2. TTL Info Text Handler
+    const updateTtlInfo = () => {
+        const selectedOption = ttlSelect.options[ttlSelect.selectedIndex];
+        const ttlValue = selectedOption.value;
+        const durationText = selectedOption.textContent;
+        
+        const info = document.getElementById('ttl-info-text');
+        
+        if (ttlValue === 'never') {
+            info.textContent = translate('expire_never', 'Your link will not expire.');
+        } else {
+            // Replace the placeholder {duration} in the translated string
+            let text = translate('expire_in_duration', 'Your link is private and will automatically expire in {duration}.');
+            info.textContent = text.replace('{duration}', durationText);
+        }
+    };
 
-        // --- Default Translations for Fallback ---
-        const defaultI18n = {
-            copy: 'Copy',
-            copied: 'Copied!',
-            ttl_1_hour: '1 Hour',
-            ttl_24_hours: '24 Hours',
-            ttl_1_week: '1 Week',
-            expire_never: 'Your link will not expire.',
-            expire_in_duration: 'Your link is private and will automatically expire in {duration}.',
-            default_error: 'An unexpected error occurred.',
-            network_error: 'Failed to connect to the server. Check your network or try again later.',
-            // STRICT validation message
-            invalid_custom_code: 'Custom suffix must only contain lowercase letters (a-z) and numbers (0-9).' 
-        };
-        let i18n = defaultI18n; // Use the default until translations are loaded
+    ttlSelect.addEventListener('change', updateTtlInfo);
+    updateTtlInfo(); // Initial call
 
-        function showToast(message, type = 'danger') {
-        if (!toastContainer) return;
+    // 3. Form Submission Handler
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-        const toastId = `toast-${Date.now()}`;
-        const toastHTML = `
-            <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        ${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        `;
-        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        // 3.1 Get and normalize URL
+        const rawLongUrl = longUrlInput.value;
+        const longUrl = normalizeUrl(rawLongUrl);
 
-        const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
-        toast.show();
+        // 3.2 Validate custom code (must be lowercase alphanumeric only)
+        let customCode = customCodeInput.value.trim().toLowerCase();
+        const customCodePattern = /^[a-z0-9]*$/; 
 
-        // Clean up the element from the DOM after it's hidden
-        toastElement.addEventListener('hidden.bs.toast', () => {
-            toastElement.remove();
-        });
+        if (customCode && !customCodePattern.test(customCode)) {
+            showToast(
+                translate('invalid_custom_code', "Custom suffix must only contain lowercase letters (a-z) and numbers (0-9)."), 
+                'warning'
+            );
+            return;
         }
 
-        shortenForm.addEventListener('submit', async(event) => {
-            event.preventDefault();
+        // 3.3 Prepare payload (only include custom_code if it has content)
+        const payload = {
+            long_url: longUrl,
+            ttl: ttlSelect.value
+        };
+        // CRITICAL FIX: Only send custom_code if it is non-empty
+        if (customCode) {
+            payload.custom_code = customCode;
+        }
 
-            // Hide previous result
-            resultBox.classList.add('d-none');
-            resultBox.classList.remove('fade-in-up');
+        // 3.4 UI State: Loading
+        submitButton.disabled = true;
+        submitButton.querySelector('.button-text').style.display = 'none';
+        submitButton.querySelector('.spinner').classList.add('spinner-border', 'spinner-border-sm');
+        submitButton.querySelector('.spinner').style.display = 'inline-block';
+        resultBox.classList.add('d-none'); // Hide previous result
 
-            // Show loading state
-            buttonText.classList.add('d-none');
-            spinner.style.display = 'inline-block';
-            submitButton.disabled = true;
+        try {
+            // 3.5 API Call
+            const response = await fetch('/api/v1/links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-            // Normalize and clean the custom code input. Enforcing lowercase for max compatibility.
-            const customCode = customCodeInput.value.trim().toLowerCase(); 
-            
-            // --- CRITICAL CLIENT-SIDE VALIDATION (Lowercase Alphanumeric Only) ---
-            if (customCode && !/^[a-z0-9]+$/.test(customCode)) {
-                showToast(i18n.invalid_custom_code, 'danger');
+            // 3.6 Handle Response
+            if (response.ok) {
+                const result = await response.json();
                 
-                // Restore button state and exit
-                spinner.style.display = 'none';
-                submitButton.disabled = false;
-                buttonText.classList.remove('d-none');
-                return; 
-            }
-            
-            const payload = {
-                long_url: longUrlInput.value,
-                ttl: ttlSelect.value,
-            };
-
-            // Only include custom_code if it has a non-empty, validated value
-            if (customCode) {
-                payload.custom_code = customCode;
-            }
-            // --- END NEW LOGIC ---
-
-            try {
-                const response = await fetch('/api/v1/links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                // Check for network errors first
-                if (!response.ok && response.status === 0) {
-                    throw new Error(i18n.network_error);
-                }
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    let errorMessage = i18n.default_error;
-                    
-                    // Enhanced error message parsing for better user feedback
-                    if (data.detail) {
-                        if (Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg) {
-                            errorMessage = data.detail.map(d => d.msg).join('; ');
-                        } else if (typeof data.detail === 'string') {
-                            errorMessage = data.detail;
-                        } else if (data.detail.msg) {
-                            errorMessage = data.detail.msg;
-                        } else if (typeof data.detail === 'object') {
-                             // Fallback for complex Pydantic errors
-                             errorMessage = JSON.stringify(data.detail);
-                        }
-                    }
-                    throw new Error(errorMessage);
-                }
-
-                // Clear the input fields after successful shortening (Fix for point 1 from first request)
+                shortUrlLink.href = result.short_url;
+                shortUrlLink.textContent = result.short_url;
+                copyButton.setAttribute('data-clipboard-text', result.short_url);
+                resultBox.classList.remove('d-none');
+                
+                // Clear inputs on success
                 longUrlInput.value = '';
                 customCodeInput.value = '';
 
-                // Use the full URL for the clipboard, but a relative path for the link's href
-                const fullUrl = data.short_url;
-                const relativePath = new URL(fullUrl).pathname; // Extracts "/get/Bx7vq"
+                // Trigger a confetti animation (conceptual)
+                document.getElementById('animation-overlay').innerHTML = `<div class="confetti">🎉 Link Created!</div>`;
+                setTimeout(() => document.getElementById('animation-overlay').innerHTML = '', 1500);
 
-                shortUrlLink.href = relativePath;
-                copyButton.dataset.fullUrl = fullUrl;
-
-                // Build the comic-style link display
-                const urlObject = new URL(fullUrl);
-                const domain = urlObject.hostname;
-                const code = urlObject.pathname;
-                shortUrlLink.innerHTML = `<span class="short-url-domain">${domain}</span><span class="short-url-code">${code}</span>`;
-
-                resultBox.classList.remove('d-none');
-                resultBox.classList.add('fade-in-up');
-
-                // Reset copy button state
-                copyButton.innerHTML = '<i class="bi bi-clipboard"></i>';
-                copyButton.title = copyButton.dataset.copyText || defaultI18n.copy;
-
-            } catch (error) {
-                showToast(error.message, 'danger');
-            } finally {
-                // Restore button state
-                spinner.style.display = 'none';
-                submitButton.disabled = false;
-                buttonText.classList.remove('d-none');
-            }
-        });
-
-        // --- Copy Button Handler ---
-        if (copyButton) {
-            copyButton.addEventListener('click', () => {
-                const urlToCopy = copyButton.dataset.fullUrl;
-                if (!urlToCopy) return;
-
-                // Use the older execCommand for better cross-iframe compatibility
-                const tempTextArea = document.createElement('textarea');
-                tempTextArea.value = urlToCopy;
-                document.body.appendChild(tempTextArea);
-                tempTextArea.select();
-                try {
-                    document.execCommand('copy');
-                    copyButton.innerHTML = '<i class="bi bi-clipboard-check-fill"></i>';
-                    copyButton.title = copyButton.dataset.copiedText || defaultI18n.copied;
-
-                    setTimeout(() => {
-                        copyButton.innerHTML = '<i class="bi bi-clipboard"></i>';
-                        copyButton.title = copyButton.dataset.copyText || defaultI18n.copy;
-                    }, 2000);
-                } catch (err) {
-                    showToast('Failed to copy link. Please copy manually.', 'danger');
-                }
-                document.body.removeChild(tempTextArea);
-
-            });
-        }
-
-        // --- TTL Persistence and UI Update (now inside the shortenForm check) ---
-        const TTL_STORAGE_KEY = 'bijective_shorty_ttl';
-
-        const updateTtlInfo = () => {
-            const ttlInfoText = document.getElementById('ttl-info-text');
-            if (!ttlInfoText || !ttlSelect) return;
-
-            const selectedValue = ttlSelect.value;
-            let durationText = '';
-
-            if (selectedValue === '1h') {
-                durationText = i18n.ttl_1_hour;
-            } else if (selectedValue === '1d') {
-                durationText = i18n.ttl_24_hours;
-            } else if (selectedValue === '1w') {
-                durationText = i18n.ttl_1_week;
-            }
-
-            if (selectedValue === 'never') {
-                ttlInfoText.textContent = i18n.expire_never;
             } else {
-                // Use replace() method for simple string substitution
-                ttlInfoText.textContent = i18n.expire_in_duration.replace('{duration}', durationText);
+                const errorData = await response.json();
+                let errorMessage = translate('default_error', 'An unexpected error occurred.');
+                
+                if (response.status === 409) {
+                    // Custom code collision
+                    errorMessage = errorData.detail;
+                } else if (response.status === 422) {
+                    // Validation errors (e.g., long_url format)
+                    errorMessage = "Invalid URL format. Ensure it starts with http:// or https://";
+                } else {
+                    errorMessage = errorData.detail || errorMessage;
+                }
+                
+                showToast(errorMessage, 'danger');
             }
-        };
+        } catch (error) {
+            console.error('Network or unexpected error:', error);
+            showToast(translate('network_error', 'Failed to connect to the server.'), 'danger');
+        } finally {
+            // 3.7 UI State: Reset
+            submitButton.disabled = false;
+            submitButton.querySelector('.button-text').style.display = 'inline-block';
+            submitButton.querySelector('.spinner').classList.remove('spinner-border', 'spinner-border-sm');
+            submitButton.querySelector('.spinner').style.display = 'none';
+        }
+    });
 
-        // Initialize i18n and TTL state
-        (async function initMainPage() {
-            const langCode = document.documentElement.lang || 'en';
-            try {
-                const response = await fetch(`/api/v1/translations/${langCode}`);
-                if (!response.ok) throw new Error('Failed to load translations');
-                
-                i18n = await response.json(); 
-                
-                copyButton.dataset.copyText = i18n.copy;
-                copyButton.dataset.copiedText = i18n.copied;
-                
-                i18n.invalid_custom_code = i18n.invalid_custom_code || defaultI18n.invalid_custom_code;
-
-            } catch (error) {
-                console.error("Failed to load translations:", error);
-                showToast('Could not load page settings. Using English defaults.', 'warning');
-            }
+    // 4. Copy Button Handler
+    copyButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        const textToCopy = shortUrlLink.textContent;
+        
+        // Use the older execCommand approach for broader compatibility in sandboxed environments
+        const tempInput = document.createElement('textarea');
+        tempInput.value = textToCopy;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        try {
+            document.execCommand('copy');
+            copyButton.querySelector('i').className = 'bi bi-check-lg';
+            copyButton.setAttribute('title', translate('copied', 'Copied!'));
+            showToast(translate('copied', 'Copied!'), 'success');
             
-            const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
-            if (savedTtl) { ttlSelect.value = savedTtl; }
+            setTimeout(() => {
+                copyButton.querySelector('i').className = 'bi bi-clipboard';
+                copyButton.setAttribute('title', translate('copy', 'Copy'));
+            }, 2000);
 
-            ttlSelect.addEventListener('change', () => {
-                localStorage.setItem(TTL_STORAGE_KEY, ttlSelect.value);
-                updateTtlInfo();
-            });
-
-            updateTtlInfo();
-        })();
-    }
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+            showToast('Failed to copy URL.', 'warning');
+        } finally {
+            document.body.removeChild(tempInput);
+        }
+    });
 });

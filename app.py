@@ -1,166 +1,111 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shortlinks.art - URL Shortener</title>
+import secrets
+import logging
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
 
-<!-- Google SEO -->
-<meta name="description" content="Fast and simple URL shortener. Generate short links instantly.">
-<meta name="keywords" content="shorten url, link shortener, short links, fast links">
-<meta name="author" content="Shortlinks.art">
-<link rel="canonical" href="https://shortlinks.art/">
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-<!-- Adsense Auto Ads -->
-<script data-ad-client="pub-6170587092427912" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+import database  # your Firestore logic
+from schemas import LinkCreate, ShortLinkResponse
+from config import get_settings, TTL_MAP, TTL
 
-<style>
-  :root {
-    --primary-color: #4f46e5;
-    --secondary-color: #6366f1;
-    --accent-color: #facc15;
-    --bg-color: #f3f4f6;
-    --text-color: #111827;
-    --button-color: var(--primary-color);
-    --button-hover: var(--secondary-color);
-  }
+# --- FastAPI setup ---
+app = FastAPI(title="Shortlinks Service", version="1.0.0")
+logger = logging.getLogger(__name__)
 
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: var(--bg-color);
-    color: var(--text-color);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
+settings = get_settings()
+BASE_URL = str(settings.base_url).rstrip("/")
 
-  .container {
-    background: #fff;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 480px;
-    text-align: center;
-  }
+DB_INITIALIZED = False
 
-  h1 {
-    color: var(--primary-color);
-  }
+def _(text: str) -> str:
+    return text  # placeholder for translations
 
-  input, select {
-    padding: 0.8rem;
-    width: 100%;
-    margin: 0.5rem 0;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
-    font-size: 1rem;
-  }
+BASE_DIR = Path(__file__).parent
+templates = Jinja2Templates(directory=str(BASE_DIR))
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-  button {
-    background: var(--button-color);
-    color: white;
-    border: none;
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 0.5rem;
-  }
 
-  button:hover {
-    background: var(--button-hover);
-  }
+@app.on_event("startup")
+async def startup_event():
+    global DB_INITIALIZED
+    try:
+        database.init_db()
+        DB_INITIALIZED = True
+        logger.info("Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
 
-  .short-link {
-    margin-top: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.6rem;
-    background: #f9fafb;
-    border-radius: 8px;
-  }
 
-  .short-link span {
-    overflow-wrap: anywhere;
-  }
+# --- Helper ---
+def calculate_expiration(ttl_string: str) -> Optional[datetime]:
+    if ttl_string == TTL.NEVER:
+        return None
+    now = datetime.now(timezone.utc)
+    try:
+        duration = TTL_MAP.get(TTL(ttl_string))
+        if duration:
+            return now + duration
+    except ValueError:
+        logger.warning(f"Invalid TTL: {ttl_string}")
+    return now + TTL_MAP[TTL.ONE_DAY]
 
-  .copy-btn {
-    background: var(--accent-color);
-    border: none;
-    padding: 0.5rem 0.8rem;
-    border-radius: 6px;
-    cursor: pointer;
-    color: #111827;
-  }
-</style>
-</head>
-<body>
 
-<div class="container">
-  <h1>Shortlinks.art</h1>
-  <input type="url" id="longUrl" placeholder="Enter your URL here">
-  <select id="ttl">
-    <option value="1h">1 Hour</option>
-    <option value="24h" selected>24 Hours</option>
-    <option value="1w">1 Week</option>
-    <option value="never">Never</option>
-  </select>
-  <input type="text" id="customCode" placeholder="Custom code (optional)">
-  <button id="shortenBtn">Shorten</button>
+# --- Routes ---
+@app.get("/", response_class=HTMLResponse)
+async def root_redirect():
+    return RedirectResponse("/ui/en/", status_code=307)
 
-  <div id="result" style="display:none;">
-    <div class="short-link">
-      <span id="shortUrl"></span>
-      <button class="copy-btn" id="copyBtn">Copy</button>
-    </div>
-  </div>
-</div>
 
-<script>
-const shortenBtn = document.getElementById("shortenBtn");
-const resultDiv = document.getElementById("result");
-const shortUrlSpan = document.getElementById("shortUrl");
-const copyBtn = document.getElementById("copyBtn");
+@app.get("/ui/{lang_code}/", response_class=HTMLResponse)
+async def serve_index(request: Request, lang_code: str):
+    return templates.TemplateResponse("index.html", {"request": request, "base_url": BASE_URL, "lang_code": lang_code, "_": _})
 
-shortenBtn.addEventListener("click", async () => {
-    const longUrl = document.getElementById("longUrl").value.trim();
-    const ttl = document.getElementById("ttl").value;
-    const customCode = document.getElementById("customCode").value.trim() || undefined;
 
-    if (!longUrl) {
-        alert("Please enter a URL.");
-        return;
-    }
+@app.post("/api/v1/links", response_model=ShortLinkResponse, status_code=201)
+async def create_short_link(link_data: LinkCreate):
+    if not DB_INITIALIZED:
+        raise HTTPException(status_code=503, detail="Database not initialized")
 
-    try {
-        const res = await fetch("/api/v1/links", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({long_url: longUrl, ttl: ttl, custom_code: customCode})
-        });
-        const data = await res.json();
-        if (res.ok) {
-            shortUrlSpan.textContent = data.short_url;
-            resultDiv.style.display = "block";
-        } else {
-            alert(data.detail || "Error creating short link");
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Failed to connect to the server. Try again later.");
-    }
-});
+    expiration_time = calculate_expiration(link_data.ttl)
+    deletion_token = secrets.token_urlsafe(32)
 
-copyBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(shortUrlSpan.textContent)
-      .then(() => alert("Copied!"))
-      .catch(() => alert("Failed to copy."));
-});
-</script>
+    try:
+        short_code = database.create_link(
+            long_url=link_data.long_url,
+            expires_at=expiration_time,
+            deletion_token=deletion_token,
+            short_code=link_data.custom_code
+        )
+        full_short_url = f"{BASE_URL}/{short_code}"
 
-</body>
-</html>
+        return ShortLinkResponse(
+            long_url=link_data.long_url,
+            short_url=full_short_url,
+            deletion_token=deletion_token,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail="Failed to generate a unique ID")
+
+
+@app.get("/{short_code}")
+async def redirect_to_long_url(short_code: str):
+    if not DB_INITIALIZED:
+        raise HTTPException(status_code=503, detail="Database not initialized")
+
+    link_data = database.get_link_by_id(short_code)
+    if not link_data:
+        raise HTTPException(status_code=404, detail="Short link not found")
+
+    expires_at = link_data.get("expires_at")
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Short link has expired")
+
+    return RedirectResponse(url=link_data["long_url"], status_code=307)

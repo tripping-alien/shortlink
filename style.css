@@ -1,10 +1,14 @@
 :root {
-  --bg: #0f1117;
-  --card: #1a1d24;
-  --accent: #6c63ff;
-  --accent-hover: #847dff;
-  --text: #ffffff;
-  --muted: #9ca3af;
+  --bg-color: #0f1117;
+  --panel-bg: #1a1d24;
+  --text-color: #ffffff;
+  --input-bg: #11131a;
+  --border-color: #292d36;
+
+  --primary-color: #6c63ff;
+  --primary-color-hover: #847dff;
+
+  --shadow-color: rgba(0,0,0,0.6);
 }
 
 [data-theme="light"] {

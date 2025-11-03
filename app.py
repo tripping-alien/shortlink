@@ -24,6 +24,9 @@ settings = get_settings()
 # Ensure BASE_URL is a string without trailing slash for consistent URL generation
 BASE_URL = str(settings.base_url).rstrip('/') 
 
+# Global state to track database initialization status
+DB_INITIALIZED = False
+
 # Mock Translator function for template rendering (replace with actual translation library if needed)
 def _(text: str) -> str:
     # This is a placeholder for the Jinja translation function
@@ -40,12 +43,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connection on application startup."""
+    global DB_INITIALIZED
     try:
+        # Note: If database.init_db() is failing due to missing env vars, 
+        # this is the source of the hidden 500 error.
         database.init_db()
+        DB_INITIALIZED = True
         logger.info("Database initialized successfully.")
     except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        # Depending on environment, you might want to stop the app here
+        logger.error(f"Failed to initialize database: {e}. Check FIREBASE_CONFIG and required environment variables.")
+        # DB_INITIALIZED remains False, but the app continues running.
+
 
 # --- Helper Functions ---
 
@@ -72,8 +80,13 @@ def calculate_expiration(ttl_string: str) -> Optional[datetime]:
 
 @app.get("/health")
 async def health_check():
-    """Simple health check endpoint."""
-    return {"status": "ok"}
+    """Simple health check endpoint that also checks DB status."""
+    # Modified to include DB status for better monitoring
+    if not DB_INITIALIZED:
+        logger.error("Health check passed, but database initialization failed.")
+        return {"status": "warning", "database": "uninitialized"}
+        
+    return {"status": "ok", "database": "initialized"}
 
 @app.get("/")
 async def root_redirect():
@@ -98,6 +111,10 @@ async def serve_index(request: Request, lang_code: str):
 async def create_short_link(link_data: LinkCreate):
     """Creates a new short link, using a custom code if provided."""
     
+    # NEW: Check DB status before attempting operation
+    if not DB_INITIALIZED:
+        raise HTTPException(status_code=503, detail="Service Unavailable: Database not initialized.")
+
     # 1. Calculate Expiration and Deletion Token
     expiration_time = calculate_expiration(link_data.ttl)
     deletion_token = secrets.token_urlsafe(32)
@@ -131,6 +148,10 @@ async def create_short_link(link_data: LinkCreate):
 @app.get("/{short_code}")
 async def redirect_to_long_url(short_code: str):
     """Redirects the user from the short code to the long URL."""
+    # NEW: Check DB status before attempting operation
+    if not DB_INITIALIZED:
+        raise HTTPException(status_code=503, detail="Service Unavailable: Database not initialized.")
+
     link_data = database.get_link_by_id(short_code)
     
     if not link_data:

@@ -10,7 +10,6 @@ try:
     import firebase_admin
     from firebase_admin import credentials, firestore
 except ImportError:
-    # Set to None for runtime check
     firebase_admin = None
     credentials = None
     firestore = None
@@ -76,12 +75,17 @@ def init_db():
         print("ERROR: Failed to initialize Firestore.")
         print(traceback.format_exc())
         db = None
-        raise # Raise to halt application startup if DB is critical
+        # Do NOT raise here, let FastAPI's lifespan handle the error state gracefully
+        # by checking if db is None.
 
 
 # --- CRUD Methods (using existing logic) ---
 
 def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: str) -> str:
+    """
+    Creates a new document using doc().set() to explicitly control the DocumentReference.
+    This fixes the Attribute Error related to the return value of .add().
+    """
     if db is None:
         raise ConnectionError("Database not initialized.")
     try:
@@ -91,11 +95,18 @@ def create_link(long_url: str, expires_at: Optional[datetime], deletion_token: s
             'deletion_token': deletion_token,
             'created_at': datetime.now(timezone.utc)
         }
-        # Simplified for clarity, assuming db is guaranteed non-None here
-        doc_ref, _ = db.collection(COLLECTION_PATH).add(data)  
+        
+        # 1. Create a new document reference with an auto-generated ID
+        doc_ref = db.collection(COLLECTION_PATH).document()
+        
+        # 2. Write the data to the document reference
+        doc_ref.set(data) 
+        
+        # 3. Return the guaranteed ID
         return doc_ref.id
     except Exception as e:
-        print("Error in create_link:")
+        # Log the error with the specific message for debugging
+        print(f"Error in create_link: Database insert failed: {e}")
         print(traceback.format_exc())
         raise
 
@@ -130,8 +141,6 @@ def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
 
     try:
         # Links with no expiry
-        # IMPORTANT: Firestore requires a composite index for chained queries or sorting.
-        # Ensure you have indexes for 'expires_at' if you get errors.
         q1 = links_ref.where('expires_at', '==', None).stream()
         for doc in q1:
             active_links.append({'id': doc.id, **doc.to_dict()})
@@ -191,7 +200,8 @@ def delete_link_by_id_and_token(link_id: str, token: str) -> int:
         print(traceback.format_exc())
         raise
 
-# --- Removed synchronous init_db() call to prevent import blocking ---
+# Note: The synchronous init_db() call at the end of the module has been removed 
+# and is now correctly managed by FastAPI's lifespan hook in app.py.
 
 # --- Local Testing ---
 if __name__ == '__main__':

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortlinks.art - Preview Link</title>
+
+<!-- SEO -->
+<meta name="description" content="Preview your short link before visiting.">
+<meta name="keywords" content="short link preview, URL shortener, shortlinks.art">
+<link rel="canonical" href="https://shortlinks.art/">
+
+<!-- Adsense Auto Ads -->
+<script data-ad-client="pub-6170587092427912" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<style>
+:root {
+  --primary-color: #4f46e5;
+  --secondary-color: #6366f1;
+  --accent-color: #facc15;
+  --bg-color: #f3f4f6;
+  --text-color: #111827;
+  --button-color: var(--primary-color);
+  --button-hover: var(--secondary-color);
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+}
+
+h1 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.short-code {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: var(--secondary-color);
+}
+
+.original-url {
+  font-size: 1rem;
+  color: #4b5563;
+  word-break: break-all;
+  margin-bottom: 1.5rem;
+}
+
+button {
+  background: var(--button-color);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 0.3rem;
+}
+
+button:hover {
+  background: var(--button-hover);
+}
+
+.copy-btn {
+  background: var(--accent-color);
+  color: #111827;
+}
+.expiration {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 0.8rem;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Preview Link</h1>
+  <div class="short-code" id="shortCode">Loading...</div>
+  <div class="original-url" id="originalUrl">Loading...</div>
+  <button id="goBtn">Go to Link</button>
+  <button class="copy-btn" id="copyBtn">Copy URL</button>
+  <div class="expiration" id="expirationInfo"></div>
+</div>
+
+<script>
+  // Extract short code from URL path
+  const pathParts = window.location.pathname.split('/');
+  const shortCode = pathParts[pathParts.length - 1];
+
+  const shortCodeEl = document.getElementById("shortCode");
+  const originalUrlEl = document.getElementById("originalUrl");
+  const expirationEl = document.getElementById("expirationInfo");
+  const goBtn = document.getElementById("goBtn");
+  const copyBtn = document.getElementById("copyBtn");
+
+  shortCodeEl.textContent = shortCode;
+
+  async function fetchLink() {
+    try {
+      const res = await fetch(`/api/v1/links/${shortCode}`);
+      if (!res.ok) {
+        originalUrlEl.textContent = "Link not found or expired.";
+        goBtn.disabled = true;
+        copyBtn.disabled = true;
+        return;
+      }
+      const data = await res.json();
+      originalUrlEl.textContent = data.long_url;
+
+      if (data.expires_at) {
+        const expDate = new Date(data.expires_at);
+        expirationEl.textContent = `Expires on: ${expDate.toLocaleString()}`;
+      } else {
+        expirationEl.textContent = "Never expires";
+      }
+
+      goBtn.onclick = () => window.location.href = `/r/${shortCode}`;
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(data.long_url)
+          .then(() => alert("Copied!"))
+          .catch(() => alert("Failed to copy."));
+      };
+
+    } catch (err) {
+      console.error(err);
+      originalUrlEl.textContent = "Failed to fetch link info. Try again later.";
+      goBtn.disabled = true;
+      copyBtn.disabled = true;
+    }
+  }
+
+  fetchLink();
+</script>
+
+</body>
+</html>

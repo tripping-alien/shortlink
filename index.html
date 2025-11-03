@@ -6,42 +6,41 @@
 
   <title>Shortlink Generator</title>
 
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Bangers&display=swap" rel="stylesheet">
-
-  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="d-flex justify-content-center p-3">
 
 <div class="container text-center" style="max-width:600px;">
   
-  <!-- Theme Switch -->
-  <button id="themeToggle" class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2">
-    🌙
-  </button>
+  <button id="themeToggle" class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2">🌙</button>
 
   <h1 class="display-5 mb-3">Shortlink Generator</h1>
-  <p class="lead">Paste your long URL below and get a neat short link!</p>
 
-  <div class="input-group mb-3">
-    <input id="urlInput" type="url" class="form-control" placeholder="https://example.com">
-    <button id="shortenBtn" class="btn btn-primary">Shorten</button>
-  </div>
+  <input id="urlInput" type="url" class="form-control mb-3" placeholder="https://example.com">
+
+  <input id="customCode" type="text" class="form-control mb-3" placeholder="Optional custom code (a-z, 0-9)" />
+
+  <select id="ttl" class="form-select mb-3">
+    <option value="one_hour">1 Hour</option>
+    <option value="one_day" selected>24 Hours</option>
+    <option value="one_week">1 Week</option>
+    <option value="never">Never Expire</option>
+  </select>
+
+  <button id="shortenBtn" class="btn btn-primary w-100">Shorten</button>
 
   <div id="resultContainer" class="mt-4" style="display:none;">
-    <div class="short-url-display" id="shortUrlDisplay">
-      <span class="short-url-domain">your.site/</span><span class="short-url-code" id="shortCode"></span>
-    </div>
+    <a id="shortUrlDisplay" class="short-url-display"></a>
     <button id="copyBtn" class="btn btn-outline-secondary copy-button mt-2">Copy</button>
   </div>
 
+  <div id="errorMsg" class="text-danger mt-3" style="display:none;"></div>
+
 </div>
 
-<script src="script.js"></script>
-
+<script src="/static/script.js"></script>
 </body>
 </html>

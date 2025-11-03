@@ -15,12 +15,9 @@ from slowapi.errors import RateLimitExceeded
 from starlette.staticfiles import StaticFiles
 
 # --- Import Firestore wrapper ---
-# Ensure this module contains the rewritten Firestore CRUD functions:
-# init_db, create_link, get_link_by_id, get_all_active_links,
-# cleanup_expired_links, delete_link_by_id_and_token
-import database
+import firestore_db
 
-# --- Other imports from your project (Assuming these files exist) ---
+# --- Other imports from your project ---
 from encoding import decode_id, get_hashids
 from i18n import load_translations, get_translator, DEFAULT_LANGUAGE
 from router import api_router, ui_router
@@ -118,44 +115,23 @@ def _(text: str, **kwargs):
     return text.format(**kwargs)
 templates.env.globals['_'] = _
 
-
-# --- CRITICAL Health Check Route (Moved up for isolation) ---
+# --- CRITICAL Health Check Route ---
 @app.get("/health")
 async def health_check():
     """Checks the application's responsiveness and database connection status."""
     # Check if the app is responsive
     if firestore_db.db is None:
         # If the DB client is None, the app is running but the DB is unhealthy.
-        # This returns the 503 that Render expects for an unhealthy but running service.
         return JSONResponse({"status": "error", "message": "Database not connected"}, status_code=503)
         
     # If we made it here, the event loop is responsive and the DB client is ready.
     return {"status": "ok"} 
 
 # --- Include Routers ---
-# These are included AFTER the health check to ensure /health is isolated
 app.include_router(api_router)
 app.include_router(ui_router)
 
-# --- Core Routes ---
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to the service."}
-    
-@app.get("/get/{short_code}", summary="Preview Short Link", include_in_schema=False)
-async def preview_short_link(request: Request, record: dict = Depends(get_valid_link_or_404)):
-    return templates.TemplateResponse("preview.html", {
-        "request": request,
-        "long_url": record["long_url"]
-    })
-    
-@app.get("/{short_code}", summary="Redirect to the original URL", include_in_schema=False)
-async def redirect_to_long_url(record: dict = Depends(get_valid_link_or_404)):
-    return RedirectResponse(url=record["long_url"])
-
-
-# --- Core Dependencies ---
-# Note: The dependencies remain here as they are not routes
+# --- Core Dependencies (MOVED UP) ---
 async def get_valid_link_or_404(short_code: str, hashids: Hashids = Depends(get_hashids)):
     translator = get_translator()
     url_id = decode_id(short_code, hashids)
@@ -173,6 +149,21 @@ async def get_valid_link_or_404(short_code: str, hashids: Hashids = Depends(get_
 
     return record
 
+# --- Core Routes ---
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to the service."}
+    
+@app.get("/get/{short_code}", summary="Preview Short Link", include_in_schema=False)
+async def preview_short_link(request: Request, record: dict = Depends(get_valid_link_or_404)):
+    return templates.TemplateResponse("preview.html", {
+        "request": request,
+        "long_url": record["long_url"]
+    })
+    
+@app.get("/{short_code}", summary="Redirect to the original URL", include_in_schema=False)
+async def redirect_to_long_url(record: dict = Depends(get_valid_link_or_404)):
+    return RedirectResponse(url=record["long_url"])
 
 # --- Optional Firestore API Routes ---
 @app.post("/links")

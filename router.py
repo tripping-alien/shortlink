@@ -10,7 +10,8 @@ from fastapi.templating import Jinja2Templates
 from hashids import Hashids
 
 import database
-from encoding import decode_id, encode_id, get_hashids
+# Removed 'encode_id', 'decode_id' from encoding to use direct short code
+from encoding import get_hashids 
 from i18n import TRANSLATIONS, DEFAULT_LANGUAGE, get_translator
 from models import LinkBase, LinkResponse, ErrorResponse
 from config import TTL, TTL_MAP, Settings, get_settings
@@ -113,10 +114,13 @@ async def health_check(request: Request):
         status_code = 503
 
     # 2. Check Database Connection
-    # NOTE: Since Firestore is external, a basic check is to see if the client is initialized.
-    if database.db is not None:
+    # NOTE: Using a simple check that ensures the client initializes without crashing.
+    try:
+        # Initializes the database connection
+        database.get_db_connection()
         health_status["services"]["database_connection"] = "ok"
-    else:
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
         health_status["services"]["database_connection"] = "error"
         health_status["status"] = "error"
         status_code = 503
@@ -127,10 +131,10 @@ async def health_check(request: Request):
         "services": health_status["services"],
         "timestamp": datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     }
-    # NOTE: Assuming you have a 'health.html' template
+    # NOTE: The original `health.html` rendering is commented out as it was not provided.
     # return templates.TemplateResponse("health.html", context, status_code=status_code)
-    # Returning JSON for simplicity since the template isn't provided
-    return JSONResponse(health_status, status_code=status_code)
+    # Returning JSON for simplicity since 'health.html' is missing.
+    return JSONResponse(content=health_status, status_code=status_code)
 
 
 @ui_router.get("/robots.txt", include_in_schema=False)
@@ -148,7 +152,7 @@ Sitemap: {settings.base_url}/sitemap.xml
 
 
 @ui_router.get("/sitemap.xml", include_in_schema=False)
-async def sitemap(settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
+async def sitemap(settings: Settings = Depends(get_settings)):
     """Generates a sitemap.xml using a robust XML library."""
     now = datetime.now(tz=timezone.utc)
     base_url = str(settings.base_url).rstrip('/')
@@ -166,7 +170,7 @@ async def sitemap(settings: Settings = Depends(get_settings), hashids: Hashids =
     active_links = await asyncio.to_thread(database.get_all_active_links, now)
 
     for link in active_links:
-        short_code = encode_id(link['id'], hashids)
+        short_code = link['id'] # The ID is now the short code itself
         # Also add the preview page to the sitemap
         url_el = ET.SubElement(urlset, "url")
         ET.SubElement(url_el, "loc").text = f"{base_url}/get/{short_code}"
@@ -207,16 +211,14 @@ async def get_translations(lang_code: str):
     summary="Create a new short link",
     responses={
         400: {"model": ErrorResponse, "description": "Bad Request: Invalid input or failed bot check."},
+        500: {"model": ErrorResponse, "description": "Internal Server Error: Failed to create unique short code."},
         422: {"model": ErrorResponse, "description": "Validation Error: The request body is malformed."},
     }
 )
 @limiter.limit("10/minute")
-async def create_short_link(link_data: LinkBase, request: Request, settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
+async def create_short_link(link_data: LinkBase, request: Request, settings: Settings = Depends(get_settings)):
     """
     Creates a new short link from a long URL.
-
-    - **ID Reuse**: It will first try to reuse an expired ID to keep codes short.
-    - **TTL**: Links can be set to expire after a specific duration.
     """
     
     # Calculate the expiration datetime
@@ -226,17 +228,12 @@ async def create_short_link(link_data: LinkBase, request: Request, settings: Set
     deletion_token = secrets.token_urlsafe(16)
 
     try:
-        # Step 1: Attempt database insertion
-        new_id = await asyncio.to_thread(database.create_link, str(link_data.long_url), expires_at, deletion_token)
-        
-        # Step 2: Encode the ID
-        short_code = encode_id(new_id, hashids)
-        
-        # --- Defensive Check to prevent Starlette Assertion Error ---
+        # database.create_link now returns the guaranteed unique short_code (Document ID)
+        short_code = await asyncio.to_thread(database.create_link, str(link_data.long_url), expires_at, deletion_token)
+
         if not short_code:
-            logger.error(f"Encoding failed: new_id was '{new_id}'. Raising 500.")
-            raise HTTPException(status_code=500, detail="Failed to generate short code (encoding error).")
-        # -----------------------------------------------------------
+            logger.error("Short code was empty after database creation. Raising 500.")
+            raise HTTPException(status_code=500, detail="Failed to generate a valid short code.")
 
         # Define both the preview and direct redirect URLs
         base_url = str(settings.base_url).rstrip('/')
@@ -280,11 +277,13 @@ async def create_short_link(link_data: LinkBase, request: Request, settings: Set
             content=response_content,
             headers={"Location": resource_location}
         )
+    except RuntimeError as e:
+        # Catch the specific error from the database if MAX_RETRIES was hit.
+        logger.error(f"Database insert failed (ID exhaustion): {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        # If the DB insert fails (as logged), this block will be executed.
         logger.error(f"Database insert failed: {e}", exc_info=True)
-        
-        # Re-raise as an HTTP exception to guarantee the correct 500 response.
+        # Replaces line 238 from the original trace:
         raise HTTPException(status_code=500, detail="Failed to create link in the database.")
 
 
@@ -295,19 +294,15 @@ async def create_short_link(link_data: LinkBase, request: Request, settings: Set
     name="get_link_details",  # Add a name to the route so we can reference it
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist or has expired."}}
 )
-async def get_link_details(short_code: str, request: Request, settings: Settings = Depends(get_settings), hashids: Hashids = Depends(get_hashids)):
+async def get_link_details(short_code: str, request: Request, settings: Settings = Depends(get_settings)):
     """
     Retrieves the details of a short link, such as the original URL and its
     expiration time, without performing a redirect.
     """
     translator = get_translator()  # Defaults to 'en' for API responses
-    # The ValueError from an invalid short_code is now handled by the exception handler
-    url_id = decode_id(short_code, hashids)
-    if url_id is None:
-        # This handles cases where the short_code is malformed or invalid
-        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+    # The short_code is now the Document ID directly, no decoding needed.
     
-    record = await asyncio.to_thread(database.get_link_by_id, url_id)
+    record = await asyncio.to_thread(database.get_link_by_id, short_code)
     if not record:
         raise HTTPException(status_code=404, detail=translator("Short link not found"))
 
@@ -320,7 +315,7 @@ async def get_link_details(short_code: str, request: Request, settings: Settings
     return {
         "short_url": f"{base_url}/get/{short_code}",  # Return the preview URL as the canonical one
         "long_url": record["long_url"],
-        "expires_at": record["expires_at"],
+        "expires_at": record["expires_at"].isoformat() if record["expires_at"] else None,
         "deletion_token": record["deletion_token"],
         "links": [
             {
@@ -344,11 +339,13 @@ async def get_link_details(short_code: str, request: Request, settings: Settings
     name="delete_short_link",  # Add a name to the route
     responses={404: {"model": ErrorResponse, "description": "Not Found: The link does not exist."}}
 )
-async def delete_short_link(short_code: str, request: Request, hashids: Hashids = Depends(get_hashids)):
+async def delete_short_link(short_code: str, request: Request):
     """
     Permanently deletes a short link. Requires the secret deletion token,
     which is provided when the link is created.
     """
+    translator = get_translator()
+    
     try:
         body = await request.json()
         token = body.get("deletion_token")
@@ -357,20 +354,14 @@ async def delete_short_link(short_code: str, request: Request, hashids: Hashids 
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid request body. Expecting JSON with 'deletion_token'.")
 
-    url_id = decode_id(short_code, hashids)
-    if url_id is None:
-        translator = get_translator()
-        raise HTTPException(status_code=404, detail=translator("Short link not found"))
-
-    # For enhanced security, first fetch the record, then perform a constant-time comparison
-    # on the token. This prevents potential timing attacks.
-    record = await asyncio.to_thread(database.get_link_by_id, url_id)
+    # The short_code is the Document ID directly
+    record = await asyncio.to_thread(database.get_link_by_id, short_code)
     
     if not record or not secrets.compare_digest(token, record["deletion_token"]):
-        raise HTTPException(status_code=404, detail=translator("Short link not found"))
+        raise HTTPException(status_code=404, detail=translator("Short link not found or token is invalid."))
 
     # If the token is valid, proceed with deletion.
-    await asyncio.to_thread(database.delete_link_by_id_and_token, url_id, token)
+    await asyncio.to_thread(database.delete_link_by_id_and_token, short_code, token)
 
     # Return a 204 No Content response, which is standard for successful deletions.
     return Response(status_code=204)

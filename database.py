@@ -11,9 +11,8 @@ from datetime import datetime, timezone
 from firebase_admin import credentials, initialize_app, firestore, get_app
 from firebase_admin import exceptions # Import exceptions for better error handling
 
-# Import the necessary constants from the user's config file
-# Assuming these are defined in a separate config.py
-from config import SHORT_CODE_LENGTH, MAX_ID_GENERATION_RETRIES
+# Import the necessary constants from the user's config file - UPDATED
+from config import SHORT_CODE_LENGTH, MAX_ID_GENERATION_RETRIES 
 
 # --- Environment Setup and Constants ---
 
@@ -127,6 +126,7 @@ def generate_unique_short_code() -> str:
     """
     Generates a unique short code by checking the database and retrying on collision.
     """
+    # Uses MAX_ID_GENERATION_RETRIES (now 10) from config
     for attempt in range(MAX_ID_GENERATION_RETRIES):
         new_id = _generate_short_code()
         
@@ -157,7 +157,8 @@ def create_link(
     
     if short_code:
         # Custom code path
-        if not short_code.isalnum(): # Basic server-side check (must be alphanumeric)
+        # Note: Frontend and schemas.py already enforce lowercase alphanumeric
+        if not short_code.isalnum(): 
             raise ValueError("Invalid short code format: custom code must be alphanumeric.")
 
         # Check for uniqueness of custom code

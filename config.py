@@ -11,6 +11,7 @@ from pydantic import HttpUrl
 from pydantic_settings import BaseSettings
 
 # --- Enums and Mappings ---
+# These are used in database.py for direct short code generation.
 SHORT_CODE_LENGTH = 6
 MAX_ID_GENERATION_RETRIES = 10 # Max attempts to find a unique ID
 

@@ -4,32 +4,118 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shortlink Generator</title>
-<link rel="stylesheet" href="./style.css">
 
 <!-- Google AdSense Auto Ads -->
 <script data-ad-client="pub-6170587092427912" async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<style>
+  /* --- CSS --- */
+  * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:0; }
+  body { background: linear-gradient(135deg, #f0f4f8, #d9e2ec); display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding-top:50px; }
+  .container { background:#fff; border-radius:16px; padding:30px 40px; box-shadow:0 10px 25px rgba(0,0,0,0.1); max-width:400px; width:100%; text-align:center; }
+  h1 { color:#102a43; margin-bottom:20px; font-size:1.8rem; }
+  input, select { width:100%; padding:12px 15px; margin:10px 0; border:1px solid #bcccdc; border-radius:8px; font-size:1rem; }
+  input:focus, select:focus { outline:none; border-color:#486581; box-shadow:0 0 5px rgba(72,104,129,0.3); }
+  button { background-color:#0f4c81; color:#fff; border:none; padding:12px 20px; margin-top:10px; border-radius:8px; cursor:pointer; font-size:1rem; transition:0.3s; }
+  button:hover { background-color:#105a9c; }
+  #result-box { margin-top:20px; padding:15px; background-color:#f0f4f8; border-radius:8px; display:flex; justify-content:space-between; align-items:center; display:none; }
+  #short-url-link { color:#0f4c81; text-decoration:none; font-weight:bold; word-break:break-all; }
+  #copy-button { background-color:#0f81a1; }
+  #copy-button:hover { background-color:#106f8c; }
+  #error-box { margin-top:10px; color:#d93025; font-weight:500; font-size:0.9rem; }
+  /* Ad container */
+  .ads-container { margin-top:20px; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>Shortlink Generator</h1>
-    <input id="long-url-input" type="text" placeholder="Enter URL"/>
-    <input id="custom-short-code-input" type="text" placeholder="Optional custom code"/>
-    <select id="ttl-select">
-      <option value="1h">1 Hour</option>
-      <option value="1d" selected>24 Hours</option>
-      <option value="1w">1 Week</option>
-      <option value="never">Never</option>
-    </select>
-    <button id="submit-button">Shorten</button>
-    
-    <div id="result-box" style="display:none;">
-      <a id="short-url-link" href="#" target="_blank"></a>
-      <button id="copy-button">Copy</button>
-    </div>
-    <div id="error-box" style="color:red;"></div>
-  </div>
 
-  <script src="./script.js"></script>
+<div class="container">
+  <h1>Shortlink Generator</h1>
+
+  <input id="long-url-input" type="text" placeholder="Enter URL"/>
+  <input id="custom-short-code-input" type="text" placeholder="Optional custom code"/>
+  <select id="ttl-select">
+    <option value="1h">1 Hour</option>
+    <option value="1d" selected>24 Hours</option>
+    <option value="1w">1 Week</option>
+    <option value="never">Never</option>
+  </select>
+  <button id="submit-button">Shorten</button>
+
+  <div id="result-box">
+    <a id="short-url-link" href="#" target="_blank"></a>
+    <button id="copy-button">Copy</button>
+  </div>
+  <div id="error-box"></div>
+
+  <div class="ads-container">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+  </div>
+</div>
+
+<script>
+  // --- JS ---
+  const submitBtn = document.getElementById("submit-button");
+  const longUrlInput = document.getElementById("long-url-input");
+  const customCodeInput = document.getElementById("custom-short-code-input");
+  const ttlSelect = document.getElementById("ttl-select");
+
+  const resultBox = document.getElementById("result-box");
+  const shortUrlLink = document.getElementById("short-url-link");
+  const copyBtn = document.getElementById("copy-button");
+  const errorBox = document.getElementById("error-box");
+
+  submitBtn.addEventListener("click", async () => {
+      errorBox.textContent = "";
+      const longUrl = longUrlInput.value.trim();
+      const customCode = customCodeInput.value.trim();
+      const ttl = ttlSelect.value;
+
+      if (!longUrl) {
+          errorBox.textContent = "Please enter a URL!";
+          return;
+      }
+
+      try {
+          const response = await fetch("/api/v1/links", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ long_url: longUrl, custom_code: customCode, ttl: ttl })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+              errorBox.textContent = data.detail || "Error creating short link.";
+              return;
+          }
+
+          shortUrlLink.href = data.short_url;
+          shortUrlLink.textContent = data.short_url;
+          resultBox.style.display = "flex";
+
+      } catch (err) {
+          errorBox.textContent = "Network error. Try again later.";
+          console.error(err);
+      }
+  });
+
+  copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(shortUrlLink.textContent)
+          .then(() => {
+              copyBtn.textContent = "Copied!";
+              setTimeout(() => { copyBtn.textContent = "Copy"; }, 2000);
+          })
+          .catch(err => console.error("Copy failed:", err));
+  });
+
+  // Initialize AdSense ads
+  (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
 </body>
 </html>

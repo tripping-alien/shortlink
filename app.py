@@ -8,14 +8,19 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-# Local imports
-from config import BASE_URL, MAX_ID_GENERATION_RETRIES, SHORT_CODE_LENGTH
+# Local imports - UPDATED to use the new config structure
+from config import get_settings, TTL_MAP, TTL 
 from schemas import LinkCreate, ShortLinkResponse
 import database
 
 # --- FastAPI Setup ---
 app = FastAPI(title="Shortlinks Service", version="1.0.0")
 logger = logging.getLogger(__name__)
+
+# Initialize settings and determine the BASE_URL
+settings = get_settings() 
+# Ensure BASE_URL is a string without trailing slash for consistent URL generation
+BASE_URL = str(settings.base_url).rstrip('/') 
 
 # Mock Translator function for template rendering (replace with actual translation library if needed)
 def _(text: str) -> str:
@@ -40,30 +45,29 @@ async def startup_event():
 # --- Helper Functions ---
 
 def calculate_expiration(ttl_string: str) -> Optional[datetime]:
-    """Calculates the expiration time based on a time-to-live string."""
-    if ttl_string == 'never':
+    """Calculates the expiration time based on a time-to-live string using TTL_MAP."""
+    if ttl_string == TTL.NEVER:
         return None
     
     now = datetime.now(timezone.utc)
     
-    if ttl_string == '1h':
-        return now + timedelta(hours=1)
-    if ttl_string == '1d':
-        return now + timedelta(days=1)
-    if ttl_string == '1w':
-        return now + timedelta(weeks=1)
+    try:
+        # Look up the timedelta in the new TTL_MAP from config
+        duration = TTL_MAP.get(TTL(ttl_string))
+        if duration:
+            return now + duration
+    except ValueError:
+        # If ttl_string is not a valid TTL enum value, log and fall through
+        logger.warning(f"Received invalid TTL value: {ttl_string}")
         
-    # Default fallback (should match default selected value in UI)
-    return now + timedelta(days=1) 
+    # Default fallback to 1 day if calculation fails (using the constant from TTL_MAP)
+    return now + TTL_MAP[TTL.ONE_DAY] 
 
 # --- Routes ---
 
 @app.get("/ui/{lang_code}/", response_class=HTMLResponse)
 async def serve_index(request: Request, lang_code: str):
     """Serves the main shortener UI (index.html)."""
-    # NOTE: The provided index.html uses Jinja2 for i18n variables like _{'Shorten'}
-    # and contextual variables like base_url, lang_code.
-    # In a real app, you would load translations here.
     context = {
         "request": request, 
         "base_url": BASE_URL, 

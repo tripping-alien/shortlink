@@ -1,197 +1,142 @@
-import asyncio
+import secrets
 import logging
-import os
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Dict, Any, List
 
-import uvicorn
-from fastapi import FastAPI, Request, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from hashids import Hashids
-from slowapi.errors import RateLimitExceeded
-from starlette.staticfiles import StaticFiles
 
-# --- Import Firestore wrapper ---
+# Local imports
+from config import BASE_URL, MAX_ID_GENERATION_RETRIES, SHORT_CODE_LENGTH
+from schemas import LinkCreate, ShortLinkResponse
 import database
 
-# --- Other imports from your project ---
-from encoding import decode_id, get_hashids
-from i18n import load_translations, get_translator, DEFAULT_LANGUAGE
-from router import api_router, ui_router
-from config import Settings, get_settings
-from limiter import limiter
-
-# --- Logging ---
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# --- FastAPI Setup ---
+app = FastAPI(title="Shortlinks Service", version="1.0.0")
 logger = logging.getLogger(__name__)
 
-# --- Background Cleanup Task ---
-async def cleanup_expired_links_task(settings: Settings):
-    while True:
-        now = datetime.now(tz=timezone.utc)
-        
-        # Check if DB is initialized before attempting cleanup
-        if database.db is not None:
-            deleted_count = 0
-            try:
-                # Cleanup is a synchronous operation, run in a thread
-                deleted_count = await asyncio.to_thread(database.cleanup_expired_links, now)
-            except Exception as e:
-                logger.error(f"Error during background cleanup: {e}", exc_info=True)
-            
-            if deleted_count > 0:
-                logger.info(f"Cleaned up {deleted_count} expired links.")
-        else:
-            logger.warning("DB not initialized. Skipping cleanup.")
+# Mock Translator function for template rendering (replace with actual translation library if needed)
+def _(text: str) -> str:
+    # This is a placeholder for the Jinja translation function
+    return text
 
-        await asyncio.sleep(settings.cleanup_interval_seconds)
-
-# --- Lifespan Events ---
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Loading translations...")
-    load_translations()
-
-    print("Initializing Firestore database...")
-    # The init_db function is now called, and on failure, database.db will be None
-    database.init_db()
-
-    # Start cleanup task only if settings can be retrieved
-    try:
-        settings = get_settings()
-        print("Starting background cleanup task...")
-        cleanup_task = asyncio.create_task(cleanup_expired_links_task(settings))
-    except Exception as e:
-        logger.critical(f"Failed to load settings or start cleanup task: {e}")
-        cleanup_task = None
-    
-    yield
-    if cleanup_task:
-        cleanup_task.cancel()
-
-# --- FastAPI Application Setup ---
-app = FastAPI(
-    title="Private, Secure, and Free Shortlinks API",
-    description="A privacy-focused, secure, and simple URL shortener.",
-    version="1.0.0",
-    lifespan=lifespan,
-    contact={
-        "name": "Andrey Lopukhov",
-        "url": "https://github.com/tripping-alien/shortlink",
-        "email": "andreyevenflow@gmail.com",
-    },
-)
-
-app.state.limiter = limiter
-
-settings = get_settings()
-
-# --- Exception Handlers ---
-@app.exception_handler(ValueError)
-async def value_error_exception_handler(request: Request, exc: ValueError):
-    logger.warning(f"ValueError handled for request {request.url.path}: {exc}")
-    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))
-    return JSONResponse(status_code=404, content={"detail": translator("Invalid short code format")})
-
-@app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception for request {request.url.path}", exc_info=True)
-    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))
-    return JSONResponse(status_code=500, content={"detail": translator("An unexpected internal error occurred.")})
-
-@app.exception_handler(RateLimitExceeded)
-async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
-    translator = get_translator(request.scope.get("language", DEFAULT_LANGUAGE))
-    return JSONResponse(status_code=429, content={"detail": translator("Rate limit exceeded. Please try again later.")})
-
-# --- Static Files and Templates ---
+# Setup templates and static files
+templates = Jinja2Templates(directory=".")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
 
-def _(text: str, **kwargs):
-    return text.format(**kwargs)
-templates.env.globals['_'] = _
 
-# --- CRITICAL Health Check Route ---
-@app.get("/health")
-async def health_check():
-    """Checks the application's responsiveness and database connection status."""
-    # Check if the app is responsive
-    if database.db is None:
-        # If the DB client is None, the app is running but the DB is unhealthy.
-        return JSONResponse({"status": "error", "message": "Database not connected"}, status_code=503)
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection on application startup."""
+    try:
+        database.init_db()
+        logger.info("Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        # Depending on environment, you might want to stop the app here
+
+# --- Helper Functions ---
+
+def calculate_expiration(ttl_string: str) -> Optional[datetime]:
+    """Calculates the expiration time based on a time-to-live string."""
+    if ttl_string == 'never':
+        return None
+    
+    now = datetime.now(timezone.utc)
+    
+    if ttl_string == '1h':
+        return now + timedelta(hours=1)
+    if ttl_string == '1d':
+        return now + timedelta(days=1)
+    if ttl_string == '1w':
+        return now + timedelta(weeks=1)
         
-    # If we made it here, the event loop is responsive and the DB client is ready.
-    return {"status": "ok"} 
+    # Default fallback (should match default selected value in UI)
+    return now + timedelta(days=1) 
 
-# --- Include Routers ---
-app.include_router(api_router)
-app.include_router(ui_router)
+# --- Routes ---
 
-# --- Core Dependencies (MOVED UP) ---
-async def get_valid_link_or_404(short_code: str, hashids: Hashids = Depends(get_hashids)):
-    translator = get_translator()
-    url_id = decode_id(short_code, hashids)
-    if url_id is None:
-        raise HTTPException(status_code=404, detail=translator("Invalid short code format"))
+@app.get("/ui/{lang_code}/", response_class=HTMLResponse)
+async def serve_index(request: Request, lang_code: str):
+    """Serves the main shortener UI (index.html)."""
+    # NOTE: The provided index.html uses Jinja2 for i18n variables like _{'Shorten'}
+    # and contextual variables like base_url, lang_code.
+    # In a real app, you would load translations here.
+    context = {
+        "request": request, 
+        "base_url": BASE_URL, 
+        "lang_code": lang_code, 
+        "_": _ # Mock translation function
+    }
+    return templates.TemplateResponse("index.html", context)
 
-    record = await asyncio.to_thread(database.get_link_by_id, url_id)
-    if not record:
-        raise HTTPException(status_code=404, detail=translator("Short link not found"))
-
-    expires_at = record['expires_at']
-    if expires_at and datetime.now(timezone.utc) > expires_at:
-        # Note: Your database.get_link_by_id already handles expiry internally
-        pass # Leaving this check here for redundancy if needed
-
-    return record
-
-# --- Core Routes ---
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to the service."}
+@app.post("/api/v1/links", response_model=ShortLinkResponse, status_code=201)
+async def create_short_link(link_data: LinkCreate):
+    """Creates a new short link, using a custom code if provided."""
     
-@app.get("/get/{short_code}", summary="Preview Short Link", include_in_schema=False)
-async def preview_short_link(request: Request, record: dict = Depends(get_valid_link_or_404)):
-    return templates.TemplateResponse("preview.html", {
-        "request": request,
-        "long_url": record["long_url"]
+    # 1. Calculate Expiration and Deletion Token
+    expiration_time = calculate_expiration(link_data.ttl)
+    deletion_token = secrets.token_urlsafe(32)
+
+    try:
+        # 2. Call the MODIFIED create_link function
+        short_code = database.create_link(
+            long_url=link_data.long_url, 
+            expires_at=expiration_time, 
+            deletion_token=deletion_token,
+            # PASS THE CUSTOM CODE HERE
+            short_code=link_data.custom_code
+        )
+        
+        # 3. Construct and return the response
+        full_short_url = f"{BASE_URL}/{short_code}"
+        
+        return ShortLinkResponse(
+            long_url=link_data.long_url,
+            short_url=full_short_url,
+            deletion_token=deletion_token,
+        )
+
+    except ValueError as e:
+        # Handle custom code collision or invalid format (as returned by database.py)
+        raise HTTPException(status_code=409, detail=str(e))
+    except RuntimeError as e:
+        # Handle ID generation failure
+        raise HTTPException(status_code=500, detail="Failed to generate a unique ID. Link space may be exhausted.")
+
+@app.get("/{short_code}")
+async def redirect_to_long_url(short_code: str):
+    """Redirects the user from the short code to the long URL."""
+    link_data = database.get_link_by_id(short_code)
+    
+    if not link_data:
+        raise HTTPException(status_code=404, detail="Short link not found.")
+        
+    # Check for expiration (already checked in database.py, but good to double-check)
+    expires_at = link_data.get('expires_at')
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Short link has expired.")
+
+    # Redirect to the stored long URL
+    return RedirectResponse(url=link_data['long_url'], status_code=307)
+
+
+@app.get("/api/v1/translations/{lang_code}")
+async def get_translations(lang_code: str):
+    """Mock endpoint to serve client translations for script.js."""
+    # In a real app, you would load the JSON file for the given language.
+    # For this example, we return a working set of English defaults.
+    return JSONResponse({
+        "copy": "Copy",
+        "copied": "Copied!",
+        "ttl_1_hour": "1 Hour",
+        "ttl_24_hours": "24 Hours",
+        "ttl_1_week": "1 Week",
+        "expire_never": "Your link will not expire.",
+        "expire_in_duration": "Your link is private and will automatically expire in {duration}.",
+        "default_error": "An unexpected error occurred.",
+        "network_error": "Failed to connect to the server. Check your network or try again later.",
+        "invalid_custom_code": "Custom suffix must only contain lowercase letters (a-z) and numbers (0-9)."
     })
-    
-@app.get("/{short_code}", summary="Redirect to the original URL", include_in_schema=False)
-async def redirect_to_long_url(record: dict = Depends(get_valid_link_or_404)):
-    return RedirectResponse(url=record["long_url"])
-
-# --- Optional Firestore API Routes ---
-@app.post("/links")
-async def api_create_link(request: Request):
-    data = await request.json()
-    long_url = data.get("long_url")
-    expires_at_str = data.get("expires_at")
-    deletion_token = data.get("deletion_token")
-    expires_at = datetime.fromisoformat(expires_at_str) if expires_at_str else None
-    new_id = await asyncio.to_thread(database.create_link, long_url, expires_at, deletion_token)
-    return JSONResponse({"id": new_id}, status_code=201)
-
-@app.get("/links/active")
-async def api_get_active_links():
-    links = await asyncio.to_thread(database.get_all_active_links, datetime.now(timezone.utc))
-    return JSONResponse({"active_links": links})
-
-@app.delete("/links/{link_id}")
-async def api_delete_link(link_id: str, token: str):
-    if not token:
-        raise HTTPException(status_code=400, detail="Missing deletion token")
-    result = await asyncio.to_thread(database.delete_link_by_id_and_token, link_id, token)
-    if result == 0:
-        raise HTTPException(status_code=404, detail="Not found or invalid token")
-    return JSONResponse({"deleted": True})
-
-# --- Run Local Server ---
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True)
-

@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
             expire_in_duration: 'Your link is private and will automatically expire in {duration}.',
             default_error: 'An unexpected error occurred.',
             network_error: 'Failed to connect to the server. Check your network or try again later.',
-            invalid_custom_code: 'Custom suffix must only contain lowercase letters (a-z), numbers (0-9), and hyphens (-).'
+            // STRICT validation message
+            invalid_custom_code: 'Custom suffix must only contain lowercase letters (a-z) and numbers (0-9).' 
         };
         let i18n = defaultI18n; // Use the default until translations are loaded
 
@@ -103,11 +104,11 @@ document.addEventListener('DOMContentLoaded', function() {
             spinner.style.display = 'inline-block';
             submitButton.disabled = true;
 
-            const customCode = customCodeInput.value.trim().toLowerCase(); // Normalize to lowercase on client for safety
+            // Normalize and clean the custom code input. Enforcing lowercase for max compatibility.
+            const customCode = customCodeInput.value.trim().toLowerCase(); 
             
-            // --- NEW CLIENT-SIDE VALIDATION ---
-            // If custom code is provided, validate it against safe URL characters (lowercase and hyphen).
-            if (customCode && !/^[a-z0-9-]+$/.test(customCode)) {
+            // --- CRITICAL CLIENT-SIDE VALIDATION (Lowercase Alphanumeric Only) ---
+            if (customCode && !/^[a-z0-9]+$/.test(customCode)) {
                 showToast(i18n.invalid_custom_code, 'danger');
                 
                 // Restore button state and exit
@@ -122,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ttl: ttlSelect.value,
             };
 
-            // Only include custom_code if it has a non-empty value
+            // Only include custom_code if it has a non-empty, validated value
             if (customCode) {
                 payload.custom_code = customCode;
             }
@@ -145,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) {
                     let errorMessage = i18n.default_error;
                     
-                    // Enhanced error message parsing
+                    // Enhanced error message parsing for better user feedback
                     if (data.detail) {
                         if (Array.isArray(data.detail) && data.detail[0] && data.detail[0].msg) {
                             errorMessage = data.detail.map(d => d.msg).join('; ');
@@ -154,13 +155,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         } else if (data.detail.msg) {
                             errorMessage = data.detail.msg;
                         } else if (typeof data.detail === 'object') {
+                             // Fallback for complex Pydantic errors
                              errorMessage = JSON.stringify(data.detail);
                         }
                     }
                     throw new Error(errorMessage);
                 }
 
-                // Clear the input fields after successful shortening
+                // Clear the input fields after successful shortening (Fix for point 1 from first request)
                 longUrlInput.value = '';
                 customCodeInput.value = '';
 
@@ -248,31 +250,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        // Fix for "Could not load settings" (yellow) on start
+        // Initialize i18n and TTL state
         (async function initMainPage() {
             const langCode = document.documentElement.lang || 'en';
             try {
                 const response = await fetch(`/api/v1/translations/${langCode}`);
                 if (!response.ok) throw new Error('Failed to load translations');
                 
-                // Successfully loaded translations, overwrite default
                 i18n = await response.json(); 
                 
-                // Set translations for the copy button tooltips
                 copyButton.dataset.copyText = i18n.copy;
                 copyButton.dataset.copiedText = i18n.copied;
                 
-                // Update client-side validation message with i18n if available
                 i18n.invalid_custom_code = i18n.invalid_custom_code || defaultI18n.invalid_custom_code;
 
             } catch (error) {
-                // If translation loading fails, we silently fall back to defaultI18n 
-                // but still show a warning to the user.
                 console.error("Failed to load translations:", error);
                 showToast('Could not load page settings. Using English defaults.', 'warning');
             }
             
-            // Now proceed with localStorage and UI updates using loaded or default i18n
             const savedTtl = localStorage.getItem(TTL_STORAGE_KEY);
             if (savedTtl) { ttlSelect.value = savedTtl; }
 

@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-pydantic-settings
+firebase-admin
 jinja2
 httpx
 setuptools

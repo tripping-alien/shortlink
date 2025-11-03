@@ -119,6 +119,13 @@ app.add_middleware(
 )
 
 # ---------------- ROUTES ----------------
+# Google AdSense Publisher ID
+ADSENSE_CLIENT_ID = "pub-6170587092427912"
+ADSENSE_SCRIPT = f"""
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_CLIENT_ID}"
+     crossorigin="anonymous"></script>
+"""
+
 @app.get("/health")
 async def health():
     try:
@@ -132,8 +139,15 @@ async def api_create_link(payload: Dict[str, Any]):
     long_url = payload.get("long_url")
     ttl = payload.get("ttl", "24h")
     custom_code = payload.get("custom_code")
+    
     if not long_url:
         raise HTTPException(status_code=400, detail="Missing long_url")
+
+    # FIX 1: Normalize the URL before saving to the database
+    # Add https:// if no scheme (http://, https://) is present
+    if not long_url.startswith(("http://", "https://")):
+        long_url = "https://" + long_url
+
     try:
         link = create_link_in_db(long_url, ttl, custom_code)
         return {"short_url": link["short_url"]}
@@ -152,7 +166,7 @@ async def index():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shortlinks.art - URL Shortener</title>
     <meta name="description" content="Fast and simple URL shortener with previews.">
-    <style>
+    {ADSENSE_SCRIPT} <style>
         body {{
             font-family: Arial, sans-serif;
             margin: 0;
@@ -282,19 +296,23 @@ async def preview(short_code: str):
     link = get_link(short_code)
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
+    
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
     
     long_url = link["long_url"]
+
+    # FIX 2: Create an absolute URL for the 'href' attribute, handling old data
+    if not long_url.startswith(("http://", "https://")):
+        safe_href_url = "https://" + long_url
+    else:
+        safe_href_url = long_url
     
-    # --- FIX ---
-    # Escape the URL for security (XSS) and to ensure the HTML is valid
-    # html.escape(..., quote=True) is for use inside attributes like 'href'
-    escaped_long_url_href = html.escape(long_url, quote=True)
-    # html.escape(...) is for displaying as text
+    # Escape the normalized URL for the 'href' attribute
+    escaped_long_url_href = html.escape(safe_href_url, quote=True)
+    # Escape the original URL for just displaying as text
     escaped_long_url_display = html.escape(long_url)
-    # --- END FIX ---
 
     return f"""
     <!DOCTYPE html>
@@ -305,7 +323,7 @@ async def preview(short_code: str):
         <title>Preview - {short_code}</title>
         <meta name="robots" content="noindex">
         <meta name="description" content="Preview link before visiting">
-        <style>
+        {ADSENSE_SCRIPT} <style>
             body {{ font-family: Arial,sans-serif; margin:0; background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; box-sizing: border-box; }}
             .card {{ background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); width:100%; max-width:500px; text-align:center; }}
             h1 {{ margin-top:0; color:#4f46e5; }}
@@ -314,7 +332,7 @@ async def preview(short_code: str):
             a.button:hover {{ background:#6366f1; }}
             @media(max-width:500px){{ 
                 .card {{ padding:1.5rem; }} 
-                /* --- FIX: Added box-sizing to prevent overflow on mobile --- */
+                /* FIX: Added box-sizing to prevent overflow on mobile */
                 a.button {{ width:100%; box-sizing: border-box; }} 
             }}
         </style>
@@ -324,19 +342,28 @@ async def preview(short_code: str):
             <h1>Preview Link</h1>
             <p>Original URL:</p>
             <p class="url">{escaped_long_url_display}</p>
-            <a class="button" href="{escaped_long_url_display}" target="_blank" rel="noopener noreferrer">Go to Link</a>
+            <a class="button" href="{escaped_long_url_href}" target="_blank" rel="noopener noreferrer">Go to Link</a>
         </div>
     </body>
     </html>
     """
-
 
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
     link = get_link(short_code)
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
+    
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
-    return RedirectResponse(url=link["long_url"])
+
+    long_url = link["long_url"]
+
+    # FIX 3: Ensure the redirect URL is absolute, handling old data
+    if not long_url.startswith(("http://", "https://")):
+        absolute_url = "https://" + long_url
+    else:
+        absolute_url = long_url
+
+    return RedirectResponse(url=absolute_url)

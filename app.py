@@ -126,6 +126,16 @@ async def preview_short_link(request: Request, record: dict = Depends(get_valid_
         "long_url": record["long_url"]
     })
 
+# If you also want to fix the 405 Method Not Allowed error on the root path:
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the service."}
+
+@app.get("/health")
+def health_check():
+    # This simple response tells the service that the app is running and responsive.
+    return {"status": "ok"} 
+    
 @app.get("/{short_code}", summary="Redirect to the original URL", include_in_schema=False)
 async def redirect_to_long_url(record: dict = Depends(get_valid_link_or_404)):
     return RedirectResponse(url=record["long_url"])

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Shortlink Generator</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Bangers&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="d-flex justify-content-center p-3">
+
+<div class="container text-center" style="max-width:600px;">
+  
+  <!-- Theme Switch -->
+  <button id="themeToggle" class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2">
+    🌙
+  </button>
+
+  <h1 class="display-5 mb-3">Shortlink Generator</h1>
+  <p class="lead">Paste your long URL below and get a neat short link!</p>
+
+  <div class="input-group mb-3">
+    <input id="urlInput" type="url" class="form-control" placeholder="https://example.com">
+    <button id="shortenBtn" class="btn btn-primary">Shorten</button>
+  </div>
+
+  <div id="resultContainer" class="mt-4" style="display:none;">
+    <div class="short-url-display" id="shortUrlDisplay">
+      <span class="short-url-domain">your.site/</span><span class="short-url-code" id="shortCode"></span>
+    </div>
+    <button id="copyBtn" class="btn btn-outline-secondary copy-button mt-2">Copy</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>

@@ -16,11 +16,13 @@ httpx
 beautifulsoup4
 lxml
 
-# --- NEW FEATURES ---
-slowapi              # For Rate Limiting
-qrcode               # For QR Codes
-Pillow               # Required by qrcode
-# --- END NEW ---
+# Features
+slowapi
+qrcode
+Pillow
+
+# --- NEW: Robustness ---
+validators           # For URL validation
 
 # Build (Optional but good practice)
 setuptools

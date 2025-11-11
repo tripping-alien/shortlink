@@ -6,6 +6,12 @@ import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
+# --- NEW IMPORTS ---
+import httpx              # For async HTTP requests
+from bs4 import BeautifulSoup # For HTML parsing
+from urllib.parse import urljoin, urlparse # For fixing relative URLs
+# --- END NEW IMPORTS ---
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -148,6 +154,69 @@ def get_link(code: str) -> Optional[Dict[str, Any]]:
     data["short_code"] = doc.id
     return data
 
+# --- NEW HELPER FUNCTION ---
+async def fetch_metadata(url: str) -> dict:
+    """
+    Fetches metadata (title, description, image) from a given URL.
+    """
+    headers = {
+        # Pretend to be a browser to avoid getting blocked
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    meta = {
+        "title": None,
+        "description": None,
+        "image": None,
+        "favicon": None
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            # Follow redirects, set a 5-second timeout
+            response = await client.get(url, headers=headers, follow_redirects=True, timeout=5.0)
+            response.raise_for_status() # Raise exception for 4xx/5xx errors
+            
+            # Use the final URL after redirects as the base for relative URLs
+            final_url = str(response.url)
+            
+            soup = BeautifulSoup(response.text, "lxml")
+
+            # 1. Get Title
+            if og_title := soup.find("meta", property="og:title"):
+                meta["title"] = og_title.get("content")
+            elif title := soup.find("title"):
+                meta["title"] = title.string
+
+            # 2. Get Description
+            if og_desc := soup.find("meta", property="og:description"):
+                meta["description"] = og_desc.get("content")
+            elif desc := soup.find("meta", name="description"):
+                meta["description"] = desc.get("content")
+
+            # 3. Get Image
+            if og_image := soup.find("meta", property="og:image"):
+                # Make relative image URLs absolute
+                meta["image"] = urljoin(final_url, og_image.get("content"))
+
+            # 4. Get Favicon
+            if favicon := soup.find("link", rel="icon") or soup.find("link", rel="shortcut icon"):
+                # Make relative favicon URLs absolute
+                meta["favicon"] = urljoin(final_url, favicon.get("href"))
+            else:
+                # Fallback: try to guess /favicon.ico
+                parsed_url = urlparse(final_url)
+                meta["favicon"] = f"{parsed_url.scheme}://{parsed_url.netloc}/favicon.ico"
+
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
+        print(f"Error fetching metadata for {url}: {e}")
+        # If fetching fails, we just return empty meta; the page will still load
+    except Exception as e:
+        print(f"Error parsing HTML for {url}: {e}")
+
+    return meta
+# --- END NEW HELPER FUNCTION ---
+
+
 # ---------------- APP ----------------
 app = FastAPI(title="Shortlinks.art URL Shortener")
 
@@ -199,6 +268,7 @@ async def api_create_link(payload: Dict[str, Any]):
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
+    # ... (This route is unchanged, code omitted for brevity) ...
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -503,10 +573,10 @@ async def index():
     </html>
     """
 
-
+# --- UPDATED PREVIEW ROUTE ---
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(short_code: str):
-    link = get_link(short_code)
+    link = get_link(short_code) # Assuming this is your DB call
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
     
@@ -516,17 +586,38 @@ async def preview(short_code: str):
     
     long_url = link["long_url"]
 
-    # FIX 2: Create an absolute URL for the 'href' attribute, handling old data
+    # FIX 2: Create an absolute URL for the 'href' attribute
     if not long_url.startswith(("http://", "https://")):
         safe_href_url = "https://" + long_url
     else:
         safe_href_url = long_url
     
-    # Escape the normalized URL for the 'href' attribute
+    # --- NEW: Fetch Metadata ---
+    meta = await fetch_metadata(safe_href_url)
+    
+    # --- NEW: Escape all metadata for security (XSS prevention) ---
+    escaped_title = html.escape(meta.get("title") or "Title not found")
+    escaped_description = html.escape(meta.get("description") or "No description available.")
+    escaped_image_url = html.escape(meta.get("image") or "", quote=True)
+    escaped_favicon_url = html.escape(meta.get("favicon") or "", quote=True)
+    
+    # Escape the URLs for display and href
     escaped_long_url_href = html.escape(safe_href_url, quote=True)
-    # Escape the original URL for just displaying as text
     escaped_long_url_display = html.escape(long_url)
 
+    # --- NEW: Conditionally create HTML blocks ---
+    favicon_html = ""
+    if meta.get("favicon"):
+        favicon_html = f'<img src="{escaped_favicon_url}" class="favicon" alt="">'
+        
+    image_html = ""
+    if meta.get("image"):
+        image_html = f'<img src="{escaped_image_url}" alt="Preview Image" class="preview-image">'
+    
+    description_html = ""
+    if meta.get("description"):
+        description_html = f'<p class="description">{escaped_description}</p>'
+    
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -536,30 +627,72 @@ async def preview(short_code: str):
         <title>Preview - {short_code}</title>
         <meta name="robots" content="noindex">
         <meta name="description" content="Preview link before visiting">
-        {ADSENSE_SCRIPT} <style>
-            body {{ font-family: Arial,sans-serif; margin:0; background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; box-sizing: border-box; }}
+        {ADSENSE_SCRIPT}
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin:0; background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; box-sizing: border-box; }}
             .card {{ background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); width:100%; max-width:500px; text-align:center; }}
+            
+            /* --- NEW STYLES --- */
+            .meta-header {{ display:flex; align-items:center; justify-content:center; gap: 8px; }}
+            .favicon {{ width:16px; height:16px; vertical-align:middle; }}
+            .preview-image {{
+                width: 100%;
+                max-height: 250px;
+                object-fit: cover;
+                border-radius: 8px;
+                margin-top: 1.5rem;
+                border: 1px solid #eee;
+            }}
+            .meta-title {{
+                margin-top: 0.5rem;
+                margin-bottom: 0.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #111827;
+            }}
+            .description {{
+                font-size: 0.9rem;
+                color: #4b5563;
+                line-height: 1.5;
+                margin-bottom: 1.5rem;
+            }}
+            /* --- END NEW STYLES --- */
+
             h1 {{ margin-top:0; color:#4f46e5; }}
-            p.url {{ word-break: break-word; font-weight:bold; color:#111827; }}
+            p.info {{ margin-bottom: 0; color: #374151; }}
+            p.url {{ word-break: break-all; font-weight:bold; color:#111827; margin-top: 8px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;}}
             a.button {{ display:inline-block; margin-top:20px; padding:12px 24px; background:#4f46e5; color:white; text-decoration:none; border-radius:8px; font-weight:bold; }}
             a.button:hover {{ background:#6366f1; }}
             @media(max-width:500px){{ 
                 .card {{ padding:1.5rem; }} 
-                /* FIX: Added box-sizing to prevent overflow on mobile */
                 a.button {{ width:100%; box-sizing: border-box; }} 
             }}
         </style>
     </head>
     <body>
         <div class="card">
-            <h1>Preview Link</h1>
-            <p>Original URL:</p>
+            <h1>Link Preview</h1>
+            
+            {image_html}
+            
+            <div class="meta-header">
+                {favicon_html}
+                <h2 class="meta-title">{escaped_title}</h2>
+            </div>
+            
+            {description_html}
+            <hr style="border:none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0;">
+
+            <p class="info">You are being redirected to:</p>
             <p class="url">{escaped_long_url_display}</p>
-            <a class="button" href="{escaped_long_url_href}" target="_blank" rel="noopener noreferrer">Go to Link</a>
+            
+            <a class="button" href="{escaped_long_url_href}" target="_blank" rel="noopener noreferrer">Proceed to Link</a>
         </div>
     </body>
     </html>
     """
+# --- END UPDATED PREVIEW ROUTE ---
+
 
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):

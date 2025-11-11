@@ -30,7 +30,6 @@
     {{ ADSENSE_SCRIPT|safe }} 
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
     
 </head>
@@ -47,11 +46,19 @@
         <option value="1w">1 Week</option>
         <option value="never">Never</option>
       </select>
-      <input type="text" id="customCode" placeholder="Custom code (optional)">
+
+      <a href="#" class="advanced-options-toggle" id="advanced-toggle">Advanced Options <span>+</span></a>
+      <div id="advanced-options">
+          <input type="text" id="customCode" placeholder="Custom code (optional)">
+          <input type="text" id="utmTags" placeholder="UTM tags (e.g., utm_source=twitter)">
+      </div>
       
       <div id="error-msg"></div>
       
-      <button id="shortenBtn">Shorten</button>
+      <button id="shortenBtn">
+          <span class="btn-text">Shorten</span>
+          <div class="spinner"></div>
+      </button>
       
       <div id="result">
         
@@ -77,21 +84,23 @@
             <a href="#" id="deleteUrlLink" target="_blank"></a>
         </div>
       </div>
-      </div>
+    </div>
 
     <script>
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
     const errorDiv = document.getElementById("error-msg");
     
-    // --- NEW: Result elements ---
     const shortUrlLink = document.getElementById("shortUrlLink");
     const copyBtn = document.getElementById("copyBtn");
     const statsUrlLink = document.getElementById("statsUrlLink");
     const qrCodeImg = document.getElementById("qrCode");
     const deleteUrlLink = document.getElementById("deleteUrlLink");
 
-    // JS Text
+    // NEW: Advanced Options Elements
+    const advancedToggle = document.getElementById("advanced-toggle");
+    const advancedOptionsDiv = document.getElementById("advanced-options");
+
     const TEXT_ENTER_URL = "Please enter a URL.";
     const TEXT_ERROR = "Error creating short link";
     const TEXT_ERROR_SERVER = "Failed to connect to the server.";
@@ -101,14 +110,23 @@
     const TEXT_COPY = "Copy";
     const TEXT_FAILED = "Failed!";
 
+    // NEW: Toggle advanced options
+    advancedToggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        const isShown = advancedOptionsDiv.classList.toggle("show");
+        advancedToggle.querySelector("span").textContent = isShown ? "−" : "+";
+    });
+
     shortenBtn.addEventListener("click", async () => {
         const longUrl = document.getElementById("longUrl").value.trim();
         const ttl = document.getElementById("ttl").value;
+        // NEW: Get advanced values
         const customCode = document.getElementById("customCode").value.trim() || undefined;
+        const utmTags = document.getElementById("utmTags").value.trim() || undefined;
         
         errorDiv.style.display = "none";
         errorDiv.textContent = "";
-        resultDiv.classList.remove("show"); // Hide old results
+        resultDiv.classList.remove("show");
 
         if (!longUrl) {
             errorDiv.textContent = TEXT_ENTER_URL;
@@ -117,18 +135,23 @@
         }
         
         shortenBtn.disabled = true;
-        shortenBtn.textContent = TEXT_SHORTENING;
+        shortenBtn.classList.add("loading");
 
         try {
             const res = await fetch("/api/v1/links", {
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
-                body: JSON.stringify({long_url:longUrl, ttl:ttl, custom_code:customCode})
+                // NEW: Send advanced values in payload
+                body: JSON.stringify({
+                    long_url: longUrl, 
+                    ttl: ttl, 
+                    custom_code: customCode, 
+                    utm_tags: utmTags 
+                })
             });
             const data = await res.json();
             
             if (res.ok) {
-                // --- NEW: Populate all result fields ---
                 shortUrlLink.href = data.short_url;
                 shortUrlLink.textContent = data.short_url.replace("https://", "");
                 
@@ -148,7 +171,7 @@
             errorDiv.style.display = "block";
         } finally {
             shortenBtn.disabled = false;
-            shortenBtn.textContent = TEXT_SHORTEN;
+            shortenBtn.classList.remove("loading");
         }
     });
 

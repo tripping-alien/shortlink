@@ -6,17 +6,26 @@ import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
+# --- NEW IMPORTS ---
+import io
+import base64
+import qrcode
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from starlette.staticfiles import StaticFiles
+# --- END NEW IMPORTS ---
+
 # --- IMPORTS ---
 import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-from fastapi.templating import Jinja2Templates  # <-- For Jinja2
+from fastapi.templating import Jinja2Templates
 # --- END IMPORTS ---
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
-# --- REMOVED BABEL MIDDLEWARE IMPORT ---
 
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
@@ -99,7 +108,7 @@ def init_firebase():
     return db
 
 # ---------------- HELPERS ----------------
-# ... (Helper functions _generate_short_code, generate_unique_short_code, etc. are unchanged) ...
+# ... (Other helpers are unchanged) ...
 def _generate_short_code(length=SHORT_CODE_LENGTH) -> str:
     chars = string.ascii_lowercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
@@ -119,6 +128,16 @@ def calculate_expiration(ttl: str) -> Optional[datetime]:
         return None
     return datetime.now(timezone.utc) + delta
 
+# --- NEW QR CODE HELPER ---
+def generate_qr_code_data_uri(text: str) -> str:
+    """Generates a QR code and returns it as a Base64 Data URI."""
+    img = qrcode.make(text, box_size=10, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64_str = base64.b64encode(buf.getvalue()).decode("utf-8")
+    return f"data:image/png;base64,{b64_str}"
+
+# --- UPDATED: create_link_in_db ---
 def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str] = None) -> Dict[str, Any]:
     collection = init_firebase().collection("links")
     if custom_code:
@@ -135,12 +154,25 @@ def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str
     data = {
         "long_url": long_url,
         "deletion_token": deletion_token,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(timezone.utc),
+        "click_count": 0  # <-- NEW: Initialize click count
     }
     if expires_at:
         data["expires_at"] = expires_at
     collection.document(code).set(data)
-    return {**data, "short_code": code, "short_url": f"{BASE_URL}/preview/{code}"}
+    
+    # --- NEW: Return URLs for stats and deletion ---
+    short_url_preview = f"{BASE_URL}/preview/{code}"
+    stats_url = f"{BASE_URL}/stats/{code}"
+    delete_url = f"{BASE_URL}/delete/{code}?token={deletion_token}"
+
+    return {
+        **data,
+        "short_code": code,
+        "short_url_preview": short_url_preview,
+        "stats_url": stats_url,
+        "delete_url": delete_url
+    }
 
 def get_link(code: str) -> Optional[Dict[str, Any]]:
     collection = init_firebase().collection("links")
@@ -152,6 +184,7 @@ def get_link(code: str) -> Optional[Dict[str, Any]]:
     return data
 
 async def fetch_metadata(url: str) -> dict:
+    # ... (fetch_metadata function is unchanged) ...
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -187,13 +220,18 @@ async def fetch_metadata(url: str) -> dict:
     return meta
 
 # ---------------- APP ----------------
+# --- NEW: RATE LIMITER SETUP ---
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Shortlinks.art URL Shortener")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# --- END NEW ---
 
-# --- REMOVED BABEL SETUP ---
+# --- NEW: MOUNT STATIC DIRECTORY ---
+app.mount("/static", StaticFiles(directory="static"), name="static")
+# --- END NEW ---
 
-# --- JINJA2 SETUP (Simplified) ---
 templates = Jinja2Templates(directory="templates")
-# --- REMOVED BABEL JINJA2 EXTENSIONS ---
 
 app.add_middleware(
     CORSMiddleware,
@@ -204,7 +242,6 @@ app.add_middleware(
 )
 
 # ---------------- ROUTES ----------------
-# Google AdSense Publisher ID
 ADSENSE_CLIENT_ID = "pub-6170587092427912"
 ADSENSE_SCRIPT = f"""
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_CLIENT_ID}"
@@ -219,8 +256,10 @@ async def health():
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
+# --- UPDATED: api_create_link ---
 @app.post("/api/v1/links")
-async def api_create_link(payload: Dict[str, Any]):
+@limiter.limit("10/minute")  # <-- NEW: Rate limit
+async def api_create_link(request: Request, payload: Dict[str, Any]):
     long_url = payload.get("long_url")
     ttl = payload.get("ttl", "24h")
     custom_code = payload.get("custom_code")
@@ -230,26 +269,32 @@ async def api_create_link(payload: Dict[str, Any]):
         long_url = "https://" + long_url
     try:
         link = create_link_in_db(long_url, ttl, custom_code)
-        return {"short_url": link["short_url"]}
+        
+        # --- NEW: Generate QR Code ---
+        qr_code_data_uri = generate_qr_code_data_uri(link["short_url_preview"])
+
+        return {
+            "short_url": link["short_url_preview"], # Renamed for clarity
+            "stats_url": link["stats_url"],
+            "delete_url": link["delete_url"],
+            "qr_code_data": qr_code_data_uri
+        }
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- HOMEPAGE ROUTE ---
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    """
-    Renders the homepage using the index.html template.
-    """
     context = {
         "request": request,
         "ADSENSE_SCRIPT": ADSENSE_SCRIPT
     }
     return templates.TemplateResponse("index.html", context)
 
-# --- SEO ROUTES ---
+# --- SEO ROUTES (Unchanged) ---
 @app.get("/robots.txt", response_class=PlainTextResponse)
+# ... (function unchanged) ...
 async def robots():
     content = f"""User-agent: *
 Disallow: /api/
@@ -261,6 +306,7 @@ Sitemap: {BASE_URL}/sitemap.xml
     return content
 
 @app.get("/sitemap.xml", response_class=Response)
+# ... (function unchanged) ...
 async def sitemap():
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -274,9 +320,9 @@ async def sitemap():
 """
     return Response(content=xml_content, media_type="application/xml")
 
-# --- PREVIEW ROUTE ---
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(request: Request, short_code: str):
+    # ... (function is unchanged) ...
     link = get_link(short_code)
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
@@ -311,23 +357,83 @@ async def preview(request: Request, short_code: str):
     
     return templates.TemplateResponse("preview.html", context)
 
+
+# --- UPDATED: redirect_link ---
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
-    link = get_link(short_code)
-    if not link:
+    collection_ref = init_firebase().collection("links")
+    doc_ref = collection_ref.document(short_code)
+    
+    doc = doc_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="Link not found")
+    
+    link = doc.to_dict()
     
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
 
-    long_url = link["long_url"]
+    # --- NEW: Increment click count ---
+    try:
+        doc_ref.update({"click_count": firestore.Increment(1)})
+    except Exception as e:
+        print(f"Error incrementing click count: {e}")
+    # --- END NEW ---
 
+    long_url = link["long_url"]
     if not long_url.startswith(("http://", "https://")):
         absolute_url = "https://" + long_url
     else:
         absolute_url = long_url
 
     return RedirectResponse(url=absolute_url)
+
+# --- NEW: STATS PAGE ROUTE ---
+@app.get("/stats/{short_code}", response_class=HTMLResponse)
+async def stats(request: Request, short_code: str):
+    link = get_link(short_code)
+    if not link:
+        raise HTTPException(status_code=404, detail="Link not found")
     
+    context = {
+        "request": request,
+        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "link": link
+    }
+    return templates.TemplateResponse("stats.html", context)
+
+# --- NEW: DELETE LINK ROUTE ---
+@app.get("/delete/{short_code}", response_class=HTMLResponse)
+async def delete(request: Request, short_code: str, token: Optional[str] = None):
+    if not token:
+        raise HTTPException(status_code=400, detail="Deletion token is missing")
+    
+    collection_ref = init_firebase().collection("links")
+    doc_ref = collection_ref.document(short_code)
+    
+    doc = doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Link not found")
+    
+    link = doc.to_dict()
+    
+    if link.get("deletion_token") == token:
+        doc_ref.delete()
+        context = {
+            "request": request, 
+            "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+            "success": True, 
+            "message": "Link successfully deleted."
+        }
+    else:
+        context = {
+            "request": request,
+            "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+            "success": False,
+            "message": "Invalid deletion token. Link was not deleted."
+        }
+        
+    return templates.TemplateResponse("delete_status.html", context)
+
 start_cleanup_thread()

@@ -33,7 +33,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
-from google.cloud.firestore_v1.base_query import FieldFilter, Query
+
+# --- THIS IS THE FIX ---
+from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud.firestore_v1.query import Query
+# ----------------------
 
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")

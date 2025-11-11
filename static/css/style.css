@@ -38,6 +38,11 @@ body {
     max-width: 500px;
     text-align: center;
 }
+/* NEW: Card variant for dashboard */
+.card.card-wide {
+    max-width: 800px;
+}
+
 
 h1 {
     font-size: 2.25rem;
@@ -64,6 +69,20 @@ a.button {
 
 a.button:hover {
     background: var(--primary-hover);
+}
+
+/* NEW: Header link for "My Links" */
+.header-link {
+    display: block;
+    text-align: right;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+.header-link:hover {
+    text-decoration: underline;
 }
 
 
@@ -342,11 +361,71 @@ hr {
     color: var(--error-red);
 }
 
+.chart-container {
+    position: relative;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+/* --- NEW: Dashboard Table Styles --- */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 1.5rem;
+}
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+.dashboard-table th,
+.dashboard-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+.dashboard-table th {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.dashboard-table td {
+    color: var(--text-primary);
+    word-break: break-all;
+}
+.dashboard-table .link-col {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dashboard-table .link-col a {
+    color: var(--primary-color);
+    font-weight: 500;
+    text-decoration: none;
+}
+.dashboard-table .link-col a:hover {
+    text-decoration: underline;
+}
+.dashboard-table .actions-col a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-right: 0.75rem;
+}
+.dashboard-table .actions-col a:hover {
+    color: var(--primary-color);
+}
+.dashboard-table .actions-col a.delete-link:hover {
+    color: var(--error-red);
+}
 
 /* --- Mobile Responsive (All Pages) --- */
 @media(max-width: 500px) {
     .card {
         padding: 2rem 1.5rem;
+    }
+    .card.card-wide {
+        padding: 1.5rem 0;
     }
     h1 {
         font-size: 1.8rem;
@@ -391,12 +470,4 @@ button#shortenBtn.loading .btn-text {
 }
 @keyframes spin {
     to { transform: rotate(360deg); }
-}
-
-/* --- NEW: Stats Page Chart --- */
-.chart-container {
-    position: relative;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-light);
 }

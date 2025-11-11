@@ -135,6 +135,7 @@ def generate_qr_code_data_uri(text: str) -> str:
     b64_str = base64.b64encode(buf.getvalue()).decode("utf-8")
     return f"data:image/png;base64,{b64_str}"
 
+# --- UPDATED: create_link_in_db ---
 def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str] = None) -> Dict[str, Any]:
     collection = init_firebase().collection("links")
     if custom_code:
@@ -152,7 +153,8 @@ def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str
         "long_url": long_url,
         "deletion_token": deletion_token,
         "created_at": datetime.now(timezone.utc),
-        "click_count": 0
+        "click_count": 0,
+        "clicks_by_day": {}  # <-- NEW: Initialize daily click map
     }
     if expires_at:
         data["expires_at"] = expires_at
@@ -169,6 +171,7 @@ def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str
         "stats_url": stats_url,
         "delete_url": delete_url
     }
+# --- END UPDATED HELPER ---
 
 def get_link(code: str) -> Optional[Dict[str, Any]]:
     collection = init_firebase().collection("links")
@@ -386,7 +389,6 @@ async def redirect_link(short_code: str):
     
     doc = doc_ref.get()
     if not doc.exists:
-        # --- BUG FIX: Changed 44 to 404 ---
         raise HTTPException(status_code=404, detail="Link not found")
     
     link = doc.to_dict()
@@ -396,7 +398,16 @@ async def redirect_link(short_code: str):
         raise HTTPException(status_code=410, detail="Link expired")
 
     try:
-        doc_ref.update({"click_count": firestore.Increment(1)})
+        # --- NEW: Track clicks by day ---
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        day_key = f"clicks_by_day.{today_str}"
+        
+        # Update both total count and daily count
+        doc_ref.update({
+            "click_count": firestore.Increment(1),
+            day_key: firestore.Increment(1)
+        })
+        # --- END NEW ---
     except Exception as e:
         print(f"Error incrementing click count: {e}")
 

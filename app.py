@@ -27,7 +27,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from fastapi.templating import Jinja2Templates
 
-from fastapi import FastAPI, HTTPException, Request, Depends
+# Path is needed for the new URL-based locale
+from fastapi import FastAPI, HTTPException, Request, Depends, Path
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -51,18 +52,10 @@ TTL_MAP = {
 
 # ---------------- LOCALIZATION (i18n) ----------------
 
-# 1. Define supported languages
 SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar"]
 DEFAULT_LOCALE = "en"
 
-# 2. Store all translations in a dictionary
-# NOTE: This is now very large. For future growth,
-# consider loading these from separate JSON files.
-
-# =====================================================================
-# PASTE THIS INTO YOUR app.py, REPLACING THE OLD 'translations' DICT
-# =====================================================================
-
+# This is the full translation dictionary with all keys
 translations = {
     "en": {
         # Meta Tags
@@ -168,10 +161,6 @@ translations = {
         "js_copied": "¡Copiado!",
         "js_copy_failed": "¡Falló!",
     },
-    # ==============================================================
-    # TODO: You need to translate the new keys for these languages
-    # I have added them in English as placeholders.
-    # ==============================================================
     "zh": { 
         "app_title": "Shortlinks.art - 免费的开源网址缩短服务",
         "meta_description_main": "创建带预览的免费短链接。Shortlinks.art 是一个快速、简单的网址缩短器，提供自定义过期时间和链接预览。",
@@ -213,7 +202,7 @@ translations = {
         "js_copied": "已复制！",
         "js_copy_failed": "失败！",
     },
-    "hi": { # Hindi
+    "hi": {
         "app_title": "Shortlinks.art - मुफ़्त और ओपन सोर्स यूआरएल शॉर्टनर",
         "meta_description_main": "प्रीव्यू के साथ मुफ़्त शॉर्ट लिंक बनाएं। Shortlinks.art एक तेज़, सरल यूआरएल शॉर्टनर है जो कस्टम समाप्ति समय और लिंक प्रीव्यू प्रदान करता है।",
         "meta_keywords_main": "यूआरएल शॉर्टनर, लिंक शॉर्टनर, मुफ़्त यूआरएल शॉर्टनर, प्रीव्यू के साथ यूआरएल शॉर्टनर, कस्टम शॉर्ट लिंक, एक्सपायरिंग लिंक, अस्थायी लिंक, शॉर्ट यूआरएल, शॉर्टन लिंक, shortlinks.art",
@@ -254,7 +243,7 @@ translations = {
         "js_copied": "कॉपी किया गया!",
         "js_copy_failed": "विफल!",
     },
-    "pt": { # Portuguese
+    "pt": {
         "app_title": "Shortlinks.art - Encurtador de URL gratuito e de código aberto",
         "meta_description_main": "Crie links curtos gratuitos com pré-visualizações. Shortlinks.art é um encurtador de URL rápido e simples que oferece tempos de expiração personalizados e pré-visualizações de links.",
         "meta_keywords_main": "encurtador de url, encurtador de link, encurtador de url gratuito, encurtador de url com pré-visualização, link curto personalizado, links que expiram, links temporários, short url, encurtar link, shortlinks.art",
@@ -295,7 +284,7 @@ translations = {
         "js_copied": "Copiado!",
         "js_copy_failed": "Falhou!",
     },
-    "fr": { # French
+    "fr": {
         "app_title": "Shortlinks.art - Raccourcisseur d'URL gratuit et open source",
         "meta_description_main": "Créez des liens courts gratuits avec aperçus. Shortlinks.art est un raccourcisseur d'URL rapide et simple qui offre des temps d'expiration personnalisés et des aperçus de liens.",
         "meta_keywords_main": "raccourcisseur d'url, raccourcisseur de lien, raccourcisseur d'url gratuit, raccourcisseur d'url avec aperçu, lien court personnalisé, liens expirants, liens temporaires, short url, raccourcir lien, shortlinks.art",
@@ -336,7 +325,7 @@ translations = {
         "js_copied": "Copié !",
         "js_copy_failed": "Échoué !",
     },
-    "de": { # German
+    "de": {
         "app_title": "Shortlinks.art - Kostenloser Open-Source-URL-Shortener",
         "meta_description_main": "Erstellen Sie kostenlose Kurzlinks mit Vorschau. Shortlinks.art ist ein schneller, einfacher URL-Shortener, der benutzerdefinierte Ablaufzeiten und Link-Vorschauen bietet.",
         "meta_keywords_main": "url shortener, link shortener, kostenloser url shortener, url shortener mit vorschau, benutzerdefinierter short link, ablaufende links, temporäre links, short url, link kürzen, shortlinks.art",
@@ -377,7 +366,7 @@ translations = {
         "js_copied": "Kopiert!",
         "js_copy_failed": "Fehlgeschlagen!",
     },
-    "ar": { # Arabic
+    "ar": {
         "app_title": "Shortlinks.art - خدمة تقصير روابط مجانية ومفتوحة المصدر",
         "meta_description_main": "أنشئ روابط قصيرة مجانية مع معاينات. Shortlinks.art هو مقصر روابط سريع وبسيط يوفر أوقات انتهاء صلاحية مخصصة ومعاينات للروابط.",
         "meta_keywords_main": "مقصر روابط, تقصير روابط, مقصر روابط مجاني, مقصر روابط مع معاينة, رابط قصير مخصص, روابط تنتهي صلاحيتها, روابط مؤقتة, short url, تقصير رابط, shortlinks.art",
@@ -400,58 +389,138 @@ translations = {
         "result_stats_page": "صفحة الإحصائيات",
         "result_view_clicks": "عرض النقرات",
         "result_save_link_strong": "احفظ هذا الرابط!",
-        "result_save_link_text": "هذا هو رابط الحذف"
+        "result_save_link_text": "هذا هو رابط الحذف الفريد الخاص بك. احتفظ به بأمان إذا أردت يومًا إزالة الرابط القصير.",
+        "nav_home": "الرئيسية",
+        "nav_about": "حول",
+        "link_not_found": "الرابط غير موجود",
+        "link_expired": "انتهت صلاحية الرابط",
+        "invalid_url": "الرابط المُقدم غير صالح.",
+        "custom_code_exists": "الرمز المخصص موجود بالفعل",
+        "id_generation_failed": "لم يمكن إنشاء رمز قصير فريد.",
+        "owner_id_required": "معرف المالك مطلوب",
+        "token_missing": "رمز الحذف مفقود",
+        "delete_success": "تم حذف الرابط بنجاح.",
+        "delete_invalid_token": "رمز الحذف غير صالح. لم يتم حذف الرابط.",
+        "js_enter_url": "الرجاء إدخال رابط.",
+        "js_error_creating": "خطأ أثناء إنشاء الرابط القصير",
+        "js_error_server": "فشل الاتصال بالخادم.",
+        "js_copied": "تم النسخ!",
+        "js_copy_failed": "فشل!",
     }
 }
 
-# 3. Detect locale from request header
-def get_locale(request: Request) -> str:
-    """Parses the Accept-Language header to find the best matching locale."""
+
+# --- NEW i18n Functions for SEO-friendly URLs ---
+
+def get_browser_locale(request: Request) -> str:
+    """Detects locale from cookie *first*, then Accept-Language header."""
+    lang_cookie = request.cookies.get("lang")
+    if lang_cookie and lang_cookie in SUPPORTED_LOCALES:
+        return lang_cookie
+            
     try:
         lang_header = request.headers.get("accept-language")
-        if not lang_header:
-            return DEFAULT_LOCALE
-        
-        # Simple parser: gets the first language, e.g., "es-ES,en;q=0.9" -> "es"
-        primary_lang = lang_header.split(',')[0].split('-')[0].lower()
-        
-        if primary_lang in SUPPORTED_LOCALES:
-            return primary_lang
+        if lang_header:
+            primary_lang = lang_header.split(',')[0].split('-')[0].lower()
+            if primary_lang in SUPPORTED_LOCALES:
+                return primary_lang
     except Exception:
-        pass # Fallback to default
+        pass
     return DEFAULT_LOCALE
 
-# 4. Create a translator "getter" dependency
-def get_translator_and_locale(request: Request) -> (Callable[[str], str], str):
+def get_translator_and_locale(
+    request: Request, 
+    locale: str = Path(..., description="The language code, e.g., 'en', 'es'")
+) -> (Callable[[str], str], str):
     """
-    Returns a 'gettext' style function (named '_') and the locale.
+    Returns a 'gettext' style function (named '_') and the locale
+    based on the URL path parameter.
     """
-    locale = get_locale(request)
+    valid_locale = locale if locale in SUPPORTED_LOCALES else DEFAULT_LOCALE
     
     def _(key: str) -> str:
-        # Get the translated string for the detected locale
-        translated = translations.get(locale, {}).get(key)
+        translated = translations.get(valid_locale, {}).get(key)
         if translated:
             return translated
-        
-        # Fallback to the default locale (English)
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
         if fallback:
             return fallback
-            
-        # As a last resort, return the key itself
         return key
         
-    return _, locale
+    return _, valid_locale
 
-# Wrapper dependency to just get the translator function
+def get_api_translator(request: Request) -> Callable[[str], str]:
+    """
+    A separate dependency for API routes that don't have a {locale} path.
+    It uses the browser/cookie locale.
+    """
+    locale = get_browser_locale(request)
+    def _(key: str) -> str:
+        translated = translations.get(locale, {}).get(key)
+        if translated:
+            return translated
+        fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
+        if fallback:
+            return fallback
+        return key
+    return _
+
+# Wrapper dependencies for localized page routes
 def get_translator(tr: tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
     return tr[0]
 
-# Wrapper dependency to just get the locale
 def get_current_locale(tr: tuple = Depends(get_translator_and_locale)) -> str:
     return tr[1]
 
+def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale)) -> list[dict]:
+    """Generates a list of hreflang tag attributes for the current page."""
+    tags = []
+    current_path = request.url.path
+    
+    # Remove the current locale prefix to get the base path
+    # e.g., "/en/about" -> "/about"
+    base_path = current_path.replace(f"/{locale}", "", 1)
+    if not base_path: # Handles the root case "/en" -> ""
+        base_path = "/"
+        
+    for lang in SUPPORTED_LOCALES:
+        lang_path = f"/{lang}{base_path}"
+        # Fix for root path becoming "//"
+        if lang_path.startswith('//'):
+            lang_path = lang_path[1:]
+            
+        tags.append({
+            "rel": "alternate",
+            "hreflang": lang,
+            "href": str(request.url.replace(path=lang_path))
+        })
+    
+    # Add x-default tag
+    default_path = f"/{DEFAULT_LOCALE}{base_path}"
+    if default_path.startswith('//'):
+            default_path = default_path[1:]
+
+    tags.append({
+        "rel": "alternate",
+        "hreflang": "x-default",
+        "href": str(request.url.replace(path=default_path))
+    })
+    return tags
+
+async def get_common_context(
+    request: Request,
+    _: Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale),
+    hreflang_tags: list = Depends(get_hreflang_tags)
+) -> dict:
+    """A single dependency to get all common template variables."""
+    return {
+        "request": request,
+        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "_": _,
+        "locale": locale,
+        "hreflang_tags": hreflang_tags
+    }
 
 # ---------------- FIREBASE ----------------
 db: firestore.Client = None
@@ -573,9 +642,9 @@ def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None
         data["expires_at"] = expires_at
     collection.document(code).set(data)
     
-    short_url_preview = f"{BASE_URL}/preview/{code}"
-    stats_url = f"{BASE_URL}/stats/{code}"
-    delete_url = f"{BASE_URL}/delete/{code}?token={deletion_token}"
+    short_url_preview = f"{BASE_URL}/preview/{code}" # Note: This doesn't have locale
+    stats_url = f"{BASE_URL}/stats/{code}" # Note: This doesn't have locale
+    delete_url = f"{BASE_URL}/delete/{code}?token={deletion_token}" # Note: This doesn't have locale
 
     return {
         **data,
@@ -657,14 +726,15 @@ async def fetch_metadata(url: str) -> dict:
     return meta
 
 # ---------------- APP ----------------
-limiter = Limiter(key_func=get_remote_address)
+# We create a main app (for non-localized routes)
+# and a sub-app (i18n_router) for all localized page routes.
 app = FastAPI(title="Shortlinks.art URL Shortener")
+i18n_router = FastAPI() # Our sub-app for all localized routes
+
+# Apply middleware to the main app
+limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -672,6 +742,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files on the main app
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
 
 class LinkCreatePayload(BaseModel):
     long_url: str
@@ -687,6 +762,21 @@ ADSENSE_SCRIPT = f"""
      crossorigin="anonymous"></script>
 """
 
+# === NON-LOCALIZED ROUTES (Mounted on main 'app') ===
+# These routes do *not* have a /en/ or /es/ prefix.
+
+@app.get("/")
+async def root_redirect(request: Request):
+    """
+    Redirects '/' to the user's preferred language, e.g., '/en'.
+    This is critical for SEO.
+    """
+    locale = get_browser_locale(request)
+    # 307 (Temporary Redirect) is good for this first hop
+    response = RedirectResponse(url=f"/{locale}", status_code=307) 
+    response.set_cookie("lang", locale, max_age=365*24*60*60, samesite="lax")
+    return response
+
 @app.get("/health")
 async def health():
     try:
@@ -699,8 +789,8 @@ async def health():
 @limiter.limit("10/minute")
 async def api_create_link(
     request: Request, 
-    payload: LinkCreatePayload, 
-    _ : Callable = Depends(get_translator)
+    payload: LinkCreatePayload,
+    _ : Callable = Depends(get_api_translator) # Use the API-specific translator
 ):
     long_url = payload.long_url
     
@@ -719,65 +809,30 @@ async def api_create_link(
                 long_url = f"{long_url}?{cleaned_tags}"
 
     try:
+        # Note: The URLs returned here are non-localized by design
         link = create_link_in_db(long_url, payload.ttl, payload.custom_code, payload.owner_id)
-        qr_code_data_uri = generate_qr_code_data_uri(link["short_url_preview"])
+        
+        # We need to build a *localized* preview URL for the QR code
+        locale = get_browser_locale(request)
+        localized_preview_url = f"{BASE_URL}/{locale}/preview/{link['short_code']}"
+        
+        qr_code_data_uri = generate_qr_code_data_uri(localized_preview_url)
         return {
-            "short_url": link["short_url_preview"],
-            "stats_url": link["stats_url"],
-            "delete_url": link["delete_url"],
+            "short_url": f"{BASE_URL}/r/{link['short_code']}", # The redirect link is not localized
+            "stats_url": f"{BASE_URL}/{locale}/stats/{link['short_code']}", # Stats link is
+            "delete_url": f"{BASE_URL}/{locale}/delete/{link['short_code']}?token={link['deletion_token']}", # Delete is
             "qr_code_data": qr_code_data_uri
         }
     except ValueError as e:
-        if "Custom code already exists" in str(e):
-            raise HTTPException(status_code=409, detail=_("custom_code_exists"))
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=409, detail=_("custom_code_exists"))
     except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=_("id_generation_failed"))
-
-@app.get("/", response_class=HTMLResponse)
-async def index(
-    request: Request, 
-    _ : Callable = Depends(get_translator),
-    locale: str = Depends(get_current_locale)
-):
-    context = {
-        "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
-        "_": _,
-        "locale": locale # Pass locale for RTL check
-    }
-    return templates.TemplateResponse("index.html", context)
-    
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(
-    request: Request, 
-    _ : Callable = Depends(get_translator),
-    locale: str = Depends(get_current_locale)
-):
-    context = {
-        "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
-        "_": _,
-        "locale": locale
-    }
-    return templates.TemplateResponse("dashboard.html", context)
-
-@app.get("/about", response_class=HTMLResponse)
-async def about(
-    request: Request, 
-    _ : Callable = Depends(get_translator),
-    locale: str = Depends(get_current_locale)
-):
-    context = {
-        "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
-        "_": _,
-        "locale": locale
-    }
-    return templates.TemplateResponse("about.html", context)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/my-links")
-async def get_my_links(owner_id: str, _ : Callable = Depends(get_translator)):
+async def get_my_links(
+    owner_id: str,
+    _ : Callable = Depends(get_api_translator)
+):
     if not owner_id:
         raise HTTPException(status_code=400, detail=_("owner_id_required"))
 
@@ -795,6 +850,7 @@ async def get_my_links(owner_id: str, _ : Callable = Depends(get_translator)):
         data = doc.to_dict()
         short_code = doc.id
         data["short_code"] = short_code
+        # Non-localized links for the API response (can be localized on frontend)
         data["short_url_preview"] = f"{BASE_URL}/preview/{short_code}"
         data["stats_url"] = f"{BASE_URL}/stats/{short_code}"
         data["delete_url"] = f"{BASE_URL}/delete/{short_code}?token={data['deletion_token']}"
@@ -811,41 +867,119 @@ async def robots():
     content = f"""User-agent: *
 Disallow: /api/
 Disallow: /r/
-Disallow: /preview/
 Disallow: /health
-Disallow: /dashboard
-Disallow: /api/v1/my-links
+# We must allow crawlers to see the localized pages
+# Disallow: /preview/
+# Disallow: /dashboard/
 Sitemap: {BASE_URL}/sitemap.xml
 """
     return content
 
 @app.get("/sitemap.xml", response_class=Response)
 async def sitemap():
+    # TODO: This sitemap is now incorrect.
+    # It needs to list *all language variations* for all pages.
+    # e.g., <loc>https://shortlinks.art/en/</loc>
+    # e.g., <loc>https://shortlinks.art/es/</loc>
+    # e.g., <loc>https://shortlinks.art/en/about</loc>
+    # ...and so on.
+    
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+"""
+    # Add home and about page for every locale
+    for lang in SUPPORTED_LOCALES:
+        xml_content += f"""
   <url>
-    <loc>{BASE_URL}/</loc>
+    <loc>{BASE_URL}/{lang}</loc>
     <lastmod>{last_mod}</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>{BASE_URL}/about</loc>
+    <loc>{BASE_URL}/{lang}/about</loc>
     <lastmod>{last_mod}</lastmod>
     <priority>0.8</priority>
   </url>
-</urlset>
 """
+    xml_content += "</urlset>"
     return Response(content=xml_content, media_type="application/xml")
 
-@app.get("/preview/{short_code}", response_class=HTMLResponse)
-async def preview(
-    request: Request, 
-    short_code: str, 
-    _ : Callable = Depends(get_translator),
-    locale: str = Depends(get_current_locale)
+@transactional
+def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> str:
+    doc = doc_ref.get(transaction=transaction)
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail=get_text("link_not_found"))
+
+    link = doc.to_dict()
+    
+    expires_at = link.get("expires_at")
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail=get_text("link_expired"))
+
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    day_key = f"clicks_by_day.{today_str}"
+    
+    transaction.update(doc_ref, {
+        "click_count": firestore.Increment(1),
+        day_key: firestore.Increment(1)
+    })
+    
+    return link["long_url"]
+
+@app.get("/r/{short_code}")
+async def redirect_link(
+    short_code: str,
+    _ : Callable = Depends(get_api_translator)
 ):
+    db = init_firebase()
+    doc_ref = db.collection("links").document(short_code)
+    
+    try:
+        transaction = db.transaction()
+        long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Transaction failed: {e}")
+        link = get_link(short_code)
+        if not link:
+            raise HTTPException(status_code=404, detail=_("link_not_found"))
+        expires_at = link.get("expires_at")
+        if expires_at and expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=410, detail=_("link_expired"))
+        long_url = link["long_url"]
+
+    if not long_url.startswith(("http://", "https://")):
+        absolute_url = "https://" + long_url
+    else:
+        absolute_url = long_url
+
+    return RedirectResponse(url=absolute_url)
+
+
+# === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===
+# These routes will all be prefixed with '/{locale}'
+
+@i18n_router.get("/", response_class=HTMLResponse)
+async def index(common_context: dict = Depends(get_common_context)):
+    return templates.TemplateResponse("index.html", common_context)
+    
+@i18n_router.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(common_context: dict = Depends(get_common_context)):
+    return templates.TemplateResponse("dashboard.html", common_context)
+
+@i18n_router.get("/about", response_class=HTMLResponse)
+async def about(common_context: dict = Depends(get_common_context)):
+    return templates.TemplateResponse("about.html", common_context)
+
+@i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
+async def preview(
+    short_code: str,
+    common_context: dict = Depends(get_common_context)
+):
+    _ = common_context["_"]
     db_client = init_firebase()
     doc_ref = db_client.collection("links").document(short_code)
     doc = doc_ref.get()
@@ -891,11 +1025,8 @@ async def preview(
             print(f"Error updating cache for {short_code}: {e}")
             
     context = {
-        "request": request,
+        **common_context,
         "short_code": short_code,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
-        "_": _,
-        "locale": locale,
         "escaped_long_url_href": html.escape(safe_href_url, quote=True),
         "escaped_long_url_display": html.escape(long_url),
         "meta_title": html.escape(meta.get("title") or "Title not found"),
@@ -909,83 +1040,26 @@ async def preview(
     
     return templates.TemplateResponse("preview.html", context)
 
-@transactional
-def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> str:
-    doc = doc_ref.get(transaction=transaction)
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail=get_text("link_not_found"))
-
-    link = doc.to_dict()
-    
-    expires_at = link.get("expires_at")
-    if expires_at and expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=410, detail=get_text("link_expired"))
-
-    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    day_key = f"clicks_by_day.{today_str}"
-    
-    transaction.update(doc_ref, {
-        "click_count": firestore.Increment(1),
-        day_key: firestore.Increment(1)
-    })
-    
-    return link["long_url"]
-
-@app.get("/r/{short_code}")
-async def redirect_link(short_code: str, _ : Callable = Depends(get_translator)):
-    db = init_firebase()
-    doc_ref = db.collection("links").document(short_code)
-    
-    try:
-        transaction = db.transaction()
-        long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        print(f"Transaction failed: {e}")
-        link = get_link(short_code)
-        if not link:
-            raise HTTPException(status_code=404, detail=_("link_not_found"))
-        expires_at = link.get("expires_at")
-        if expires_at and expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=410, detail=_("link_expired"))
-        long_url = link["long_url"]
-
-    if not long_url.startswith(("http://", "https://")):
-        absolute_url = "https://" + long_url
-    else:
-        absolute_url = long_url
-
-    return RedirectResponse(url=absolute_url)
-
-@app.get("/stats/{short_code}", response_class=HTMLResponse)
+@i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
 async def stats(
-    request: Request, 
-    short_code: str, 
-    _ : Callable = Depends(get_translator),
-    locale: str = Depends(get_current_locale)
+    short_code: str,
+    common_context: dict = Depends(get_common_context)
 ):
+    _ = common_context["_"]
     link = get_link(short_code)
     if not link:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
     
-    context = {
-        "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
-        "link": link,
-        "_": _,
-        "locale": locale
-    }
+    context = { **common_context, "link": link }
     return templates.TemplateResponse("stats.html", context)
 
-@app.get("/delete/{short_code}", response_class=HTMLResponse)
+@i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete(
-    request: Request, 
-    short_code: str, 
+    short_code: str,
     token: Optional[str] = None,
-    _ : Callable = Depends(get_translator),
-    locale: str = Depends(get_current_locale)
+    common_context: dict = Depends(get_common_context)
 ):
+    _ = common_context["_"]
     if not token:
         raise HTTPException(status_code=400, detail=_("token_missing"))
     
@@ -1001,26 +1075,26 @@ async def delete(
     if link.get("deletion_token") == token:
         doc_ref.delete()
         context = {
-            "request": request, 
-            "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+            **common_context, 
             "success": True, 
-            "message": _("delete_success"),
-            "_": _,
-            "locale": locale
+            "message": _("delete_success")
         }
     else:
         context = {
-            "request": request,
-            "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+            **common_context,
             "success": False,
-            "message": _("delete_invalid_token"),
-            "_": _,
-            "locale": locale
+            "message": _("delete_invalid_token")
         }
         
     return templates.TemplateResponse("delete_status.html", context)
 
+
 class SecurityException(Exception):
     pass
 
+# --- Mount the localized router ---
+# This MUST be the last route.
+app.mount("/{locale}", i18n_router, name="localized")
+
+# --- Start background tasks ---
 start_cleanup_thread()

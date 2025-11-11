@@ -35,6 +35,8 @@
 </head>
 <body>
     <div class="container">
+      <a href="{{ url_for('dashboard') }}" class="header-link">My Links →</a>
+
       <h1>Shortlinks<span>.art</span></h1>
       
       <p class="tagline">A fast, simple URL shortener with link previews.</p>
@@ -97,7 +99,6 @@
     const qrCodeImg = document.getElementById("qrCode");
     const deleteUrlLink = document.getElementById("deleteUrlLink");
 
-    // NEW: Advanced Options Elements
     const advancedToggle = document.getElementById("advanced-toggle");
     const advancedOptionsDiv = document.getElementById("advanced-options");
 
@@ -110,7 +111,21 @@
     const TEXT_COPY = "Copy";
     const TEXT_FAILED = "Failed!";
 
-    // NEW: Toggle advanced options
+    // --- NEW: Anonymous Owner ID Logic ---
+    let ownerId = null;
+    function getOrSetOwnerId() {
+        const idKey = 'shortlinks_owner_id';
+        let storedId = localStorage.getItem(idKey);
+        if (!storedId) {
+            storedId = crypto.randomUUID();
+            localStorage.setItem(idKey, storedId);
+        }
+        return storedId;
+    }
+    // Load the owner ID as soon as the script runs
+    ownerId = getOrSetOwnerId();
+    // --- END NEW ---
+
     advancedToggle.addEventListener("click", (e) => {
         e.preventDefault();
         const isShown = advancedOptionsDiv.classList.toggle("show");
@@ -120,7 +135,6 @@
     shortenBtn.addEventListener("click", async () => {
         const longUrl = document.getElementById("longUrl").value.trim();
         const ttl = document.getElementById("ttl").value;
-        // NEW: Get advanced values
         const customCode = document.getElementById("customCode").value.trim() || undefined;
         const utmTags = document.getElementById("utmTags").value.trim() || undefined;
         
@@ -141,12 +155,12 @@
             const res = await fetch("/api/v1/links", {
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
-                // NEW: Send advanced values in payload
                 body: JSON.stringify({
                     long_url: longUrl, 
                     ttl: ttl, 
                     custom_code: customCode, 
-                    utm_tags: utmTags 
+                    utm_tags: utmTags,
+                    owner_id: ownerId // <-- NEW: Send the owner ID
                 })
             });
             const data = await res.json();

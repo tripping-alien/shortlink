@@ -4,7 +4,7 @@ import html
 import string
 import random
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any, Literal
+from typing import Optional, Dict, Any, Literal, Callable
 
 import socket
 import ipaddress
@@ -13,7 +13,7 @@ import io
 import base64
 
 import validators
-from pydantic import BaseModel, constr # 'constr' is correct
+from pydantic import BaseModel, constr
 from firebase_admin.firestore import transactional
 
 import qrcode
@@ -34,7 +34,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
 
-# Import fix from previous error
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
@@ -49,6 +48,236 @@ TTL_MAP = {
     "1w": timedelta(weeks=1),
     "never": None
 }
+
+# ---------------- LOCALIZATION (i18n) ----------------
+
+# 1. Define supported languages
+SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar"]
+DEFAULT_LOCALE = "en"
+
+# 2. Store all translations in a dictionary
+# NOTE: This is now very large. For future growth,
+# consider loading these from separate JSON files.
+translations = {
+    "en": {
+        "app_title": "Shortlinks.art - Free & Open Source URL Shortener",
+        "link_not_found": "Link not found",
+        "link_expired": "Link expired",
+        "invalid_url": "Invalid URL provided.",
+        "custom_code_exists": "Custom code already exists",
+        "id_generation_failed": "Could not generate unique short code.",
+        "owner_id_required": "Owner ID is required",
+        "token_missing": "Deletion token is missing",
+        "delete_success": "Link successfully deleted.",
+        "delete_invalid_token": "Invalid deletion token. Link was not deleted.",
+        "create_link_heading": "Create a Short Link",
+        "long_url_placeholder": "Enter your long URL (e.g., https://...)",
+        "create_button": "Shorten",
+        "custom_code_label": "Custom code (optional)",
+        "ttl_label": "Expires after",
+        "ttl_1h": "1 Hour",
+        "ttl_24h": "24 Hours",
+        "ttl_1w": "1 Week",
+        "ttl_never": "Never",
+    },
+    "es": {
+        "app_title": "Shortlinks.art - Acortador de URL gratuito y de código abierto",
+        "link_not_found": "Enlace no encontrado",
+        "link_expired": "El enlace ha caducado",
+        "invalid_url": "La URL proporcionada no es válida.",
+        "custom_code_exists": "Este código personalizado ya existe",
+        "id_generation_failed": "No se pudo generar un código corto único.",
+        "owner_id_required": "Se requiere ID de propietario",
+        "token_missing": "Falta el token de eliminación",
+        "delete_success": "Enlace eliminado con éxito.",
+        "delete_invalid_token": "Token de eliminación no válido. El enlace no fue eliminado.",
+        "create_link_heading": "Crear un enlace corto",
+        "long_url_placeholder": "Introduce tu URL larga (ej., https://...)",
+        "create_button": "Acortar",
+        "custom_code_label": "Código personalizado (opcional)",
+        "ttl_label": "Expira después de",
+        "ttl_1h": "1 Hora",
+        "ttl_24h": "24 Horas",
+        "ttl_1w": "1 Semana",
+        "ttl_never": "Nunca",
+    },
+    "zh": { # Mandarin Chinese (Simplified)
+        "app_title": "Shortlinks.art - 免费的开源网址缩短服务",
+        "link_not_found": "链接未找到",
+        "link_expired": "链接已过期",
+        "invalid_url": "提供了无效的URL。",
+        "custom_code_exists": "自定义代码已存在",
+        "id_generation_failed": "无法生成唯一的短代码。",
+        "owner_id_required": "需要所有者ID",
+        "token_missing": "缺少删除令牌",
+        "delete_success": "链接已成功删除。",
+        "delete_invalid_token": "删除令牌无效。链接未被删除。",
+        "create_link_heading": "创建短链接",
+        "long_url_placeholder": "输入您的长网址 (例如 https://...)",
+        "create_button": "缩短",
+        "custom_code_label": "自定义代码 (可选)",
+        "ttl_label": "过期时间",
+        "ttl_1h": "1 小时",
+        "ttl_24h": "24 小时",
+        "ttl_1w": "1 周",
+        "ttl_never": "从不",
+    },
+    "hi": { # Hindi
+        "app_title": "Shortlinks.art - मुफ़्त और ओपन सोर्स यूआरएल शॉर्टनर",
+        "link_not_found": "लिंक नहीं मिला",
+        "link_expired": "लिंक समाप्त हो गया है",
+        "invalid_url": "अमान्य यूआरएल प्रदान किया गया।",
+        "custom_code_exists": "कस्टम कोड पहले से मौजूद है",
+        "id_generation_failed": "अद्वितीय शॉर्ट कोड उत्पन्न नहीं किया जा सका।",
+        "owner_id_required": "मालिक आईडी की आवश्यकता है",
+        "token_missing": "विलोपन टोकन गायब है",
+        "delete_success": "लिंक सफलतापूर्वक हटा दिया गया।",
+        "delete_invalid_token": "अमान्य विलोपन टोकन। लिंक हटाया नहीं गया।",
+        "create_link_heading": "एक छोटा लिंक बनाएं",
+        "long_url_placeholder": "अपना लंबा यूआरएल दर्ज करें (जैसे, https://...)",
+        "create_button": "छोटा करें",
+        "custom_code_label": "कस्टम कोड (वैकल्पिक)",
+        "ttl_label": "इसके बाद समाप्त हो जाएगा",
+        "ttl_1h": "1 घंटा",
+        "ttl_24h": "24 घंटे",
+        "ttl_1w": "1 सप्ताह",
+        "ttl_never": "कभी नहीं",
+    },
+    "pt": { # Portuguese
+        "app_title": "Shortlinks.art - Encurtador de URL gratuito e de código aberto",
+        "link_not_found": "Link não encontrado",
+        "link_expired": "O link expirou",
+        "invalid_url": "URL fornecida é inválida.",
+        "custom_code_exists": "O código personalizado já existe",
+        "id_generation_failed": "Não foi possível gerar um código curto único.",
+        "owner_id_required": "ID do proprietário é obrigatório",
+        "token_missing": "Token de exclusão ausente",
+        "delete_success": "Link excluído com sucesso.",
+        "delete_invalid_token": "Token de exclusão inválido. O link não foi excluído.",
+        "create_link_heading": "Criar um link curto",
+        "long_url_placeholder": "Digite sua URL longa (ex: https://...)",
+        "create_button": "Encurtar",
+        "custom_code_label": "Código personalizado (opcional)",
+        "ttl_label": "Expira em",
+        "ttl_1h": "1 Hora",
+        "ttl_24h": "24 Horas",
+        "ttl_1w": "1 Semana",
+        "ttl_never": "Nunca",
+    },
+    "fr": { # French
+        "app_title": "Shortlinks.art - Raccourcisseur d'URL gratuit et open source",
+        "link_not_found": "Lien non trouvé",
+        "link_expired": "Le lien a expiré",
+        "invalid_url": "URL fournie invalide.",
+        "custom_code_exists": "Le code personnalisé existe déjà",
+        "id_generation_failed": "Impossible de générer un code court unique.",
+        "owner_id_required": "ID du propriétaire requis",
+        "token_missing": "Jeton de suppression manquant",
+        "delete_success": "Lien supprimé avec succès.",
+        "delete_invalid_token": "Jeton de suppression non valide. Le lien n'a pas été supprimé.",
+        "create_link_heading": "Créer un lien court",
+        "long_url_placeholder": "Entrez votre URL longue (ex: https://...)",
+        "create_button": "Raccourcir",
+        "custom_code_label": "Code personnalisé (optionnel)",
+        "ttl_label": "Expire après",
+        "ttl_1h": "1 Heure",
+        "ttl_24h": "24 Heures",
+        "ttl_1w": "1 Semaine",
+        "ttl_never": "Jamais",
+    },
+    "de": { # German
+        "app_title": "Shortlinks.art - Kostenloser Open-Source-URL-Shortener",
+        "link_not_found": "Link nicht gefunden",
+        "link_expired": "Link ist abgelaufen",
+        "invalid_url": "Ungültige URL angegeben.",
+        "custom_code_exists": "Benutzerdefinierter Code existiert bereits",
+        "id_generation_failed": "Konnte keinen eindeutigen Kurzcode generieren.",
+        "owner_id_required": "Besitzer-ID erforderlich",
+        "token_missing": "Lösch-Token fehlt",
+        "delete_success": "Link erfolgreich gelöscht.",
+        "delete_invalid_token": "Ungültiges Lösch-Token. Link wurde nicht gelöscht.",
+        "create_link_heading": "Einen Kurzlink erstellen",
+        "long_url_placeholder": "Geben Sie Ihre lange URL ein (z.B. https://...)",
+        "create_button": "Kürzen",
+        "custom_code_label": "Benutzerdefinierter Code (optional)",
+        "ttl_label": "Läuft ab nach",
+        "ttl_1h": "1 Stunde",
+        "ttl_24h": "24 Stunden",
+        "ttl_1w": "1 Woche",
+        "ttl_never": "Nie",
+    },
+    "ar": { # Arabic
+        "app_title": "Shortlinks.art - خدمة تقصير روابط مجانية ومفتوحة المصدر",
+        "link_not_found": "الرابط غير موجود",
+        "link_expired": "انتهت صلاحية الرابط",
+        "invalid_url": "الرابط المُقدم غير صالح.",
+        "custom_code_exists": "الرمز المخصص موجود بالفعل",
+        "id_generation_failed": "لم يمكن إنشاء رمز قصير فريد.",
+        "owner_id_required": "معرف المالك مطلوب",
+        "token_missing": "رمز الحذف مفقود",
+        "delete_success": "تم حذف الرابط بنجاح.",
+        "delete_invalid_token": "رمز الحذف غير صالح. لم يتم حذف الرابط.",
+        "create_link_heading": "إنشاء رابط قصير",
+        "long_url_placeholder": "أدخل الرابط الطويل (مثال: https://...)",
+        "create_button": "تقصير",
+        "custom_code_label": "رمز مخصص (اختياري)",
+        "ttl_label": "تنتهي الصلاحية بعد",
+        "ttl_1h": "1 ساعة",
+        "ttl_24h": "24 ساعة",
+        "ttl_1w": "1 أسبوع",
+        "ttl_never": "أبداً",
+    }
+}
+
+
+# 3. Detect locale from request header
+def get_locale(request: Request) -> str:
+    """Parses the Accept-Language header to find the best matching locale."""
+    try:
+        lang_header = request.headers.get("accept-language")
+        if not lang_header:
+            return DEFAULT_LOCALE
+        
+        # Simple parser: gets the first language, e.g., "es-ES,en;q=0.9" -> "es"
+        primary_lang = lang_header.split(',')[0].split('-')[0].lower()
+        
+        if primary_lang in SUPPORTED_LOCALES:
+            return primary_lang
+    except Exception:
+        pass # Fallback to default
+    return DEFAULT_LOCALE
+
+# 4. Create a translator "getter" dependency
+def get_translator_and_locale(request: Request) -> (Callable[[str], str], str):
+    """
+    Returns a 'gettext' style function (named '_') and the locale.
+    """
+    locale = get_locale(request)
+    
+    def _(key: str) -> str:
+        # Get the translated string for the detected locale
+        translated = translations.get(locale, {}).get(key)
+        if translated:
+            return translated
+        
+        # Fallback to the default locale (English)
+        fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
+        if fallback:
+            return fallback
+            
+        # As a last resort, return the key itself
+        return key
+        
+    return _, locale
+
+# Wrapper dependency to just get the translator function
+def get_translator(tr: tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
+    return tr[0]
+
+# Wrapper dependency to just get the locale
+def get_current_locale(tr: tuple = Depends(get_translator_and_locale)) -> str:
+    return tr[1]
+
 
 # ---------------- FIREBASE ----------------
 db: firestore.Client = None
@@ -273,12 +502,7 @@ app.add_middleware(
 class LinkCreatePayload(BaseModel):
     long_url: str
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
-    
-    # --- THIS IS THE FIX for Pydantic v2 ---
-    # Replaced 'alnum=True' with a regex 'pattern'
     custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]*$', max_length=20)] = None
-    # -------------------------------------
-    
     utm_tags: Optional[str] = None
     owner_id: Optional[str] = None
 
@@ -299,14 +523,18 @@ async def health():
 
 @app.post("/api/v1/links")
 @limiter.limit("10/minute")
-async def api_create_link(request: Request, payload: LinkCreatePayload):
+async def api_create_link(
+    request: Request, 
+    payload: LinkCreatePayload, 
+    _ : Callable = Depends(get_translator)
+):
     long_url = payload.long_url
     
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
 
     if not validators.url(long_url, public=True):
-        raise HTTPException(status_code=400, detail="Invalid URL provided.")
+        raise HTTPException(status_code=400, detail=_("invalid_url"))
 
     if payload.utm_tags:
         cleaned_tags = payload.utm_tags.lstrip("?&")
@@ -326,40 +554,58 @@ async def api_create_link(request: Request, payload: LinkCreatePayload):
             "qr_code_data": qr_code_data_uri
         }
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        if "Custom code already exists" in str(e):
+            raise HTTPException(status_code=409, detail=_("custom_code_exists"))
+        raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=_("id_generation_failed"))
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
+async def index(
+    request: Request, 
+    _ : Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale)
+):
     context = {
         "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT
+        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "_": _,
+        "locale": locale # Pass locale for RTL check
     }
     return templates.TemplateResponse("index.html", context)
     
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
+async def dashboard(
+    request: Request, 
+    _ : Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale)
+):
     context = {
         "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT
+        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "_": _,
+        "locale": locale
     }
     return templates.TemplateResponse("dashboard.html", context)
 
-# --- NEW: About Page Route ---
 @app.get("/about", response_class=HTMLResponse)
-async def about(request: Request):
+async def about(
+    request: Request, 
+    _ : Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale)
+):
     context = {
         "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT
+        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "_": _,
+        "locale": locale
     }
     return templates.TemplateResponse("about.html", context)
-# --- END NEW ---
 
 @app.get("/api/v1/my-links")
-async def get_my_links(owner_id: str):
+async def get_my_links(owner_id: str, _ : Callable = Depends(get_translator)):
     if not owner_id:
-        raise HTTPException(status_code=400, detail="Owner ID is required")
+        raise HTTPException(status_code=400, detail=_("owner_id_required"))
 
     db = init_firebase()
     links_query = (
@@ -388,7 +634,6 @@ async def get_my_links(owner_id: str):
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
-    # No change needed, /about is allowed by default.
     content = f"""User-agent: *
 Disallow: /api/
 Disallow: /r/
@@ -400,7 +645,6 @@ Sitemap: {BASE_URL}/sitemap.xml
 """
     return content
 
-# --- UPDATED: sitemap.xml ---
 @app.get("/sitemap.xml", response_class=Response)
 async def sitemap():
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -420,28 +664,31 @@ async def sitemap():
 </urlset>
 """
     return Response(content=xml_content, media_type="application/xml")
-# --- END UPDATED ---
 
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
-async def preview(request: Request, short_code: str):
+async def preview(
+    request: Request, 
+    short_code: str, 
+    _ : Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale)
+):
     db_client = init_firebase()
     doc_ref = db_client.collection("links").document(short_code)
     doc = doc_ref.get()
 
     if not doc.exists:
-        raise HTTPException(status_code=404, detail="Link not found")
+        raise HTTPException(status_code=404, detail=_("link_not_found"))
     
     link = doc.to_dict()
     link["short_code"] = doc.id
     
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=410, detail="Link expired")
+        raise HTTPException(status_code=410, detail=_("link_expired"))
     
     long_url = link["long_url"]
     
-    if not long_url.startswith(("http://", "https:"
-                                          "//")):
+    if not long_url.startswith(("http://", "https://")):
         safe_href_url = "https://" + long_url
     else:
         safe_href_url = long_url
@@ -473,6 +720,8 @@ async def preview(request: Request, short_code: str):
         "request": request,
         "short_code": short_code,
         "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "_": _,
+        "locale": locale,
         "escaped_long_url_href": html.escape(safe_href_url, quote=True),
         "escaped_long_url_display": html.escape(long_url),
         "meta_title": html.escape(meta.get("title") or "Title not found"),
@@ -487,16 +736,16 @@ async def preview(request: Request, short_code: str):
     return templates.TemplateResponse("preview.html", context)
 
 @transactional
-def update_clicks_in_transaction(transaction, doc_ref) -> str:
+def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> str:
     doc = doc_ref.get(transaction=transaction)
     if not doc.exists:
-        raise HTTPException(status_code=4404, detail="Link not found")
+        raise HTTPException(status_code=404, detail=get_text("link_not_found"))
 
     link = doc.to_dict()
     
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=410, detail="Link expired")
+        raise HTTPException(status_code=410, detail=get_text("link_expired"))
 
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     day_key = f"clicks_by_day.{today_str}"
@@ -509,23 +758,23 @@ def update_clicks_in_transaction(transaction, doc_ref) -> str:
     return link["long_url"]
 
 @app.get("/r/{short_code}")
-async def redirect_link(short_code: str):
+async def redirect_link(short_code: str, _ : Callable = Depends(get_translator)):
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
     
     try:
         transaction = db.transaction()
-        long_url = update_clicks_in_transaction(transaction, doc_ref)
+        long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
     except HTTPException as e:
         raise e
     except Exception as e:
         print(f"Transaction failed: {e}")
         link = get_link(short_code)
         if not link:
-            raise HTTPException(status_code=404, detail="Link not found")
+            raise HTTPException(status_code=404, detail=_("link_not_found"))
         expires_at = link.get("expires_at")
         if expires_at and expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=410, detail="Link expired")
+            raise HTTPException(status_code=410, detail=_("link_expired"))
         long_url = link["long_url"]
 
     if not long_url.startswith(("http://", "https://")):
@@ -536,29 +785,42 @@ async def redirect_link(short_code: str):
     return RedirectResponse(url=absolute_url)
 
 @app.get("/stats/{short_code}", response_class=HTMLResponse)
-async def stats(request: Request, short_code: str):
+async def stats(
+    request: Request, 
+    short_code: str, 
+    _ : Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale)
+):
     link = get_link(short_code)
     if not link:
-        raise HTTPException(status_code=404, detail="Link not found")
+        raise HTTPException(status_code=404, detail=_("link_not_found"))
     
     context = {
         "request": request,
         "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
-        "link": link
+        "link": link,
+        "_": _,
+        "locale": locale
     }
     return templates.TemplateResponse("stats.html", context)
 
 @app.get("/delete/{short_code}", response_class=HTMLResponse)
-async def delete(request: Request, short_code: str, token: Optional[str] = None):
+async def delete(
+    request: Request, 
+    short_code: str, 
+    token: Optional[str] = None,
+    _ : Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale)
+):
     if not token:
-        raise HTTPException(status_code=400, detail="Deletion token is missing")
+        raise HTTPException(status_code=400, detail=_("token_missing"))
     
     collection_ref = init_firebase().collection("links")
     doc_ref = collection_ref.document(short_code)
     
     doc = doc_ref.get()
     if not doc.exists:
-        raise HTTPException(status_code=404, detail="Link not found")
+        raise HTTPException(status_code=404, detail=_("link_not_found"))
     
     link = doc.to_dict()
     
@@ -568,14 +830,18 @@ async def delete(request: Request, short_code: str, token: Optional[str] = None)
             "request": request, 
             "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
             "success": True, 
-            "message": "Link successfully deleted."
+            "message": _("delete_success"),
+            "_": _,
+            "locale": locale
         }
     else:
         context = {
             "request": request,
             "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
             "success": False,
-            "message": "Invalid deletion token. Link was not deleted."
+            "message": _("delete_invalid_token"),
+            "_": _,
+            "locale": locale
         }
         
     return templates.TemplateResponse("delete_status.html", context)

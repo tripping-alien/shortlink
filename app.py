@@ -45,7 +45,6 @@ TTL_MAP = {
 }
 
 # ---------------- FIREBASE ----------------
-# ... (Firebase code is unchanged) ...
 db: firestore.Client = None
 APP_INSTANCE = None
 
@@ -110,7 +109,6 @@ def init_firebase():
     return db
 
 # ---------------- HELPERS ----------------
-# ... (Other helpers are unchanged) ...
 def _generate_short_code(length=SHORT_CODE_LENGTH) -> str:
     chars = string.ascii_lowercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
@@ -181,22 +179,15 @@ def get_link(code: str) -> Optional[Dict[str, Any]]:
     data["short_code"] = doc.id
     return data
 
-# --- NEW: SSRF Security Helper ---
 def is_public_ip(ip_str: str) -> bool:
     """Checks if an IP address is public."""
     try:
         ip = ipaddress.ip_address(ip_str)
-        # is_global = not private, not reserved, not loopback, etc.
         return ip.is_global
     except ValueError:
         return False
 
-# --- UPDATED: fetch_metadata (SSRF Patched) ---
 async def fetch_metadata(url: str) -> dict:
-    """
-    Fetches metadata (title, description, image) from a given URL,
-    with SSRF protection.
-    """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -206,25 +197,19 @@ async def fetch_metadata(url: str) -> dict:
         "image": None,
         "favicon": None
     }
-
     try:
-        # --- NEW: SSRF CHECK ---
         parsed_url = urlparse(url)
         hostname = parsed_url.hostname
         if not hostname:
             raise ValueError("Invalid hostname")
 
-        # Resolve hostname to IP address in a non-blocking way
-        # `socket.gethostbyname` is blocking, so we run it in a thread pool
         try:
             ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
         except socket.gaierror:
             raise ValueError("Could not resolve hostname")
 
-        # Check if the IP is public
         if not is_public_ip(ip_address):
             raise SecurityException(f"Blocked request to non-public IP: {ip_address}")
-        # --- END SSRF CHECK ---
 
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, follow_redirects=True, timeout=5.0)
@@ -246,7 +231,6 @@ async def fetch_metadata(url: str) -> dict:
             if favicon := soup.find("link", rel="icon") or soup.find("link", rel="shortcut icon"):
                 meta["favicon"] = urljoin(final_url, favicon.get("href"))
             else:
-                # Fallback: try to guess /favicon.ico
                 parsed_url_fallback = urlparse(final_url)
                 meta["favicon"] = f"{parsed_url_fallback.scheme}://{parsed_url_fallback.netloc}/favicon.ico"
 
@@ -256,12 +240,9 @@ async def fetch_metadata(url: str) -> dict:
         print(f"SSRF Prevention: {e}")
     except Exception as e:
         print(f"Error parsing or validating URL for {url}: {e}")
-
     return meta
-# --- END UPDATED FUNCTION ---
 
 # ---------------- APP ----------------
-# ... (App setup is unchanged) ...
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Shortlinks.art URL Shortener")
 app.state.limiter = limiter
@@ -285,7 +266,6 @@ ADSENSE_SCRIPT = f"""
      crossorigin="anonymous"></script>
 """
 
-# ... (All routes: /health, /api/v1/links, /, /robots.txt, /sitemap.xml, /preview, /r, /stats, /delete are unchanged) ...
 @app.get("/health")
 async def health():
     try:
@@ -317,9 +297,7 @@ async def api_create_link(request: Request, payload: Dict[str, Any]):
 
     try:
         link = create_link_in_db(long_url, ttl, custom_code)
-        
         qr_code_data_uri = generate_qr_code_data_uri(link["short_url_preview"])
-
         return {
             "short_url": link["short_url_preview"],
             "stats_url": link["stats_url"],
@@ -381,7 +359,6 @@ async def preview(request: Request, short_code: str):
     else:
         safe_href_url = long_url
     
-    # This function is now secure
     meta = await fetch_metadata(safe_href_url)
     
     context = {
@@ -401,6 +378,7 @@ async def preview(request: Request, short_code: str):
     
     return templates.TemplateResponse("preview.html", context)
 
+# --- UPDATED: /r/{short_code} route ---
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
     collection_ref = init_firebase().collection("links")
@@ -408,7 +386,8 @@ async def redirect_link(short_code: str):
     
     doc = doc_ref.get()
     if not doc.exists:
-        raise HTTPException(status_code=44, detail="Link not found")
+        # --- BUG FIX: Changed 44 to 404 ---
+        raise HTTPException(status_code=404, detail="Link not found")
     
     link = doc.to_dict()
     
@@ -428,6 +407,7 @@ async def redirect_link(short_code: str):
         absolute_url = long_url
 
     return RedirectResponse(url=absolute_url)
+# --- END UPDATED ROUTE ---
 
 @app.get("/stats/{short_code}", response_class=HTMLResponse)
 async def stats(request: Request, short_code: str):
@@ -474,9 +454,7 @@ async def delete(request: Request, short_code: str, token: Optional[str] = None)
         
     return templates.TemplateResponse("delete_status.html", context)
 
-# --- NEW: Custom Exception Class ---
 class SecurityException(Exception):
     pass
-# --- END NEW ---
 
 start_cleanup_thread()

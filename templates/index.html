@@ -25,13 +25,18 @@
     <meta property="twitter:description" content="{{ _('meta_description_og') }}">
     
     <meta property="twitter:image" content="https://shortlinks.art/assets/social-preview.jpg">
+    
+    {% for tag in hreflang_tags %}
+    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
+    {% endfor %}
+
     {{ ADSENSE_SCRIPT|safe }} 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 </head>
 <body>
     <div class="card">
-      <a href="{{ url_for('dashboard') }}" class="header-link">{{ _("my_links_button") }} →</a>
+      <a href="{{ url_for('localized:dashboard', locale=locale) }}" class="header-link">{{ _("my_links_button") }} →</a>
       <h1>Shortlinks<span>.art</span></h1>
       <p class="tagline">{{ _("tagline") }}</p>
       
@@ -77,14 +82,24 @@
 
     <footer class="footer">
         <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
-        <a href="{{ url_for('index') }}">{{ _("nav_home") }}</a>
-        <a href="{{ url_for('about') }}">{{ _("nav_about") }}</a>
+        <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
+        <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
+
+        <div class="language-switcher">
+            {% for tag in hreflang_tags %}
+              {% if tag.hreflang != 'x-default' %}
+                <a href="{{ tag.href }}" 
+                   class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
+                   data-lang="{{ tag.hreflang }}">
+                   {{ tag.hreflang.upper() }}
+                </a>
+              {% endif %}
+            {% endfor %}
+        </div>
     </footer>
 
     <script>
-    // =====================================================================
-    // UPDATED: JavaScript constants are now injected by Jinja2
-    // =====================================================================
+    // Constants
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
     const errorDiv = document.getElementById("error-msg");
@@ -96,7 +111,7 @@
     const advancedToggle = document.getElementById("advanced-toggle");
     const advancedOptionsDiv = document.getElementById("advanced-options");
 
-    // Translated strings for JavaScript
+    // Translated strings
     const TEXT_ENTER_URL = "{{ _('js_enter_url') }}";
     const TEXT_ERROR = "{{ _('js_error_creating') }}";
     const TEXT_ERROR_SERVER = "{{ _('js_error_server') }}";
@@ -105,6 +120,7 @@
     const TEXT_COPY = "{{ _('copy_button') }}";
     const TEXT_FAILED = "{{ _('js_copy_failed') }}";
 
+    // Owner ID logic
     let ownerId = null;
     function getOrSetOwnerId() {
         const idKey = 'shortlinks_owner_id';
@@ -116,11 +132,15 @@
         return storedId;
     }
     ownerId = getOrSetOwnerId();
+
+    // Advanced options toggle
     advancedToggle.addEventListener("click", (e) => {
         e.preventDefault();
         const isShown = advancedOptionsDiv.classList.toggle("show");
         advancedToggle.querySelector("span").textContent = isShown ? "−" : "+";
     });
+
+    // Shorten button logic
     shortenBtn.addEventListener("click", async () => {
         const longUrl = document.getElementById("longUrl").value.trim();
         const ttl = document.getElementById("ttl").value;
@@ -137,13 +157,10 @@
         shortenBtn.disabled = true;
         shortenBtn.classList.add("loading");
         try {
+            // API routes are not localized, they live at the root
             const res = await fetch("/api/v1/links", {
                 method:"POST",
-                // =========================================================
-                // FIXED: This is the syntax error from your log
-                // =========================================================
                 headers: { "Content-Type": "application/json" },
-                // =========================================================
                 body: JSON.stringify({
                     long_url: longUrl, 
                     ttl: ttl, 
@@ -154,7 +171,9 @@
             });
             const data = await res.json();
             if (res.ok) {
-                shortUrlLink.href = data.short_url;
+                // data.short_url is the /r/ link
+                // data.stats_url and data.delete_url are now localized!
+                shortUrlLink.href = data.short_url; 
                 shortUrlLink.textContent = data.short_url.replace("https://", "");
                 statsUrlLink.href = data.stats_url;
                 deleteUrlLink.href = data.delete_url;
@@ -174,6 +193,8 @@
             shortenBtn.classList.remove("loading");
         }
     });
+
+    // Copy button logic
     copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(shortUrlLink.href)
             .then(() => {
@@ -193,6 +214,11 @@
                 }, 2000);
             });
     });
+
+    /* DELETED: The JavaScript-based language switcher is no longer needed
+      because the buttons are now simple <a> links that go to the
+      correct URL, e.g., /es/ or /fr/.
+    */
     </script>
 </body>
 </html>

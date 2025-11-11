@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ locale }}" dir="{{ 'rtl' if locale == 'ar' else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free URL Shortener with Link Previews & Expiring Links - Shortlinks.art</title>
-    <meta name="description" content="Create free short links with previews. Shortlinks.art is a fast, simple URL shortener that offers custom expiration times and link previews.">
-    <meta name="keywords" content="url shortener, link shortener, free url shortener, url shortener with preview, link shortener with preview, custom short link, expiring links, temporary links, short url, shorten link, fast url shortener, simple url shortener, shortlinks.art">
+    
+    <title>{{ _("app_title") }}</title>
+    <meta name="description" content="{{ _('meta_description_main') }}">
+    <meta name="keywords" content="{{ _('meta_keywords_main') }}">
+    
     <link rel="canonical" href="https://shortlinks.art/" />
     <meta name="robots" content="index, follow">
     <meta name="google-site-verification" content="YOUR_GOOGLE_CODE_HERE" />
@@ -13,13 +15,15 @@
     <meta name="yandex-verification" content="YOUR_YANDEX_CODE_HERE" />
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://shortlinks.art/">
-    <meta property="og:title" content="Free URL Shortener with Link Previews - Shortlinks.art">
-    <meta property="og:description" content="A fast, free, and simple URL shortener with link previews and custom expiration times.">
+    
+    <meta property="og:title" content="{{ _('app_title') }}">
+    <meta property="og:description" content="{{ _('meta_description_og') }}">
     <meta property="og:image" content="https://shortlinks.art/assets/social-preview.jpg"> 
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://shortlinks.art/">
-    <meta property="twitter:title" content="Free URL Shortener with Link Previews - Shortlinks.art">
-    <meta property="twitter:description" content="A fast, free, and simple URL shortener with link previews and custom expiration times.">
+    <meta property="twitter:title" content="{{ _('app_title') }}">
+    <meta property="twitter:description" content="{{ _('meta_description_og') }}">
+    
     <meta property="twitter:image" content="https://shortlinks.art/assets/social-preview.jpg">
     {{ ADSENSE_SCRIPT|safe }} 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
@@ -27,44 +31,45 @@
 </head>
 <body>
     <div class="card">
-      <a href="{{ url_for('dashboard') }}" class="header-link">My Links →</a>
+      <a href="{{ url_for('dashboard') }}" class="header-link">{{ _("my_links_button") }} →</a>
       <h1>Shortlinks<span>.art</span></h1>
-      <p class="tagline">A fast, simple URL shortener with link previews.</p>
+      <p class="tagline">{{ _("tagline") }}</p>
       
-      <input type="url" id="longUrl" placeholder="Enter your URL here">
+      <input type="url" id="longUrl" placeholder="{{ _('long_url_placeholder') }}">
       <select id="ttl">
-        <option value="1h">1 Hour</option>
-        <option value="24h" selected>24 Hours</option>
-        <option value="1w">1 Week</option>
-        <option value="never">Never</option>
+        <option value="1h">{{ _("ttl_1h") }}</option>
+        <option value="24h" selected>{{ _("ttl_24h") }}</option>
+        <option value="1w">{{ _("ttl_1w") }}</option>
+        <option value="never">{{ _("ttl_never") }}</option>
       </select>
-      <a href="#" class="advanced-options-toggle" id="advanced-toggle">Advanced Options <span>+</span></a>
+      <a href="#" class="advanced-options-toggle" id="advanced-toggle">{{ _("advanced_options_button") }} <span>+</span></a>
       <div id="advanced-options">
-          <input type="text" id="customCode" placeholder="Custom code (optional)">
-          <input type="text" id="utmTags" placeholder="UTM tags (e.g., utm_source=twitter)">
+          <input type="text" id="customCode" placeholder="{{ _('custom_code_label') }}">
+          <input type="text" id="utmTags" placeholder="{{ _('utm_tags_placeholder') }}">
       </div>
       <div id="error-msg"></div>
       <button id="shortenBtn">
-          <span class="btn-text">Shorten</span>
+          <span class="btn-text">{{ _("create_button") }}</span>
           <div class="spinner"></div>
       </button>
+      
       <div id="result">
         <div class="result-item">
-          <span>Short Link</span>
+          <span>{{ _("result_short_link") }}</span>
           <div>
             <a href="#" id="shortUrlLink" target="_blank" rel="noopener noreferrer"></a>
-            <button class="copy-btn" id="copyBtn">Copy</button>
+            <button class="copy-btn" id="copyBtn">{{ _("copy_button") }}</button>
           </div>
         </div>
         <div class="result-item">
-            <span>Stats Page</span>
-            <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer">View Clicks</a>
+            <span>{{ _("result_stats_page") }}</span>
+            <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer">{{ _("result_view_clicks") }}</a>
         </div>
         <div id="qr-code-box">
             <img id="qrCode" src="" alt="QR Code">
         </div>
         <div id="delete-link-box">
-            <p><strong>Save this link!</strong> This is your unique deletion link. Keep it safe if you ever want to remove your shortlink.</p>
+            <p><strong>{{ _("result_save_link_strong") }}</strong> {{ _("result_save_link_text") }}</p>
             <a href="#" id="deleteUrlLink" target="_blank"></a>
         </div>
       </div>
@@ -72,12 +77,14 @@
 
     <footer class="footer">
         <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
-        <a href="{{ url_for('index') }}">Home</a>
-        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('index') }}">{{ _("nav_home") }}</a>
+        <a href="{{ url_for('about') }}">{{ _("nav_about") }}</a>
     </footer>
 
     <script>
-    // ... (javascript is unchanged) ...
+    // =====================================================================
+    // UPDATED: JavaScript constants are now injected by Jinja2
+    // =====================================================================
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
     const errorDiv = document.getElementById("error-msg");
@@ -88,14 +95,16 @@
     const deleteUrlLink = document.getElementById("deleteUrlLink");
     const advancedToggle = document.getElementById("advanced-toggle");
     const advancedOptionsDiv = document.getElementById("advanced-options");
-    const TEXT_ENTER_URL = "Please enter a URL.";
-    const TEXT_ERROR = "Error creating short link";
-    const TEXT_ERROR_SERVER = "Failed to connect to the server.";
-    const TEXT_SHORTENING = "Shortening...";
-    const TEXT_SHORTEN = "Shorten";
-    const TEXT_COPIED = "Copied!";
-    const TEXT_COPY = "Copy";
-    const TEXT_FAILED = "Failed!";
+
+    // Translated strings for JavaScript
+    const TEXT_ENTER_URL = "{{ _('js_enter_url') }}";
+    const TEXT_ERROR = "{{ _('js_error_creating') }}";
+    const TEXT_ERROR_SERVER = "{{ _('js_error_server') }}";
+    const TEXT_SHORTEN = "{{ _('create_button') }}";
+    const TEXT_COPIED = "{{ _('js_copied') }}";
+    const TEXT_COPY = "{{ _('copy_button') }}";
+    const TEXT_FAILED = "{{ _('js_copy_failed') }}";
+
     let ownerId = null;
     function getOrSetOwnerId() {
         const idKey = 'shortlinks_owner_id';
@@ -130,7 +139,11 @@
         try {
             const res = await fetch("/api/v1/links", {
                 method:"POST",
-                headers:{{"Content-Type":"application/json"}},
+                // =========================================================
+                // FIXED: This is the syntax error from your log
+                // =========================================================
+                headers: { "Content-Type": "application/json" },
+                // =========================================================
                 body: JSON.stringify({
                     long_url: longUrl, 
                     ttl: ttl, 

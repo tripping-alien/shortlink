@@ -26,3 +26,5 @@ validators           # For URL validation
 
 # Build (Optional but good practice)
 setuptools
+
+passlib[bcrypt]

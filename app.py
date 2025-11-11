@@ -138,7 +138,6 @@ def generate_qr_code_data_uri(text: str) -> str:
     b64_str = base64.b64encode(buf.getvalue()).decode("utf-8")
     return f"data:image/png;base64,{b64_str}"
 
-# --- UPDATED: create_link_in_db ---
 def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None, owner_id: Optional[str] = None) -> Dict[str, Any]:
     collection = init_firebase().collection("links")
     if custom_code:
@@ -162,7 +161,7 @@ def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None
         "meta_description": None,
         "meta_image": None,
         "meta_favicon": None,
-        "owner_id": owner_id  # <-- NEW: Save the owner
+        "owner_id": owner_id
     }
     if expires_at:
         data["expires_at"] = expires_at
@@ -179,7 +178,6 @@ def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None
         "stats_url": stats_url,
         "delete_url": delete_url
     }
-# --- END UPDATED HELPER ---
 
 def get_link(code: str) -> Optional[Dict[str, Any]]:
     collection = init_firebase().collection("links")
@@ -269,14 +267,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- UPDATED: Pydantic Model ---
 class LinkCreatePayload(BaseModel):
     long_url: str
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
     custom_code: Optional[constr(alnum=True, max_length=20)] = None
     utm_tags: Optional[str] = None
-    owner_id: Optional[str] = None  # <-- NEW
-# --- END NEW MODEL ---
+    owner_id: Optional[str] = None
 
 # ---------------- ROUTES ----------------
 ADSENSE_CLIENT_ID = "pub-6170587092427912"
@@ -293,7 +289,6 @@ async def health():
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
-# --- UPDATED: api_create_link ---
 @app.post("/api/v1/links")
 @limiter.limit("10/minute")
 async def api_create_link(request: Request, payload: LinkCreatePayload):
@@ -314,9 +309,7 @@ async def api_create_link(request: Request, payload: LinkCreatePayload):
                 long_url = f"{long_url}?{cleaned_tags}"
 
     try:
-        # Pass the owner_id to the DB function
         link = create_link_in_db(long_url, payload.ttl, payload.custom_code, payload.owner_id)
-        
         qr_code_data_uri = generate_qr_code_data_uri(link["short_url_preview"])
         return {
             "short_url": link["short_url_preview"],
@@ -328,7 +321,6 @@ async def api_create_link(request: Request, payload: LinkCreatePayload):
         raise HTTPException(status_code=409, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
-# --- END UPDATED ROUTE ---
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -338,7 +330,6 @@ async def index(request: Request):
     }
     return templates.TemplateResponse("index.html", context)
     
-# --- NEW: Dashboard Page Route ---
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     context = {
@@ -346,9 +337,17 @@ async def dashboard(request: Request):
         "ADSENSE_SCRIPT": ADSENSE_SCRIPT
     }
     return templates.TemplateResponse("dashboard.html", context)
+
+# --- NEW: About Page Route ---
+@app.get("/about", response_class=HTMLResponse)
+async def about(request: Request):
+    context = {
+        "request": request,
+        "ADSENSE_SCRIPT": ADSENSE_SCRIPT
+    }
+    return templates.TemplateResponse("about.html", context)
 # --- END NEW ---
 
-# --- NEW: "My Links" API Endpoint ---
 @app.get("/api/v1/my-links")
 async def get_my_links(owner_id: str):
     if not owner_id:
@@ -366,24 +365,22 @@ async def get_my_links(owner_id: str):
     links_list = []
     for doc in docs:
         data = doc.to_dict()
-        # We need to re-build the URLs to send to the client
         short_code = doc.id
         data["short_code"] = short_code
         data["short_url_preview"] = f"{BASE_URL}/preview/{short_code}"
         data["stats_url"] = f"{BASE_URL}/stats/{short_code}"
         data["delete_url"] = f"{BASE_URL}/delete/{short_code}?token={data['deletion_token']}"
-        # Convert datetime to string for JSON
         data["created_at"] = data["created_at"].isoformat()
-        if "expires_at" in data:
+        if "expires_at" in data and data["expires_at"]:
             data["expires_at"] = data["expires_at"].isoformat()
             
         links_list.append(data)
         
     return {"links": links_list}
-# --- END NEW ---
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
+    # No change needed, /about is allowed by default.
     content = f"""User-agent: *
 Disallow: /api/
 Disallow: /r/
@@ -395,9 +392,11 @@ Sitemap: {BASE_URL}/sitemap.xml
 """
     return content
 
+# --- UPDATED: sitemap.xml ---
 @app.get("/sitemap.xml", response_class=Response)
 async def sitemap():
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -405,9 +404,15 @@ async def sitemap():
     <lastmod>{last_mod}</lastmod>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>{BASE_URL}/about</loc>
+    <lastmod>{last_mod}</lastmod>
+    <priority>0.8</priority>
+  </url>
 </urlset>
 """
     return Response(content=xml_content, media_type="application/xml")
+# --- END UPDATED ---
 
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(request: Request, short_code: str):

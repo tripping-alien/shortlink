@@ -6,7 +6,12 @@ import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
-# --- NEW IMPORTS ---
+# --- NEW IMPORTS (for SSRF Fix) ---
+import socket
+import ipaddress
+import asyncio
+# --- END NEW IMPORTS ---
+
 import io
 import base64
 import qrcode
@@ -14,14 +19,11 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.staticfiles import StaticFiles
-# --- END NEW IMPORTS ---
 
-# --- IMPORTS ---
 import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from fastapi.templating import Jinja2Templates
-# --- END IMPORTS ---
 
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
@@ -43,6 +45,7 @@ TTL_MAP = {
 }
 
 # ---------------- FIREBASE ----------------
+# ... (Firebase code is unchanged) ...
 db: firestore.Client = None
 APP_INSTANCE = None
 
@@ -107,6 +110,7 @@ def init_firebase():
     return db
 
 # ---------------- HELPERS ----------------
+# ... (Other helpers are unchanged) ...
 def _generate_short_code(length=SHORT_CODE_LENGTH) -> str:
     chars = string.ascii_lowercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
@@ -127,7 +131,6 @@ def calculate_expiration(ttl: str) -> Optional[datetime]:
     return datetime.now(timezone.utc) + delta
 
 def generate_qr_code_data_uri(text: str) -> str:
-    """Generates a QR code and returns it as a Base64 Data URI."""
     img = qrcode.make(text, box_size=10, border=2)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -178,7 +181,22 @@ def get_link(code: str) -> Optional[Dict[str, Any]]:
     data["short_code"] = doc.id
     return data
 
+# --- NEW: SSRF Security Helper ---
+def is_public_ip(ip_str: str) -> bool:
+    """Checks if an IP address is public."""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        # is_global = not private, not reserved, not loopback, etc.
+        return ip.is_global
+    except ValueError:
+        return False
+
+# --- UPDATED: fetch_metadata (SSRF Patched) ---
 async def fetch_metadata(url: str) -> dict:
+    """
+    Fetches metadata (title, description, image) from a given URL,
+    with SSRF protection.
+    """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -188,12 +206,33 @@ async def fetch_metadata(url: str) -> dict:
         "image": None,
         "favicon": None
     }
+
     try:
+        # --- NEW: SSRF CHECK ---
+        parsed_url = urlparse(url)
+        hostname = parsed_url.hostname
+        if not hostname:
+            raise ValueError("Invalid hostname")
+
+        # Resolve hostname to IP address in a non-blocking way
+        # `socket.gethostbyname` is blocking, so we run it in a thread pool
+        try:
+            ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
+        except socket.gaierror:
+            raise ValueError("Could not resolve hostname")
+
+        # Check if the IP is public
+        if not is_public_ip(ip_address):
+            raise SecurityException(f"Blocked request to non-public IP: {ip_address}")
+        # --- END SSRF CHECK ---
+
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, follow_redirects=True, timeout=5.0)
             response.raise_for_status()
+            
             final_url = str(response.url)
             soup = BeautifulSoup(response.text, "lxml")
+
             if og_title := soup.find("meta", property="og:title"):
                 meta["title"] = og_title.get("content")
             elif title := soup.find("title"):
@@ -207,13 +246,22 @@ async def fetch_metadata(url: str) -> dict:
             if favicon := soup.find("link", rel="icon") or soup.find("link", rel="shortcut icon"):
                 meta["favicon"] = urljoin(final_url, favicon.get("href"))
             else:
-                parsed_url = urlparse(final_url)
-                meta["favicon"] = f"{parsed_url.scheme}://{parsed_url.netloc}/favicon.ico"
-    except Exception as e:
+                # Fallback: try to guess /favicon.ico
+                parsed_url_fallback = urlparse(final_url)
+                meta["favicon"] = f"{parsed_url_fallback.scheme}://{parsed_url_fallback.netloc}/favicon.ico"
+
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
         print(f"Error fetching metadata for {url}: {e}")
+    except SecurityException as e:
+        print(f"SSRF Prevention: {e}")
+    except Exception as e:
+        print(f"Error parsing or validating URL for {url}: {e}")
+
     return meta
+# --- END UPDATED FUNCTION ---
 
 # ---------------- APP ----------------
+# ... (App setup is unchanged) ...
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Shortlinks.art URL Shortener")
 app.state.limiter = limiter
@@ -237,6 +285,7 @@ ADSENSE_SCRIPT = f"""
      crossorigin="anonymous"></script>
 """
 
+# ... (All routes: /health, /api/v1/links, /, /robots.txt, /sitemap.xml, /preview, /r, /stats, /delete are unchanged) ...
 @app.get("/health")
 async def health():
     try:
@@ -245,31 +294,26 @@ async def health():
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
-# --- UPDATED: api_create_link ---
 @app.post("/api/v1/links")
 @limiter.limit("10/minute")
 async def api_create_link(request: Request, payload: Dict[str, Any]):
     long_url = payload.get("long_url")
     ttl = payload.get("ttl", "24h")
     custom_code = payload.get("custom_code")
-    utm_tags = payload.get("utm_tags")  # <-- NEW: Get UTM tags
+    utm_tags = payload.get("utm_tags")
     
     if not long_url:
         raise HTTPException(status_code=400, detail="Missing long_url")
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
 
-    # --- NEW: Append UTM Tags ---
     if utm_tags:
-        # Clean the tags: remove leading ? or &
         cleaned_tags = utm_tags.lstrip("?&")
         if cleaned_tags:
-            # Check if long_url already has query params
             if "?" in long_url:
                 long_url = f"{long_url}&{cleaned_tags}"
             else:
                 long_url = f"{long_url}?{cleaned_tags}"
-    # --- END NEW ---
 
     try:
         link = create_link_in_db(long_url, ttl, custom_code)
@@ -337,6 +381,7 @@ async def preview(request: Request, short_code: str):
     else:
         safe_href_url = long_url
     
+    # This function is now secure
     meta = await fetch_metadata(safe_href_url)
     
     context = {
@@ -363,7 +408,7 @@ async def redirect_link(short_code: str):
     
     doc = doc_ref.get()
     if not doc.exists:
-        raise HTTPException(status_code=404, detail="Link not found")
+        raise HTTPException(status_code=44, detail="Link not found")
     
     link = doc.to_dict()
     
@@ -428,5 +473,10 @@ async def delete(request: Request, short_code: str, token: Optional[str] = None)
         }
         
     return templates.TemplateResponse("delete_status.html", context)
+
+# --- NEW: Custom Exception Class ---
+class SecurityException(Exception):
+    pass
+# --- END NEW ---
 
 start_cleanup_thread()

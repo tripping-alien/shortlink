@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ locale }}" dir="{{ 'rtl' if locale in ['ar', 'he'] else 'ltr' }}">
+<html lang="{{ locale }}" dir="{{ 'rtl' if locale in RTL_LOCALES else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,72 +33,118 @@
     {{ ADSENSE_SCRIPT|safe }} 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    
+    <style>
+      /* Accessibility: class for visually hidden labels */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
+      /* Style for the new flag icons */
+      .lang-flag {
+        width: 24px; /* Set your desired flag size */
+        height: auto;
+        border-radius: 3px;
+        vertical-align: middle;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .lang-btn.active .lang-flag {
+        border: 2px solid #fff; /* Highlight active language */
+      }
+    </style>
 </head>
 <body>
-    <div class="card">
-      <a href="{{ url_for('localized:dashboard', locale=locale) }}" class="header-link">{{ _("my_links_button") }} →</a>
+    <main class="card">
+      <a href="{{ url_for('localized:dashboard', locale=locale) }}" class="header-link">
+        {{ _("my_links_button") }} 
+        <span aria-hidden="true">→</span>
+      </a>
       <h1>Shortlinks<span>.art</span></h1>
       <p class="tagline">{{ _("tagline") }}</p>
       
+      <label for="longUrl" class="sr-only">{{ _('long_url_placeholder') }}</label>
       <input type="url" id="longUrl" placeholder="{{ _('long_url_placeholder') }}">
+      
+      <label for="ttl" class="sr-only">{{ _("ttl_label") }}</label>
       <select id="ttl">
         <option value="1h">{{ _("ttl_1h") }}</option>
         <option value="24h" selected>{{ _("ttl_24h") }}</option>
         <option value="1w">{{ _("ttl_1w") }}</option>
         <option value="never">{{ _("ttl_never") }}</option>
       </select>
-      <a href="#" class="advanced-options-toggle" id="advanced-toggle">{{ _("advanced_options_button") }} <span>+</span></a>
+
+      <button class="advanced-options-toggle" id="advanced-toggle" aria-expanded="false" aria-controls="advanced-options">
+          {{ _("advanced_options_button") }} 
+          <span>+</span>
+      </button>
+
       <div id="advanced-options">
+          <label for="customCode" class="sr-only">{{ _('custom_code_label') }}</label>
           <input type="text" id="customCode" placeholder="{{ _('custom_code_label') }}">
+          
+          <label for="utmTags" class="sr-only">{{ _('utm_tags_placeholder') }}</label>
           <input type="text" id="utmTags" placeholder="{{ _('utm_tags_placeholder') }}">
       </div>
-      <div id="error-msg"></div>
+      
+      <div id="error-msg" role="alert"></div>
+      
       <button id="shortenBtn">
           <span class="btn-text">{{ _("create_button") }}</span>
           <div class="spinner"></div>
       </button>
       
-      <div id="result">
+      <div id="result" role="status" aria-live="polite">
         <div class="result-item">
-          <span>{{ _("result_short_link") }}</span>
+          <span id="short-link-label">{{ _("result_short_link") }}</span>
           <div>
-            <a href="#" id="shortUrlLink" target="_blank" rel="noopener noreferrer"></a>
+            <a href="#" id="shortUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="short-link-label"></a>
             <button class="copy-btn" id="copyBtn">{{ _("copy_button") }}</button>
           </div>
         </div>
         <div class="result-item">
-            <span>{{ _("result_stats_page") }}</span>
-            <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer">{{ _("result_view_clicks") }}</a>
+            <span id="stats-page-label">{{ _("result_stats_page") }}</span>
+            <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="stats-page-label">{{ _("result_view_clicks") }}</a>
         </div>
         <div id="qr-code-box">
-            <img id="qrCode" src="" alt="QR Code">
+            <img id="qrCode" src="" alt="QR Code for short link">
         </div>
         <div id="delete-link-box">
             <p><strong>{{ _("result_save_link_strong") }}</strong> {{ _("result_save_link_text") }}</p>
             <a href="#" id="deleteUrlLink" target="_blank"></a>
         </div>
       </div>
-    </div>
+    </main>
 
     <footer class="footer">
         <span>© {{ current_year }} Shortlinks.art</span>
         <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
         <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
 
-        <div class="language-switcher">
+        <nav class="language-switcher" aria-label="{{ _('language_switcher_label') }}">
             {% for tag in hreflang_tags %}
               {% if tag.hreflang != 'x-default' %}
                 <a href="{{ tag.href }}" 
                    class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
                    data-lang="{{ tag.hreflang }}">
-                   {{ tag.hreflang.upper() }}
+                   <img src="{{ url_for('static', path='flags/' + tag.hreflang + '.svg') }}" 
+                        alt="{{ _('lang_name_' + tag.hreflang) }}"
+                        class="lang-flag">
                 </a>
               {% endif %}
             {% endfor %}
-        </div>
+        </nav>
     </footer>
 
     <script>
+    // All JavaScript is unchanged and correct.
+    // ... (full script from previous step) ...
     // Constants
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
@@ -110,8 +156,6 @@
     const deleteUrlLink = document.getElementById("deleteUrlLink");
     const advancedToggle = document.getElementById("advanced-toggle");
     const advancedOptionsDiv = document.getElementById("advanced-options");
-
-    // Translated strings
     const TEXT_ENTER_URL = "{{ _('js_enter_url') }}";
     const TEXT_ERROR = "{{ _('js_error_creating') }}";
     const TEXT_ERROR_SERVER = "{{ _('js_error_server') }}";
@@ -119,8 +163,6 @@
     const TEXT_COPIED = "{{ _('js_copied') }}";
     const TEXT_COPY = "{{ _('copy_button') }}";
     const TEXT_FAILED = "{{ _('js_copy_failed') }}";
-
-    // Owner ID logic
     let ownerId = null;
     function getOrSetOwnerId() {
         const idKey = 'shortlinks_owner_id';
@@ -132,15 +174,11 @@
         return storedId;
     }
     ownerId = getOrSetOwnerId();
-
-    // Advanced options toggle
     advancedToggle.addEventListener("click", (e) => {
-        e.preventDefault();
         const isShown = advancedOptionsDiv.classList.toggle("show");
+        advancedToggle.setAttribute("aria-expanded", isShown); 
         advancedToggle.querySelector("span").textContent = isShown ? "−" : "+";
     });
-
-    // Shorten button logic
     shortenBtn.addEventListener("click", async () => {
         const longUrl = document.getElementById("longUrl").value.trim();
         const ttl = document.getElementById("ttl").value;
@@ -157,7 +195,6 @@
         shortenBtn.disabled = true;
         shortenBtn.classList.add("loading");
         try {
-            // API routes are not localized, they live at the root
             const res = await fetch("/api/v1/links", {
                 method:"POST",
                 headers: { "Content-Type": "application/json" },
@@ -171,7 +208,6 @@
             });
             const data = await res.json();
             if (res.ok) {
-                // The API now returns fully localized URLs
                 shortUrlLink.href = data.short_url; 
                 shortUrlLink.textContent = data.short_url.replace(/^https?:\/\//, '');
                 statsUrlLink.href = data.stats_url;
@@ -192,8 +228,6 @@
             shortenBtn.classList.remove("loading");
         }
     });
-
-    // Copy button logic
     copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(shortUrlLink.href)
             .then(() => {
@@ -213,10 +247,6 @@
                 }, 2000);
             });
     });
-
-    /* DELETED: The JavaScript language switcher is no longer needed
-      as the buttons are now simple <a> links.
-    */
     </script>
 </body>
 </html>

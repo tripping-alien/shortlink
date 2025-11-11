@@ -205,79 +205,200 @@ async def index():
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shortlinks.art - URL Shortener</title>
-    <meta name="description" content="Fast and simple URL shortener with previews.">
-    {ADSENSE_SCRIPT} <style>
+
+    <title>Shortlinks.art - Fast & Simple URL Shortener</title>
+    <meta name="description" content="A fast, free, and simple URL shortener with link previews and custom expiration times.">
+    <meta name="keywords" content="url shortener, shortlinks, link shortener, custom url, short url, free url shortener, shortlinks.art, shorten link">
+    <link rel="canonical" href="https://shortlinks.art/" />
+    <meta name="robots" content="index, follow">
+    
+    <meta name="google-site-verification" content="YOUR_GOOGLE_CODE_HERE" />
+    <meta name="msvalidate.01" content="YOUR_BING_CODE_HERE" />
+    <meta name="yandex-verification" content="YOUR_YANDEX_CODE_HERE" />
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://shortlinks.art/">
+    <meta property="og:title" content="Shortlinks.art - Fast & Simple URL Shortener">
+    <meta property="og:description" content="A fast, free, and simple URL shortener with link previews and custom expiration times.">
+    <meta property="og:image" content="https://shortlinks.art/assets/social-preview.jpg"> 
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://shortlinks.art/">
+    <meta property="twitter:title" content="Shortlinks.art - Fast & Simple URL Shortener">
+    <meta property="twitter:description" content="A fast, free, and simple URL shortener with link previews and custom expiration times.">
+    <meta property="twitter:image" content="https://shortlinks.art/assets/social-preview.jpg">
+
+    {ADSENSE_SCRIPT} 
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {{
+            --primary-color: #4f46e5;
+            --primary-hover: #6366f1;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --bg-light: #f3f4f6;
+            --bg-white: #ffffff;
+            --border-color: #d1d5db;
+        }}
+
         body {{
-            font-family: Arial, sans-serif;
+            /* NEW: Using Inter font */
+            font-family: 'Inter', Arial, sans-serif;
             margin: 0;
-            background: #f3f4f6;
-            color: #111827;
+            background: var(--bg-light);
+            color: var(--text-primary);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 1rem;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }}
+
         .container {{
-            background: #fff;
-            padding: 2rem;
+            background: var(--bg-white);
+            padding: 2rem 2.5rem; /* More horizontal padding */
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.05);
             width: 100%;
             max-width: 480px;
             text-align: center;
         }}
+
+        /* NEW: Branded H1 */
+        h1 {{
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }}
+        h1 span {{
+            color: var(--primary-color);
+        }}
+
+        /* NEW: Tagline */
+        .tagline {{
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-top: 0;
+            margin-bottom: 2rem;
+        }}
+
         input, select {{
             padding: 0.8rem;
             width: 100%;
-            margin: 0.5rem 0;
+            margin-bottom: 0.75rem; /* Consistent margin */
             border-radius: 8px;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--border-color);
             font-size: 1rem;
-            box-sizing: border-box;
+            font-family: 'Inter', Arial, sans-serif;
+            box-sizing: border-box; /* Crucial for padding */
+            /* NEW: Smooth focus transition */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }}
+
+        /* NEW: Focus state for accessibility and polish */
+        input:focus, select:focus {{
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }}
+
         button {{
-            background: #4f46e5;
+            background: var(--primary-color);
             color: white;
             border: none;
             padding: 0.8rem 1.5rem;
             font-size: 1rem;
+            font-weight: 500; /* NEW */
             border-radius: 8px;
             cursor: pointer;
-            margin-top: 0.5rem;
             width: 100%;
+            margin-top: 0.5rem;
+            /* NEW: Smooth hover transition */
+            transition: background-color 0.3s ease;
         }}
         button:hover {{
-            background: #6366f1;
+            background: var(--primary-hover);
         }}
+        button:disabled {{
+            background: #9ca3af;
+            cursor: not-allowed;
+        }}
+
+        /* NEW: Styling for the result box */
+        #result {{
+            /* Hidden by default for transition */
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.5s ease, max-height 0.5s ease, margin-top 0.5s ease;
+        }}
+        /* NEW: 'show' class to trigger animation */
+        #result.show {{
+            opacity: 1;
+            max-height: 100px;
+            margin-top: 1.5rem;
+        }}
+
         .short-link {{
-            margin-top: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.6rem;
+            padding: 0.8rem 1rem;
             background: #f9fafb;
             border-radius: 8px;
-            word-break: break-word;
+            border: 1px solid #e5e7eb;
+            word-break: break-all;
+            text-align: left;
         }}
+        #shortUrl {{
+            font-weight: 500;
+        }}
+
+        /* NEW: Improved copy button */
         .copy-btn {{
-            background: #facc15;
-            border: none;
+            background: #e5e7eb;
+            color: #374151;
             padding: 0.5rem 0.8rem;
             border-radius: 6px;
             cursor: pointer;
-            color: #111827;
+            margin-left: 1rem;
+            width: auto; /* Override 100% width */
+            margin-top: 0;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease;
         }}
+        .copy-btn:hover {{
+            background: #d1d5db;
+        }}
+        .copy-btn:disabled {{
+            background: #e5e7eb;
+            color: #6b7280;
+        }}
+
+        /* NEW: Inline error message */
+        #error-msg {{
+            color: #dc2626; /* Red */
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            display: none; /* Hidden by default */
+        }}
+
         @media(max-width:500px){{
-            .container {{ padding: 1rem; }}
-            button {{ font-size: 0.9rem; }}
+            .container {{ padding: 2rem 1.5rem; }}
+            h1 {{ font-size: 1.8rem; }}
+            .tagline {{ margin-bottom: 1.5rem; }}
         }}
     </style>
     </head>
     <body>
     <div class="container">
-      <h1>Shortlinks.art</h1>
+      <h1>Shortlinks<span>.art</span></h1>
+      <p class="tagline">Fast, simple, and free.</p>
+      
       <input type="url" id="longUrl" placeholder="Enter your URL here">
       <select id="ttl">
         <option value="1h">1 Hour</option>
@@ -286,8 +407,12 @@ async def index():
         <option value="never">Never</option>
       </select>
       <input type="text" id="customCode" placeholder="Custom code (optional)">
+      
+      <div id="error-msg"></div>
+      
       <button id="shortenBtn">Shorten</button>
-      <div id="result" style="display:none;">
+      
+      <div id="result">
         <div class="short-link">
           <span id="shortUrl"></span>
           <button class="copy-btn" id="copyBtn">Copy</button>
@@ -300,12 +425,28 @@ async def index():
     const resultDiv = document.getElementById("result");
     const shortUrlSpan = document.getElementById("shortUrl");
     const copyBtn = document.getElementById("copyBtn");
+    const errorDiv = document.getElementById("error-msg");
 
     shortenBtn.addEventListener("click", async () => {{
         const longUrl = document.getElementById("longUrl").value.trim();
         const ttl = document.getElementById("ttl").value;
         const customCode = document.getElementById("customCode").value.trim() || undefined;
-        if (!longUrl) {{ alert("Please enter a URL."); return; }}
+        
+        // NEW: Clear previous errors
+        errorDiv.style.display = "none";
+        errorDiv.textContent = "";
+
+        if (!longUrl) {{
+            // NEW: Show inline error
+            errorDiv.textContent = "Please enter a URL.";
+            errorDiv.style.display = "block";
+            return;
+        }}
+        
+        // NEW: Disable button on submit
+        shortenBtn.disabled = true;
+        shortenBtn.textContent = "Shortening...";
+
         try {{
             const res = await fetch("/api/v1/links", {{
                 method:"POST",
@@ -313,24 +454,55 @@ async def index():
                 body: JSON.stringify({{long_url:longUrl, ttl:ttl, custom_code:customCode}})
             }});
             const data = await res.json();
+            
             if (res.ok) {{
                 shortUrlSpan.textContent = data.short_url;
-                resultDiv.style.display = "block";
+                resultDiv.classList.add("show"); // NEW: Trigger animation
             }} else {{
-                alert(data.detail || "Error creating short link");
+                // NEW: Show inline error
+                errorDiv.textContent = data.detail || "Error creating short link";
+                errorDiv.style.display = "block";
             }}
-        }} catch(err) {{ console.error(err); alert("Failed to connect to the server."); }}
+        }} catch(err) {{
+            console.error(err);
+            // NEW: Show inline error
+            errorDiv.textContent = "Failed to connect to the server.";
+            errorDiv.style.display = "block";
+        }} finally {{
+            // NEW: Re-enable button
+            shortenBtn.disabled = false;
+            shortenBtn.textContent = "Shorten";
+        }}
     }});
 
     copyBtn.addEventListener("click", () => {{
         navigator.clipboard.writeText(shortUrlSpan.textContent)
-            .then(() => alert("Copied!"))
-            .catch(() => alert("Failed to copy."));
+            .then(() => {{
+                // NEW: Better feedback than alert()
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = "Copied!";
+                copyBtn.disabled = true;
+                setTimeout(() => {{
+                    copyBtn.textContent = originalText;
+                    copyBtn.disabled = false;
+                }}, 2000); // Reset after 2 seconds
+            }})
+            .catch(() => {{
+                // NEW: Handle copy failure
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = "Failed!";
+                copyBtn.disabled = true;
+                 setTimeout(() => {{
+                    copyBtn.textContent = originalText;
+                    copyBtn.disabled = false;
+                }}, 2000);
+            }});
     }});
     </script>
     </body>
     </html>
     """
+
 
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(short_code: str):

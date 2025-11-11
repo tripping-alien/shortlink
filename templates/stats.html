@@ -5,43 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stats - {{ link.short_code }}</title>
     <meta name="robots" content="noindex">
-    
     {{ ADSENSE_SCRIPT|safe }}
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="card">
         <div class="stats-container">
             <h1>Link Stats</h1>
-            
             <div class="chart-container">
                 <canvas id="clickChart"></canvas>
             </div>
-        
             <div class="stat-item">
                 <span class="stat-item-label">Total Clicks</span>
                 <span class="stat-item-value clicks">{{ link.click_count }}</span>
             </div>
-
             <div class="stat-item">
                 <span class="stat-item-label">Short Code</span>
                 <span class="stat-item-value">{{ link.short_code }}</span>
             </div>
-
             <div class="stat-item">
                 <span class="stat-item-label">Destination</span>
                 <span class="stat-item-value">{{ link.long_url }}</span>
             </div>
-
             <div class="stat-item">
                 <span class="stat-item-label">Created On</span>
                 <span class="stat-item-value">{{ link.created_at.strftime('%B %d, %Y') }}</span>
             </div>
-
             <div class="stat-item">
                 <span class="stat-item-label">Expires</span>
                 {% if link.expires_at %}
@@ -50,55 +41,52 @@
                     <span class="stat-item-value">Never</span>
                 {% endif %}
             </div>
-            
             <a class="button" href="/" style="width: 100%; box-sizing: border-box;">Create Another Link</a>
         </div>
     </div>
+
+    <footer class="footer">
+        <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('about') }}">About</a>
+    </footer>
     
     <script>
-        // Get the daily click data from Jinja2
-        // We use |tojson to safely convert the Python dict to a JS object
-        const clickData = {{ link.clicks_by_day | tojson }};
-        
-        // Get the dates (keys) and sort them chronologically
-        const sortedDates = Object.keys(clickData).sort();
-        
-        // Create the labels (dates) and data points (clicks) for the chart
-        const labels = sortedDates;
-        const dataPoints = sortedDates.map(date => clickData[date]);
-        
-        // Get the canvas element and render the chart
-        const ctx = document.getElementById('clickChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Clicks per Day',
-                    data: dataPoints,
-                    fill: true,
-                    borderColor: 'rgb(79, 70, 229)',
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            // Ensure only whole numbers for click counts
-                            precision: 0 
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false // Hide legend for a cleaner look
+    // ... (chart javascript is unchanged) ...
+    const clickData = {{ link.clicks_by_day | tojson }};
+    const sortedDates = Object.keys(clickData).sort();
+    const labels = sortedDates;
+    const dataPoints = sortedDates.map(date => clickData[date]);
+    const ctx = document.getElementById('clickChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Clicks per Day',
+                data: dataPoints,
+                fill: true,
+                borderColor: 'rgb(79, 70, 229)',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0 
                     }
                 }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
             }
-        });
+        }
+    });
     </script>
 </body>
 </html>

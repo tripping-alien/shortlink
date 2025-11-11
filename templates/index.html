@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ locale }}" dir="{{ 'rtl' if locale == 'ar' else 'ltr' }}">
+<html lang="{{ locale }}" dir="{{ 'rtl' if locale in ['ar', 'he'] else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,7 +81,7 @@
     </div>
 
     <footer class="footer">
-        <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
+        <span>© {{ current_year }} Shortlinks.art</span>
         <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
         <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
 
@@ -171,13 +171,12 @@
             });
             const data = await res.json();
             if (res.ok) {
-                // data.short_url is the /r/ link
-                // data.stats_url and data.delete_url are now localized!
+                // The API now returns fully localized URLs
                 shortUrlLink.href = data.short_url; 
-                shortUrlLink.textContent = data.short_url.replace("https://", "");
+                shortUrlLink.textContent = data.short_url.replace(/^https?:\/\//, '');
                 statsUrlLink.href = data.stats_url;
                 deleteUrlLink.href = data.delete_url;
-                deleteUrlLink.textContent = data.delete_url;
+                deleteUrlLink.textContent = data.delete_url.replace(/^https?:\/\//, '');
                 qrCodeImg.src = data.qr_code_data;
                 resultDiv.classList.add("show");
             } else {
@@ -215,9 +214,8 @@
             });
     });
 
-    /* DELETED: The JavaScript-based language switcher is no longer needed
-      because the buttons are now simple <a> links that go to the
-      correct URL, e.g., /es/ or /fr/.
+    /* DELETED: The JavaScript language switcher is no longer needed
+      as the buttons are now simple <a> links.
     */
     </script>
 </body>

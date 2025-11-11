@@ -12,109 +12,8 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <style>
-        /* ... (Your CSS) ... */
-        :root {
-            --primary-color: #4f46e5;
-            --primary-hover: #6366f1;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --bg-light: #f3f4f6;
-            --bg-white: #ffffff;
-            --border-color: #e5e7eb;
-        }
-        body { 
-            font-family: 'Inter', Arial, sans-serif;
-            margin: 0; 
-            background: var(--bg-light); 
-            color: var(--text-primary);
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            padding: 1rem; 
-            box-sizing: border-box; 
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        .card { 
-            background: var(--bg-white); 
-            padding: 2rem; 
-            border-radius: 12px; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.07); 
-            width: 100%; 
-            max-width: 500px; 
-            text-align: center; 
-        }
-        .meta-header { 
-            display:flex; 
-            align-items:center; 
-            justify-content:center; 
-            gap: 8px; 
-        }
-        .favicon { 
-            width:16px; 
-            height:16px; 
-            vertical-align:middle; 
-        }
-        .preview-image {
-            width: 100%; 
-            max-height: 250px; 
-            object-fit: cover;
-            border-radius: 8px; 
-            margin-top: 1.5rem; 
-            border: 1px solid var(--border-color);
-        }
-        .meta-title {
-            margin-top: 0.5rem; 
-            margin-bottom: 0.5rem; 
-            font-size: 1.25rem;
-            font-weight: 600; 
-            color: var(--text-primary);
-        }
-        .description {
-            font-size: 0.9rem; 
-            color: var(--text-secondary);
-            line-height: 1.5; 
-            margin-bottom: 1.5rem;
-        }
-        h1 { 
-            margin-top:0; 
-            color: var(--primary-color); 
-        }
-        p.info { 
-            margin-bottom: 0; 
-            color: var(--text-secondary); 
-        }
-        p.url {
-            word-break: break-all; 
-            font-weight: 500; 
-            color: var(--text-primary); 
-            margin-top: 8px;
-            background: #f9fafb; 
-            padding: 10px; 
-            border-radius: 6px; 
-            border: 1px solid var(--border-color);
-        }
-        a.button {
-            display:inline-block; 
-            margin-top: 20px; 
-            padding: 12px 24px; 
-            background: var(--primary-color);
-            color: white; 
-            text-decoration: none; 
-            border-radius: 8px; 
-            font-weight: 500;
-            transition: background-color 0.3s ease;
-        }
-        a.button:hover { 
-            background: var(--primary-hover); 
-        }
-        @media(max-width:500px){ 
-            .card { padding:1.5rem; } 
-            a.button { width:100%; box-sizing: border-box; } 
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    
 </head>
 <body>
     <div class="card">
@@ -135,7 +34,7 @@
             <p class="description">{{ meta_description }}</p>
         {% endif %}
 
-        <hr style="border:none; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+        <hr>
 
         <p class="info">You are being redirected to:</p>
         <p class="url">{{ escaped_long_url_display }}</p>

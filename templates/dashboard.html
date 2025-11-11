@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Links</title>
+    <meta name="robots" content="noindex">
+    
+    {{ ADSENSE_SCRIPT|safe }}
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+<body>
+    <div class="card card-wide">
+        <a href="{{ url_for('index') }}" class="header-link">← Create New Link</a>
+        <h1>My Links</h1>
+        
+        <div class="table-container">
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Short Link</th>
+                        <th>Destination</th>
+                        <th>Clicks</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="links-table-body">
+                    </tbody>
+            </table>
+        </div>
+        <p id="no-links-message" style="display: none; margin-top: 1.5rem; color: var(--text-secondary);">You haven't created any links in this browser yet.</p>
+        <p id="loading-message" style="margin-top: 1.5rem; color: var(--text-secondary);">Loading links...</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('links-table-body');
+            const loadingMsg = document.getElementById('loading-message');
+            const noLinksMsg = document.getElementById('no-links-message');
+
+            // 1. Get the anonymous ID from localStorage
+            const idKey = 'shortlinks_owner_id';
+            const ownerId = localStorage.getItem(idKey);
+
+            if (!ownerId) {
+                loadingMsg.style.display = 'none';
+                noLinksMsg.style.display = 'block';
+                return;
+            }
+
+            // 2. Fetch links from the API
+            fetch(`/api/v1/my-links?owner_id=${ownerId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch links');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loadingMsg.style.display = 'none';
+                    if (data.links && data.links.length > 0) {
+                        populateTable(data.links);
+                    } else {
+                        noLinksMsg.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    loadingMsg.textContent = 'Error loading links.';
+                });
+
+            // 3. Populate the table with data
+            function populateTable(links) {
+                for (const link of links) {
+                    const tr = document.createElement('tr');
+                    
+                    const shortUrl = link.short_url_preview.replace('https://', '');
+                    const longUrl = link.long_url.length > 50 ? link.long_url.substring(0, 50) + '...' : link.long_url;
+
+                    tr.innerHTML = `
+                        <td class="link-col"><a href="${link.short_url_preview}" target="_blank">${shortUrl}</a></td>
+                        <td class="link-col">${longUrl}</td>
+                        <td>${link.click_count}</td>
+                        <td class="actions-col">
+                            <a href="${link.stats_url}" title="View Stats">Stats</a>
+                            <a href="${link.delete_url}" class="delete-link" title="Delete Link">Delete</a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

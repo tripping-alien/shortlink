@@ -4,16 +4,20 @@ import html
 import string
 import random
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 
-# --- NEW IMPORTS (for SSRF Fix) ---
 import socket
 import ipaddress
 import asyncio
-# --- END NEW IMPORTS ---
-
 import io
 import base64
+
+# --- NEW IMPORTS ---
+import validators
+from pydantic import BaseModel, constr
+from firebase_admin.firestore import transactional
+# --- END NEW IMPORTS ---
+
 import qrcode
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -31,6 +35,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
@@ -69,19 +74,25 @@ def cleanup_expired_links():
     db = init_firebase()
     collection = db.collection("links")
     now = datetime.now(timezone.utc)
+
+    # Use the new FieldFilter syntax
     expired_docs = (
         collection
-        .where("expires_at", "<", now)
+        .where(filter=FieldFilter("expires_at", "<", now))
         .limit(100)
         .stream()
     )
+
     batch = db.batch()
     count = 0
+
     for doc in expired_docs:
         batch.delete(doc.reference)
         count += 1
+
     if count > 0:
         batch.commit()
+
     return count
 
 def init_firebase():
@@ -136,17 +147,17 @@ def generate_qr_code_data_uri(text: str) -> str:
     return f"data:image/png;base64,{b64_str}"
 
 # --- UPDATED: create_link_in_db ---
-def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str] = None) -> Dict[str, Any]:
+# We can remove some validation, as Pydantic will handle it.
+def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None) -> Dict[str, Any]:
     collection = init_firebase().collection("links")
     if custom_code:
-        if not custom_code.isalnum() or len(custom_code) > 20:
-            raise ValueError("Custom code must be alphanumeric and <=20 chars")
         doc = collection.document(custom_code).get()
         if doc.exists:
             raise ValueError("Custom code already exists")
         code = custom_code
     else:
         code = generate_unique_short_code()
+        
     expires_at = calculate_expiration(ttl)
     deletion_token = secrets.token_urlsafe(32)
     data = {
@@ -154,7 +165,7 @@ def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str
         "deletion_token": deletion_token,
         "created_at": datetime.now(timezone.utc),
         "click_count": 0,
-        "clicks_by_day": {}  # <-- NEW: Initialize daily click map
+        "clicks_by_day": {}
     }
     if expires_at:
         data["expires_at"] = expires_at
@@ -183,7 +194,6 @@ def get_link(code: str) -> Optional[Dict[str, Any]]:
     return data
 
 def is_public_ip(ip_str: str) -> bool:
-    """Checks if an IP address is public."""
     try:
         ip = ipaddress.ip_address(ip_str)
         return ip.is_global
@@ -262,6 +272,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- NEW: Pydantic Model for Robust Input Validation ---
+class LinkCreatePayload(BaseModel):
+    long_url: str
+    ttl: Literal["1h", "24h", "1w", "never"] = "24h"
+    # Ensures custom_code is alphanumeric and max 20 chars
+    custom_code: Optional[constr(alnum=True, max_length=20)] = None
+    utm_tags: Optional[str] = None
+# --- END NEW MODEL ---
+
 # ---------------- ROUTES ----------------
 ADSENSE_CLIENT_ID = "pub-6170587092427912"
 ADSENSE_SCRIPT = f"""
@@ -277,21 +296,24 @@ async def health():
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
+# --- UPDATED: api_create_link ---
 @app.post("/api/v1/links")
 @limiter.limit("10/minute")
-async def api_create_link(request: Request, payload: Dict[str, Any]):
-    long_url = payload.get("long_url")
-    ttl = payload.get("ttl", "24h")
-    custom_code = payload.get("custom_code")
-    utm_tags = payload.get("utm_tags")
+async def api_create_link(request: Request, payload: LinkCreatePayload):
+    # Pydantic has already validated ttl, custom_code, and utm_tags.
+    long_url = payload.long_url
     
-    if not long_url:
-        raise HTTPException(status_code=400, detail="Missing long_url")
+    # Add scheme if missing
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
 
-    if utm_tags:
-        cleaned_tags = utm_tags.lstrip("?&")
+    # --- NEW: Robust URL Validation ---
+    if not validators.url(long_url, public=True):
+        raise HTTPException(status_code=400, detail="Invalid URL provided.")
+    # --- END NEW ---
+
+    if payload.utm_tags:
+        cleaned_tags = payload.utm_tags.lstrip("?&")
         if cleaned_tags:
             if "?" in long_url:
                 long_url = f"{long_url}&{cleaned_tags}"
@@ -299,7 +321,7 @@ async def api_create_link(request: Request, payload: Dict[str, Any]):
                 long_url = f"{long_url}?{cleaned_tags}"
 
     try:
-        link = create_link_in_db(long_url, ttl, custom_code)
+        link = create_link_in_db(long_url, payload.ttl, payload.custom_code)
         qr_code_data_uri = generate_qr_code_data_uri(link["short_url_preview"])
         return {
             "short_url": link["short_url_preview"],
@@ -311,6 +333,7 @@ async def api_create_link(request: Request, payload: Dict[str, Any]):
         raise HTTPException(status_code=409, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
+# --- END UPDATED ROUTE ---
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -381,37 +404,61 @@ async def preview(request: Request, short_code: str):
     
     return templates.TemplateResponse("preview.html", context)
 
-# --- UPDATED: /r/{short_code} route ---
-@app.get("/r/{short_code}")
-async def redirect_link(short_code: str):
-    collection_ref = init_firebase().collection("links")
-    doc_ref = collection_ref.document(short_code)
-    
-    doc = doc_ref.get()
+# --- NEW: Transactional Function for Redirect ---
+# This decorator ensures the read and update happen atomically.
+@transactional
+def update_clicks_in_transaction(transaction, doc_ref) -> str:
+    """
+    Atomically gets link data and updates click counts.
+    Returns the long_url to redirect to.
+    """
+    doc = doc_ref.get(transaction=transaction)
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Link not found")
-    
+
     link = doc.to_dict()
     
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
 
-    try:
-        # --- NEW: Track clicks by day ---
-        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        day_key = f"clicks_by_day.{today_str}"
-        
-        # Update both total count and daily count
-        doc_ref.update({
-            "click_count": firestore.Increment(1),
-            day_key: firestore.Increment(1)
-        })
-        # --- END NEW ---
-    except Exception as e:
-        print(f"Error incrementing click count: {e}")
+    # This is the atomic read-modify-write part
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    day_key = f"clicks_by_day.{today_str}"
+    
+    transaction.update(doc_ref, {
+        "click_count": firestore.Increment(1),
+        day_key: firestore.Increment(1)
+    })
+    
+    return link["long_url"]
+# --- END NEW FUNCTION ---
 
-    long_url = link["long_url"]
+# --- UPDATED: /r/{short_code} route ---
+@app.get("/r/{short_code}")
+async def redirect_link(short_code: str):
+    db = init_firebase()
+    doc_ref = db.collection("links").document(short_code)
+    
+    try:
+        # Create a new transaction
+        transaction = db.transaction()
+        # Run the transactional function
+        long_url = update_clicks_in_transaction(transaction, doc_ref)
+
+    # Handle exceptions from inside the transaction
+    except HTTPException as e:
+        raise e # Re-raise 404s and 410s
+    except Exception as e:
+        # Catch errors like Aborted, etc.
+        print(f"Transaction failed: {e}")
+        # Fallback: Try a non-transactional get, but don't count the click
+        link = get_link(short_code)
+        if not link:
+            raise HTTPException(status_code=404, detail="Link not found")
+        long_url = link["long_url"]
+
+    # Normalize and redirect
     if not long_url.startswith(("http://", "https://")):
         absolute_url = "https://" + long_url
     else:

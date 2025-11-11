@@ -19,6 +19,7 @@ body {
     background: var(--bg-light);
     color: var(--text-primary);
     display: flex;
+    flex-direction: column; /* NEW: Allow footer to sit below */
     justify-content: center;
     align-items: center;
     min-height: 100vh;
@@ -37,8 +38,9 @@ body {
     width: 100%;
     max-width: 500px;
     text-align: center;
+    margin-top: auto; /* Pushes card up */
 }
-/* NEW: Card variant for dashboard */
+/* NEW: Card variant for dashboard/about */
 .card.card-wide {
     max-width: 800px;
 }
@@ -71,7 +73,6 @@ a.button:hover {
     background: var(--primary-hover);
 }
 
-/* NEW: Header link for "My Links" */
 .header-link {
     display: block;
     text-align: right;
@@ -368,7 +369,7 @@ hr {
     border-bottom: 1px solid var(--border-light);
 }
 
-/* --- NEW: Dashboard Table Styles --- */
+/* --- Dashboard Table Styles --- */
 .table-container {
     width: 100%;
     overflow-x: auto;
@@ -418,6 +419,33 @@ hr {
 .dashboard-table .actions-col a.delete-link:hover {
     color: var(--error-red);
 }
+
+/* --- NEW: Footer --- */
+.footer {
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
+    margin-top: 2rem;
+    margin-bottom: 1rem; /* Pushes up from bottom */
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: auto; /* Pushes to bottom */
+}
+.footer a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin: 0 0.5rem;
+    font-weight: 500;
+}
+.footer a:hover {
+    text-decoration: underline;
+    color: var(--primary-color);
+}
+.footer span {
+    margin: 0 0.5rem;
+}
+/* --- END NEW --- */
+
 
 /* --- Mobile Responsive (All Pages) --- */
 @media(max-width: 500px) {

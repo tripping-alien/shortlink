@@ -3,73 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link Preview | Shortlinks</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <title>Preview - {{ short_code }}</title>
+    <meta name="robots" content="noindex">
+    <meta name="description" content="Preview link before visiting">
+    
+    {{ ADSENSE_SCRIPT|safe }}
+    
     <style>
-        :root {
-            --bg-color: #fefae0; /* Creamy, off-white "newsprint" background */
-            --panel-bg: #ffffff;
-            --text-color: #212529;
-            --primary-color: #2962ff; /* A vibrant, classic comic blue */
-            --border-color: #000000; /* Strong black for outlines */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin:0; background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; box-sizing: border-box; }
+        .card { background:#fff; padding:2rem; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); width:100%; max-width:500px; text-align:center; }
+        .meta-header { display:flex; align-items:center; justify-content:center; gap: 8px; }
+        .favicon { width:16px; height:16px; vertical-align:middle; }
+        .preview-image {
+            width: 100%; max-height: 250px; object-fit: cover;
+            border-radius: 8px; margin-top: 1.5rem; border: 1px solid #eee;
         }
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: var(--bg-color);
-            font-family: 'Fira Code', monospace;
+        .meta-title {
+            margin-top: 0.5rem; margin-bottom: 0.5rem; font-size: 1.25rem;
+            font-weight: 600; color: #111827;
         }
-        .preview-card {
-            width: 100%;
-            max-width: 600px;
-            padding: 2rem;
-            background-color: var(--panel-bg);
-            border-radius: 4px;
-            border: 3px solid var(--border-color);
-            box-shadow: 6px 6px 0 var(--border-color);
+        .description {
+            font-size: 0.9rem; color: #4b5563;
+            line-height: 1.5; margin-bottom: 1.5rem;
         }
-        .destination-url {
-            font-family: monospace;
-            word-break: break-all;
-            background-color: #e9ecef;
-            padding: 0.75rem;
-            border-radius: 0.25rem;
-            color: #495057;
+        h1 { margin-top:0; color:#4f46e5; }
+        p.info { margin-bottom: 0; color: #374151; }
+        p.url {
+            word-break: break-all; font-weight:bold; color:#111827; margin-top: 8px;
+            background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;
         }
-        .btn-proceed {
-            background-color: var(--primary-color);
-            color: white;
-            transition: background-color 0.2s ease-in-out;
+        a.button {
+            display:inline-block; margin-top:20px; padding:12px 24px; background:#4f46e5;
+            color:white; text-decoration:none; border-radius:8px; font-weight:bold;
         }
-        .btn-proceed:hover {
-            background-color: #34A853; /* Google Green */
+        a.button:hover { background:#6366f1; }
+        @media(max-width:500px){ 
+            .card { padding:1.5rem; } 
+            a.button { width:100%; box-sizing: border-box; } 
         }
     </style>
 </head>
 <body>
-    <div class="preview-card text-center">
-        <h1 class="h4 mb-3">Link Preview</h1>
-        <p class="text-muted">You are about to be redirected to the following URL:</p>
-        <p class="destination-url" title="{{ long_url }}">{{ long_url }}</p>
-        <div class="d-grid gap-2 mt-4">
-            <a href="{{ long_url }}" class="btn btn-proceed" rel="noopener noreferrer">Proceed to Site</a>
-            <button id="cancel-button" class="btn btn-outline-secondary">Cancel</button>
+    <div class="card">
+        <h1>Link Preview</h1>
+        
+        {% if has_image %}
+            <img src="{{ meta_image_url }}" alt="Preview Image" class="preview-image">
+        {% endif %}
+        
+        <div class="meta-header">
+            {% if has_favicon %}
+                <img src="{{ meta_favicon_url }}" class="favicon" alt="">
+            {% endif %}
+            <h2 class="meta-title">{{ meta_title }}</h2>
         </div>
-    </div>
+        
+        {% if has_description %}
+            <p class="description">{{ meta_description }}</p>
+        {% endif %}
 
-    <script>
-        document.getElementById('cancel-button').addEventListener('click', () => {
-            // Check if there is a history to go back to
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                // If no history, redirect to the homepage as a fallback
-                window.location.href = '/';
-            }
-        });
-    </script>
+        <hr style="border:none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0;">
+
+        <p class="info">You are being redirected to:</p>
+        <p class="url">{{ escaped_long_url_display }}</p>
+        
+        <a class="button" href="{{ escaped_long_url_href }}" target="_blank" rel="noopener noreferrer">Proceed to Link</a>
+    </div>
 </body>
 </html>

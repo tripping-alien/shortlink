@@ -6,18 +6,17 @@ import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
-# --- NEW IMPORTS ---
+# --- IMPORTS ---
 import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from fastapi.templating import Jinja2Templates  # <-- For Jinja2
-from fastapi_babel import Babel, BabelConfigs, _  # <-- For i18n
-# --- END NEW IMPORTS ---
+# --- END IMPORTS ---
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware # <-- For Babel
+# --- REMOVED BABEL MIDDLEWARE IMPORT ---
 
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
@@ -190,33 +189,11 @@ async def fetch_metadata(url: str) -> dict:
 # ---------------- APP ----------------
 app = FastAPI(title="Shortlinks.art URL Shortener")
 
-# --- NEW: BABEL & JINJA2 SETUP ---
+# --- REMOVED BABEL SETUP ---
 
-# 1. Setup Babel
-babel_configs = BabelConfigs(
-    BABEL_DEFAULT_LOCALE="en",
-    BABEL_TRANSLATION_DIRECTORIES="locales",  # We will create this folder later
-    BABEL_SUPPORTED_LOCALES=["en", "es", "fr", "de", "zh_CN", "pt"] # Target languages
-)
-babel = Babel(configs=babel_configs)
-
-# 2. Add Babel middleware to detect language
-class BabelMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        lang = request.headers.get("Accept-Language")
-        babel.locale = babel.get_locale(lang)
-        return await call_next(request)
-
-app.add_middleware(BabelMiddleware)
-
-# 3. Setup Jinja2 templates
+# --- JINJA2 SETUP (Simplified) ---
 templates = Jinja2Templates(directory="templates")
-# Make the `_` (gettext) function available in all Jinja templates
-templates.env.add_extension('jinja2.ext.i18n')
-templates.env.install_gettext(babel)
-
-# --- END NEW SETUP ---
-
+# --- REMOVED BABEL JINJA2 EXTENSIONS ---
 
 app.add_middleware(
     CORSMiddleware,
@@ -259,7 +236,7 @@ async def api_create_link(payload: Dict[str, Any]):
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- REWRITTEN HOMEPAGE ROUTE ---
+# --- HOMEPAGE ROUTE ---
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """
@@ -271,7 +248,7 @@ async def index(request: Request):
     }
     return templates.TemplateResponse("index.html", context)
 
-# --- NEW SEO ROUTES ---
+# --- SEO ROUTES ---
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
     content = f"""User-agent: *
@@ -297,7 +274,7 @@ async def sitemap():
 """
     return Response(content=xml_content, media_type="application/xml")
 
-# --- REWRITTEN PREVIEW ROUTE ---
+# --- PREVIEW ROUTE ---
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(request: Request, short_code: str):
     link = get_link(short_code)
@@ -317,7 +294,6 @@ async def preview(request: Request, short_code: str):
     
     meta = await fetch_metadata(safe_href_url)
     
-    # Prepare all data for the template
     context = {
         "request": request,
         "short_code": short_code,
@@ -334,7 +310,6 @@ async def preview(request: Request, short_code: str):
     }
     
     return templates.TemplateResponse("preview.html", context)
-# --- END REWRITTEN ROUTES ---
 
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):

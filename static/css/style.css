@@ -220,7 +220,6 @@ button#shortenBtn:disabled {
     font-weight: 500;
 }
 
-/* --- NEW: Advanced Options --- */
 .advanced-options-toggle {
     font-size: 0.9rem;
     color: var(--primary-color);
@@ -241,11 +240,9 @@ button#shortenBtn:disabled {
     margin-top: 0;
 }
 #advanced-options.show {
-    max-height: 300px; /* arbitrary large height */
+    max-height: 300px;
     margin-top: 1rem;
 }
-/* --- END NEW --- */
-
 
 /* --- Preview Page (preview.html) Styles --- */
 
@@ -394,4 +391,12 @@ button#shortenBtn.loading .btn-text {
 }
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* --- NEW: Stats Page Chart --- */
+.chart-container {
+    position: relative;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-light);
 }

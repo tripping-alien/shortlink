@@ -13,7 +13,7 @@ import io
 import base64
 
 import validators
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, constr # 'constr' is correct
 from firebase_admin.firestore import transactional
 
 import qrcode
@@ -34,10 +34,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
 
-# --- THIS IS THE FIX ---
+# Import fix from previous error
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
-# ----------------------
 
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
@@ -274,7 +273,12 @@ app.add_middleware(
 class LinkCreatePayload(BaseModel):
     long_url: str
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
-    custom_code: Optional[constr(alnum=True, max_length=20)] = None
+    
+    # --- THIS IS THE FIX for Pydantic v2 ---
+    # Replaced 'alnum=True' with a regex 'pattern'
+    custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]*$', max_length=20)] = None
+    # -------------------------------------
+    
     utm_tags: Optional[str] = None
     owner_id: Optional[str] = None
 
@@ -436,7 +440,8 @@ async def preview(request: Request, short_code: str):
     
     long_url = link["long_url"]
     
-    if not long_url.startswith(("http://", "https://")):
+    if not long_url.startswith(("http://", "https:"
+                                          "//")):
         safe_href_url = "https://" + long_url
     else:
         safe_href_url = long_url
@@ -485,7 +490,7 @@ async def preview(request: Request, short_code: str):
 def update_clicks_in_transaction(transaction, doc_ref) -> str:
     doc = doc_ref.get(transaction=transaction)
     if not doc.exists:
-        raise HTTPException(status_code=404, detail="Link not found")
+        raise HTTPException(status_code=4404, detail="Link not found")
 
     link = doc.to_dict()
     

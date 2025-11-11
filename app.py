@@ -43,7 +43,6 @@ TTL_MAP = {
 }
 
 # ---------------- FIREBASE ----------------
-# ... (Firebase code is unchanged) ...
 db: firestore.Client = None
 APP_INSTANCE = None
 
@@ -108,7 +107,6 @@ def init_firebase():
     return db
 
 # ---------------- HELPERS ----------------
-# ... (Other helpers are unchanged) ...
 def _generate_short_code(length=SHORT_CODE_LENGTH) -> str:
     chars = string.ascii_lowercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
@@ -128,7 +126,6 @@ def calculate_expiration(ttl: str) -> Optional[datetime]:
         return None
     return datetime.now(timezone.utc) + delta
 
-# --- NEW QR CODE HELPER ---
 def generate_qr_code_data_uri(text: str) -> str:
     """Generates a QR code and returns it as a Base64 Data URI."""
     img = qrcode.make(text, box_size=10, border=2)
@@ -137,7 +134,6 @@ def generate_qr_code_data_uri(text: str) -> str:
     b64_str = base64.b64encode(buf.getvalue()).decode("utf-8")
     return f"data:image/png;base64,{b64_str}"
 
-# --- UPDATED: create_link_in_db ---
 def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str] = None) -> Dict[str, Any]:
     collection = init_firebase().collection("links")
     if custom_code:
@@ -155,13 +151,12 @@ def create_link_in_db(long_url: str, ttl: str = "24h", custom_code: Optional[str
         "long_url": long_url,
         "deletion_token": deletion_token,
         "created_at": datetime.now(timezone.utc),
-        "click_count": 0  # <-- NEW: Initialize click count
+        "click_count": 0
     }
     if expires_at:
         data["expires_at"] = expires_at
     collection.document(code).set(data)
     
-    # --- NEW: Return URLs for stats and deletion ---
     short_url_preview = f"{BASE_URL}/preview/{code}"
     stats_url = f"{BASE_URL}/stats/{code}"
     delete_url = f"{BASE_URL}/delete/{code}?token={deletion_token}"
@@ -184,7 +179,6 @@ def get_link(code: str) -> Optional[Dict[str, Any]]:
     return data
 
 async def fetch_metadata(url: str) -> dict:
-    # ... (fetch_metadata function is unchanged) ...
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -220,17 +214,12 @@ async def fetch_metadata(url: str) -> dict:
     return meta
 
 # ---------------- APP ----------------
-# --- NEW: RATE LIMITER SETUP ---
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Shortlinks.art URL Shortener")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-# --- END NEW ---
 
-# --- NEW: MOUNT STATIC DIRECTORY ---
 app.mount("/static", StaticFiles(directory="static"), name="static")
-# --- END NEW ---
-
 templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
@@ -258,23 +247,37 @@ async def health():
 
 # --- UPDATED: api_create_link ---
 @app.post("/api/v1/links")
-@limiter.limit("10/minute")  # <-- NEW: Rate limit
+@limiter.limit("10/minute")
 async def api_create_link(request: Request, payload: Dict[str, Any]):
     long_url = payload.get("long_url")
     ttl = payload.get("ttl", "24h")
     custom_code = payload.get("custom_code")
+    utm_tags = payload.get("utm_tags")  # <-- NEW: Get UTM tags
+    
     if not long_url:
         raise HTTPException(status_code=400, detail="Missing long_url")
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
+
+    # --- NEW: Append UTM Tags ---
+    if utm_tags:
+        # Clean the tags: remove leading ? or &
+        cleaned_tags = utm_tags.lstrip("?&")
+        if cleaned_tags:
+            # Check if long_url already has query params
+            if "?" in long_url:
+                long_url = f"{long_url}&{cleaned_tags}"
+            else:
+                long_url = f"{long_url}?{cleaned_tags}"
+    # --- END NEW ---
+
     try:
         link = create_link_in_db(long_url, ttl, custom_code)
         
-        # --- NEW: Generate QR Code ---
         qr_code_data_uri = generate_qr_code_data_uri(link["short_url_preview"])
 
         return {
-            "short_url": link["short_url_preview"], # Renamed for clarity
+            "short_url": link["short_url_preview"],
             "stats_url": link["stats_url"],
             "delete_url": link["delete_url"],
             "qr_code_data": qr_code_data_uri
@@ -292,9 +295,7 @@ async def index(request: Request):
     }
     return templates.TemplateResponse("index.html", context)
 
-# --- SEO ROUTES (Unchanged) ---
 @app.get("/robots.txt", response_class=PlainTextResponse)
-# ... (function unchanged) ...
 async def robots():
     content = f"""User-agent: *
 Disallow: /api/
@@ -306,7 +307,6 @@ Sitemap: {BASE_URL}/sitemap.xml
     return content
 
 @app.get("/sitemap.xml", response_class=Response)
-# ... (function unchanged) ...
 async def sitemap():
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -322,7 +322,6 @@ async def sitemap():
 
 @app.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(request: Request, short_code: str):
-    # ... (function is unchanged) ...
     link = get_link(short_code)
     if not link:
         raise HTTPException(status_code=404, detail="Link not found")
@@ -357,8 +356,6 @@ async def preview(request: Request, short_code: str):
     
     return templates.TemplateResponse("preview.html", context)
 
-
-# --- UPDATED: redirect_link ---
 @app.get("/r/{short_code}")
 async def redirect_link(short_code: str):
     collection_ref = init_firebase().collection("links")
@@ -374,12 +371,10 @@ async def redirect_link(short_code: str):
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Link expired")
 
-    # --- NEW: Increment click count ---
     try:
         doc_ref.update({"click_count": firestore.Increment(1)})
     except Exception as e:
         print(f"Error incrementing click count: {e}")
-    # --- END NEW ---
 
     long_url = link["long_url"]
     if not long_url.startswith(("http://", "https://")):
@@ -389,7 +384,6 @@ async def redirect_link(short_code: str):
 
     return RedirectResponse(url=absolute_url)
 
-# --- NEW: STATS PAGE ROUTE ---
 @app.get("/stats/{short_code}", response_class=HTMLResponse)
 async def stats(request: Request, short_code: str):
     link = get_link(short_code)
@@ -403,7 +397,6 @@ async def stats(request: Request, short_code: str):
     }
     return templates.TemplateResponse("stats.html", context)
 
-# --- NEW: DELETE LINK ROUTE ---
 @app.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete(request: Request, short_code: str, token: Optional[str] = None):
     if not token:

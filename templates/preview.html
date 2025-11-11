@@ -3,42 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Preview - {{ short_code }}</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Preview link before visiting">
-    
     {{ ADSENSE_SCRIPT|safe }}
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-    
 </head>
 <body>
     <div class="card">
         <h1>Link Preview</h1>
-        
         {% if has_image %}
             <img src="{{ meta_image_url }}" alt="Preview Image" class="preview-image">
         {% endif %}
-        
         <div class="meta-header">
             {% if has_favicon %}
                 <img src="{{ meta_favicon_url }}" class="favicon" alt="">
             {% endif %}
             <h2 class="meta-title">{{ meta_title }}</h2>
         </div>
-        
         {% if has_description %}
             <p class="description">{{ meta_description }}</p>
         {% endif %}
-
         <hr>
-
         <p class="info">You are being redirected to:</p>
         <p class="url">{{ escaped_long_url_display }}</p>
-        
         <a class="button" href="{{ url_for('redirect_link', short_code=short_code) }}" target="_blank" rel="noopener noreferrer">Proceed to Link</a>
     </div>
+
+    <footer class="footer">
+        <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('about') }}">About</a>
+    </footer>
+
 </body>
 </html>

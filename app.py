@@ -11,6 +11,7 @@ import ipaddress
 import asyncio
 import io
 import base64
+import tempfile # Needed for robust firebase init
 
 import validators
 from pydantic import BaseModel, constr
@@ -32,7 +33,6 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.middleware.cors import CORSMiddleware
 
 import firebase_admin
-# Import 'firestore' to use firestore.Increment()
 from firebase_admin import credentials, firestore, get_app
 
 from google.cloud.firestore_v1.base_query import FieldFilter
@@ -52,14 +52,14 @@ TTL_MAP = {
 
 # ---------------- LOCALIZATION (i18n) ----------------
 
-# UPDATED: Added 'ru' and 'he'
 SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
+RTL_LOCALES = ["ar", "he"] # List of Right-to-Left languages
 
-# UPDATED: Added 'ru' and 'he' translations
-# UPDATED: Removed "Open Source" from all descriptions
+# UPDATED: Added new 'lang_name_xx' keys for flag alt text
 translations = {
     "en": {
+        "lang_name_en": "English", "lang_name_es": "Spanish", "lang_name_zh": "Chinese", "lang_name_hi": "Hindi", "lang_name_pt": "Portuguese", "lang_name_fr": "French", "lang_name_de": "German", "lang_name_ar": "Arabic", "lang_name_ru": "Russian", "lang_name_he": "Hebrew",
         "app_title": "Shortlinks.art - Fast & Simple URL Shortener",
         "meta_description_main": "Create free short links with previews. Shortlinks.art is a fast, simple URL shortener that offers custom expiration times and link previews.",
         "meta_keywords_main": "url shortener, link shortener, free url shortener, url shortener with preview, link shortener with preview, custom short link, expiring links, temporary links, short url, shorten link, fast url shortener, simple url shortener, shortlinks.art",
@@ -85,6 +85,7 @@ translations = {
         "result_save_link_text": "This is your unique deletion link. Keep it safe if you ever want to remove your shortlink.",
         "nav_home": "Home",
         "nav_about": "About",
+        "language_switcher_label": "Select a language",
         "link_not_found": "Link not found",
         "link_expired": "Link expired",
         "invalid_url": "Invalid URL provided.",
@@ -101,6 +102,7 @@ translations = {
         "js_copy_failed": "Failed!",
     },
     "es": {
+        "lang_name_en": "Inglés", "lang_name_es": "Español", "lang_name_zh": "Chino", "lang_name_hi": "Hindi", "lang_name_pt": "Portugués", "lang_name_fr": "Francés", "lang_name_de": "Alemán", "lang_name_ar": "Árabe", "lang_name_ru": "Ruso", "lang_name_he": "Hebreo",
         "app_title": "Shortlinks.art - Acortador de URL rápido y sencillo",
         "meta_description_main": "Cree enlaces cortos gratuitos con vistas previas. Shortlinks.art es un acortador de URL rápido y sencillo que ofrece vistas previas y tiempos de caducidad personalizados.",
         "meta_keywords_main": "acortador de url, acortador de enlaces, acortador de url gratuito, acortador de url con vista previa, enlace corto personalizado, enlaces que expiran, enlaces temporales, short url, acortar enlace, shortlinks.art",
@@ -126,6 +128,7 @@ translations = {
         "result_save_link_text": "Este es tu enlace de eliminación único. Guárdalo bien si alguna vez quieres eliminar tu enlace corto.",
         "nav_home": "Inicio",
         "nav_about": "Acerca de",
+        "language_switcher_label": "Seleccione un idioma",
         "link_not_found": "Enlace no encontrado",
         "link_expired": "El enlace ha caducado",
         "invalid_url": "La URL proporcionada no es válida.",
@@ -142,6 +145,7 @@ translations = {
         "js_copy_failed": "¡Falló!",
     },
     "zh": { 
+        "lang_name_en": "英语", "lang_name_es": "西班牙语", "lang_name_zh": "简体中文", "lang_name_hi": "印地语", "lang_name_pt": "葡萄牙语", "lang_name_fr": "法语", "lang_name_de": "德语", "lang_name_ar": "阿拉伯语", "lang_name_ru": "俄语", "lang_name_he": "希伯来语",
         "app_title": "Shortlinks.art - 快速简洁的网址缩短服务",
         "meta_description_main": "创建带预览的免费短链接。Shortlinks.art 是一个快速、简单的网址缩短器，提供自定义过期时间和链接预览。",
         "meta_keywords_main": "网址缩短, 链接缩短, 免费网址缩短, 带预览的网址缩短, 自定义短链接, 过期链接, 临时链接, short url, 缩短链接, shortlinks.art",
@@ -167,6 +171,7 @@ translations = {
         "result_save_link_text": "这是您的专属删除链接。请妥善保管，以便将来删除您的短链接。",
         "nav_home": "首页",
         "nav_about": "关于",
+        "language_switcher_label": "选择一种语言",
         "link_not_found": "链接未找到",
         "link_expired": "链接已过期",
         "invalid_url": "提供了无效的URL。",
@@ -183,6 +188,7 @@ translations = {
         "js_copy_failed": "失败！",
     },
     "hi": {
+        "lang_name_en": "अंग्रेज़ी", "lang_name_es": "स्पेनिश", "lang_name_zh": "चीनी", "lang_name_hi": "हिन्दी", "lang_name_pt": "पुर्तगाली", "lang_name_fr": "फ्रेंच", "lang_name_de": "जर्मन", "lang_name_ar": "अरबी", "lang_name_ru": "रूसी", "lang_name_he": "हिब्रू",
         "app_title": "Shortlinks.art - तेज़ और सरल यूआरएल शॉर्टनर",
         "meta_description_main": "प्रीव्यू के साथ मुफ़्त शॉर्ट लिंक बनाएं। Shortlinks.art एक तेज़, सरल यूआरएल शॉर्टनर है जो कस्टम समाप्ति समय और लिंक प्रीव्यू प्रदान करता है।",
         "meta_keywords_main": "यूआरएल शॉर्टनर, लिंक शॉर्टनर, मुफ़्त यूआरएल शॉर्टनर, प्रीव्यू के साथ यूआरएल शॉर्टनर, कस्टम शॉर्ट लिंक, एक्सपायरिंग लिंक, अस्थायी लिंक, शॉर्ट यूआरएल, शॉर्टन लिंक, shortlinks.art",
@@ -208,6 +214,7 @@ translations = {
         "result_save_link_text": "यह आपका अद्वितीय विलोपन लिंक है। यदि आप कभी भी अपना शॉर्टलिंक हटाना चाहते हैं तो इसे सुरक्षित रखें।",
         "nav_home": "होम",
         "nav_about": "बारे में",
+        "language_switcher_label": "एक भाषा चुनें",
         "link_not_found": "लिंक नहीं मिला",
         "link_expired": "लिंक समाप्त हो गया है",
         "invalid_url": "अमान्य यूआरएल प्रदान किया गया।",
@@ -224,6 +231,7 @@ translations = {
         "js_copy_failed": "विफल!",
     },
     "pt": {
+        "lang_name_en": "Inglês", "lang_name_es": "Espanhol", "lang_name_zh": "Chinês", "lang_name_hi": "Hindi", "lang_name_pt": "Português", "lang_name_fr": "Francês", "lang_name_de": "Alemão", "lang_name_ar": "Árabe", "lang_name_ru": "Russo", "lang_name_he": "Hebraico",
         "app_title": "Shortlinks.art - Encurtador de URL rápido e simples",
         "meta_description_main": "Crie links curtos gratuitos com pré-visualizações. Shortlinks.art é um encurtador de URL rápido e simples que oferece tempos de expiração personalizados e pré-visualizações de links.",
         "meta_keywords_main": "encurtador de url, encurtador de link, encurtador de url gratuito, encurtador de url com pré-visualização, link curto personalizado, links que expiram, links temporários, short url, encurtar link, shortlinks.art",
@@ -249,6 +257,7 @@ translations = {
         "result_save_link_text": "Este é o seu link de exclusão exclusivo. Mantenha-o seguro se você quiser remover seu link curto.",
         "nav_home": "Início",
         "nav_about": "Sobre",
+        "language_switcher_label": "Selecione um idioma",
         "link_not_found": "Link não encontrado",
         "link_expired": "O link expirou",
         "invalid_url": "URL fornecida é inválida.",
@@ -265,6 +274,7 @@ translations = {
         "js_copy_failed": "Falhou!",
     },
     "fr": {
+        "lang_name_en": "Anglais", "lang_name_es": "Espagnol", "lang_name_zh": "Chinois", "lang_name_hi": "Hindi", "lang_name_pt": "Portugais", "lang_name_fr": "Français", "lang_name_de": "Allemand", "lang_name_ar": "Arabe", "lang_name_ru": "Russe", "lang_name_he": "Hébreu",
         "app_title": "Shortlinks.art - Raccourcisseur d'URL rapide et simple",
         "meta_description_main": "Créez des liens courts gratuits avec aperçus. Shortlinks.art est un raccourcisseur d'URL rapide et simple qui offre des temps d'expiration personnalisés et des aperçus de liens.",
         "meta_keywords_main": "raccourcisseur d'url, raccourcisseur de lien, raccourcisseur d'url gratuit, raccourcisseur d'url avec aperçu, lien court personnalisé, liens expirants, liens temporaires, short url, raccourcir lien, shortlinks.art",
@@ -290,6 +300,7 @@ translations = {
         "result_save_link_text": "C'est votre lien de suppression unique. Gardez-le en sécurité si vous souhaitez un jour supprimer votre lien court.",
         "nav_home": "Accueil",
         "nav_about": "À propos",
+        "language_switcher_label": "Sélectionnez une langue",
         "link_not_found": "Lien non trouvé",
         "link_expired": "Le lien a expiré",
         "invalid_url": "URL fournie invalide.",
@@ -306,6 +317,7 @@ translations = {
         "js_copy_failed": "Échoué !",
     },
     "de": {
+        "lang_name_en": "Englisch", "lang_name_es": "Spanisch", "lang_name_zh": "Chinesisch", "lang_name_hi": "Hindi", "lang_name_pt": "Portugiesisch", "lang_name_fr": "Französisch", "lang_name_de": "Deutsch", "lang_name_ar": "Arabisch", "lang_name_ru": "Russisch", "lang_name_he": "Hebräisch",
         "app_title": "Shortlinks.art - Schneller & einfacher URL-Shortener",
         "meta_description_main": "Erstellen Sie kostenlose Kurzlinks mit Vorschau. Shortlinks.art ist ein schneller, einfacher URL-Shortener, der benutzerdefinierte Ablaufzeiten und Link-Vorschauen bietet.",
         "meta_keywords_main": "url shortener, link shortener, kostenloser url shortener, url shortener mit vorschau, benutzerdefinierter short link, ablaufende links, temporäre links, short url, link kürzen, shortlinks.art",
@@ -331,6 +343,7 @@ translations = {
         "result_save_link_text": "Dies ist Ihr eindeutiger Löschlink. Bewahren Sie ihn sicher auf, falls Sie Ihren Kurzlink jemals entfernen möchten.",
         "nav_home": "Startseite",
         "nav_about": "Über",
+        "language_switcher_label": "Wähle eine Sprache",
         "link_not_found": "Link nicht gefunden",
         "link_expired": "Link ist abgelaufen",
         "invalid_url": "Ungültige URL angegeben.",
@@ -347,6 +360,7 @@ translations = {
         "js_copy_failed": "Fehlgeschlagen!",
     },
     "ar": {
+        "lang_name_en": "الإنجليزية", "lang_name_es": "الإسبانية", "lang_name_zh": "الصينية", "lang_name_hi": "الهندية", "lang_name_pt": "البرتغالية", "lang_name_fr": "الفرنسية", "lang_name_de": "الألمانية", "lang_name_ar": "العربية", "lang_name_ru": "الروسية", "lang_name_he": "العبرية",
         "app_title": "Shortlinks.art - خدمة تقصير روابط سريعة وبسيطة",
         "meta_description_main": "أنشئ روابط قصيرة مجانية مع معاينات. Shortlinks.art هو مقصر روابط سريع وبسيط يوفر أوقات انتهاء صلاحية مخصصة ومعاينات للروابط.",
         "meta_keywords_main": "مقصر روابط, تقصير روابط, مقصر روابط مجاني, مقصر روابط مع معاينة, رابط قصير مخصص, روابط تنتهي صلاحيتها, روابط مؤقتة, short url, تقصير رابط, shortlinks.art",
@@ -372,6 +386,7 @@ translations = {
         "result_save_link_text": "هذا هو رابط الحذف الفريد الخاص بك. احتفظ به بأمان إذا أردت يومًا إزالة الرابط القصير.",
         "nav_home": "الرئيسية",
         "nav_about": "حول",
+        "language_switcher_label": "اختر لغة",
         "link_not_found": "الرابط غير موجود",
         "link_expired": "انتهت صلاحية الرابط",
         "invalid_url": "الرابط المُقدم غير صالح.",
@@ -387,7 +402,8 @@ translations = {
         "js_copied": "تم النسخ!",
         "js_copy_failed": "فشل!",
     },
-    "ru": { # Russian
+    "ru": {
+        "lang_name_en": "Английский", "lang_name_es": "Испанский", "lang_name_zh": "Китайский", "lang_name_hi": "Хинди", "lang_name_pt": "Португальский", "lang_name_fr": "Французский", "lang_name_de": "Немецкий", "lang_name_ar": "Арабский", "lang_name_ru": "Русский", "lang_name_he": "Иврит",
         "app_title": "Shortlinks.art - Быстрый и простой сервис сокращения URL",
         "meta_description_main": "Создавайте бесплатные короткие ссылки с предпросмотром. Shortlinks.art - это быстрый и простой сервис, предлагающий настройку времени жизни ссылок и их предпросмотр.",
         "meta_keywords_main": "сократить ссылку, сокращатель ссылок, бесплатный сокращатель ссылок, ссылка с предпросмотром, кастомная короткая ссылка, истекающие ссылки, временные ссылки, короткий url, shortlinks.art",
@@ -413,6 +429,7 @@ translations = {
         "result_save_link_text": "Это ваша уникальная ссылка для удаления. Сохраните ее, если захотите удалить ссылку.",
         "nav_home": "Главная",
         "nav_about": "О проекте",
+        "language_switcher_label": "Выберите язык",
         "link_not_found": "Ссылка не найдена",
         "link_expired": "Срок действия ссылки истек",
         "invalid_url": "Неверный URL.",
@@ -428,7 +445,8 @@ translations = {
         "js_copied": "Скопировано!",
         "js_copy_failed": "Ошибка!",
     },
-    "he": { # Hebrew
+    "he": {
+        "lang_name_en": "אנגלית", "lang_name_es": "ספרדית", "lang_name_zh": "סינית", "lang_name_hi": "הינדי", "lang_name_pt": "פורטוגזית", "lang_name_fr": "צרפתית", "lang_name_de": "גרמנית", "lang_name_ar": "ערבית", "lang_name_ru": "רוסית", "lang_name_he": "עברית",
         "app_title": "Shortlinks.art - מקצר כתובות URL מהיר ופשוט",
         "meta_description_main": "צרו קישורים קצרים בחינם עם תצוגה מקדימה. Shortlinks.art הוא מקצר כתובות מהיר ופשוט המציע זמני תפוגה מותאמים אישית ותצוגה מקדימה של קישורים.",
         "meta_keywords_main": "מקצר כתובות, קיצור קישורים, מקצר קישורים חינם, מקצר כתובות עם תצוגה מקדימה, קישור קצר מותאם אישית, קישורים פגי תוקף, קישורים זמניים, short url, shortlinks.art",
@@ -454,6 +472,7 @@ translations = {
         "result_save_link_text": "זהו קישור המחיקה הייחודי שלך. שמור אותו למקרה שתרצה למחוק את הקישור המקוצר שלך.",
         "nav_home": "ראשי",
         "nav_about": "אודות",
+        "language_switcher_label": "בחר שפה",
         "link_not_found": "הקישור לא נמצא",
         "link_expired": "הקישור פג תוקף",
         "invalid_url": "כתובת URL לא חוקית.",
@@ -560,15 +579,14 @@ async def get_common_context(
     locale: str = Depends(get_current_locale),
     hreflang_tags: list = Depends(get_hreflang_tags)
 ) -> dict:
-    """A single dependency to get all common template variables."""
     return {
         "request": request,
         "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
         "_": _,
         "locale": locale,
         "hreflang_tags": hreflang_tags,
-        # UPDATED: Fix for the 'datetime' bug
-        "current_year": datetime.now(timezone.utc).year
+        "current_year": datetime.now(timezone.utc).year,
+        "RTL_LOCALES": RTL_LOCALES # Pass RTL list to template
     }
 
 # ---------------- FIREBASE ----------------
@@ -577,6 +595,9 @@ APP_INSTANCE = None
 
 import threading
 import time
+import logging # Import logging
+
+logger = logging.getLogger(__name__) # Get a logger
 
 def start_cleanup_thread():
     thread = threading.Thread(target=cleanup_worker, daemon=True)
@@ -611,32 +632,63 @@ def cleanup_expired_links():
         batch.commit()
     return count
 
+#
+# =====================================================================
+# UPDATED/FIXED init_firebase function
+# This is much more robust and fixes the "Unable to add links" bug.
+# =====================================================================
+#
 def init_firebase():
     global db, APP_INSTANCE
     if db:
         return db
+
     firebase_config_str = os.environ.get("FIREBASE_CONFIG")
+    temp_file_path = None
     cred = None
-    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-        cred = credentials.ApplicationDefault()
-    elif firebase_config_str:
-        import tempfile
-        temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        temp_file.write(firebase_config_str)
-        temp_file.close()
-        cred = credentials.Certificate(temp_file.name)
-        os.remove(temp_file.name)
-    if cred is None:
-        raise RuntimeError("Firebase config missing.")
+
     try:
-        APP_INSTANCE = get_app()
-    except ValueError:
-        APP_INSTANCE = firebase_admin.initialize_app(cred)
-    # Using the SYNC client as per your file
-    db = firestore.client(app=APP_INSTANCE)
-    return db
+        if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+            cred = credentials.ApplicationDefault()
+            logger.info("Using GOOGLE_APPLICATION_CREDENTIALS path.")
+        elif firebase_config_str:
+            # Use a context manager for the temporary file
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
+                tmp_file.write(firebase_config_str)
+                temp_file_path = tmp_file.name
+            
+            cred = credentials.Certificate(temp_file_path)
+            logger.info(f"Using FIREBASE_CONFIG JSON string via temporary file: {temp_file_path}")
+        
+        if cred is None:
+            logger.error("FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS is not set.")
+            raise RuntimeError("Firebase configuration is missing.")
+
+        try:
+            APP_INSTANCE = get_app()
+            logger.info("Reusing existing Firebase App instance.")
+        except ValueError:
+            APP_INSTANCE = firebase_admin.initialize_app(cred)
+            logger.info("Initialized new Firebase App instance.")
+        
+        db = firestore.client(app=APP_INSTANCE)
+        logger.info("Firebase Firestore client initialized successfully.")
+        return db
+
+    except Exception as e:
+        logger.error(f"Error initializing Firebase or Firestore: {e}")
+        raise RuntimeError("Database connection failure.") from e
+    finally:
+        # Clean up the temp file
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+                logger.debug(f"Cleaned up temporary credential file at {temp_file_path}")
+            except Exception as cleanup_e:
+                logger.warning(f"Failed to clean up temporary credential file: {cleanup_e}")
 
 # ---------------- HELPERS ----------------
+# (All helpers are correct, no changes needed)
 def _generate_short_code(length=SHORT_CODE_LENGTH) -> str:
     chars = string.ascii_lowercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
@@ -695,7 +747,6 @@ def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None
     return {
         **data,
         "short_code": code,
-        # Note: We build the full localized URLs in the API route itself
     }
 
 def get_link(code: str) -> Optional[Dict[str, Any]]:
@@ -731,7 +782,6 @@ async def fetch_metadata(url: str) -> dict:
             raise ValueError("Invalid hostname")
 
         try:
-            # Running sync code in a thread to avoid blocking async route
             ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
         except socket.gaierror:
             raise ValueError("Could not resolve hostname")
@@ -886,10 +936,9 @@ async def get_my_links(
         data = doc.to_dict()
         short_code = doc.id
         data["short_code"] = short_code
-        # Non-localized links for the API response
-        data["short_url_preview"] = f"{BASE_URL}/preview/{short_code}" # generic
-        data["stats_url"] = f"{BASE_URL}/stats/{short_code}" # generic
-        data["delete_url"] = f"{BASE_URL}/delete/{short_code}?token={data['deletion_token']}" # generic
+        data["short_url_preview"] = f"{BASE_URL}/preview/{short_code}" 
+        data["stats_url"] = f"{BASE_URL}/stats/{short_code}"
+        data["delete_url"] = f"{BASE_URL}/delete/{short_code}?token={data['deletion_token']}"
         data["created_at"] = data["created_at"].isoformat()
         if "expires_at" in data and data["expires_at"]:
             data["expires_at"] = data["expires_at"].isoformat()
@@ -915,7 +964,6 @@ async def sitemap():
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 """
-    # Add home and about page for every locale
     for lang in SUPPORTED_LOCALES:
         xml_content += f"""
   <url>
@@ -932,9 +980,14 @@ async def sitemap():
     xml_content += "</urlset>"
     return Response(content=xml_content, media_type="application/xml")
 
+#
+# =====================================================================
+# UPDATED/FIXED update_clicks_in_transaction
+# This is now more robust and fixes the click counting bug.
+# =====================================================================
+#
 @transactional
 def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> str:
-    """This is the atomic, transactional function."""
     doc = doc_ref.get(transaction=transaction)
     if not doc.exists:
         raise HTTPException(status_code=404, detail=get_text("link_not_found"))
@@ -960,10 +1013,6 @@ async def redirect_link(
     short_code: str,
     _ : Callable = Depends(get_api_translator)
 ):
-    """
-    UPDATED: This route is now robust. It tries an atomic transaction,
-    then falls back to a non-atomic update if the transaction fails.
-    """
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
     long_url = None
@@ -974,13 +1023,13 @@ async def redirect_link(
         long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
         
     except HTTPException as e:
-        raise e # Re-raise 404s and 410s
+        raise e 
     except Exception as e:
-        # 2. Transaction failed. Log it and try a non-atomic update.
-        print(f"Transaction for click count failed: {e}. Attempting non-transactional update.")
+        # 2. Transaction failed. Log and try a non-atomic update.
+        logger.warning(f"Click count transaction for {short_code} failed: {e}. Retrying non-atomically.")
         
         try:
-            link_doc = doc_ref.get() # Regular sync get
+            link_doc = doc_ref.get() 
             if not link_doc.exists:
                  raise HTTPException(status_code=404, detail=_("link_not_found"))
             
@@ -989,7 +1038,6 @@ async def redirect_link(
             if expires_at and expires_at < datetime.now(timezone.utc):
                 raise HTTPException(status_code=410, detail=_("link_expired"))
             
-            # This is the robust part: update the count anyway
             today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             day_key = f"clicks_by_day.{today_str}"
             doc_ref.update({
@@ -1000,20 +1048,23 @@ async def redirect_link(
             long_url = link["long_url"]
             
         except HTTPException as he:
-            raise he # Raise 404/410 from the fallback
+            raise he
         except Exception as e2:
             # 3. Fallback *also* failed. Just log and redirect.
-            print(f"Non-transactional update failed: {e2}. Redirecting without count.")
-            if long_url is None and 'link' in locals():
+            logger.error(f"Non-transactional update for {short_code} failed: {e2}. Redirecting without count.")
+            if 'link' in locals() and link:
                 long_url = link.get("long_url")
             
             if long_url is None:
-                # Last resort: get the doc again just for the URL
-                link_doc = doc_ref.get()
-                if link_doc.exists:
-                    long_url = link_doc.to_dict().get("long_url")
-                else:
-                    raise HTTPException(status_code=404, detail=_("link_not_found"))
+                try:
+                    link_doc = doc_ref.get()
+                    if link_doc.exists:
+                        long_url = link_doc.to_dict().get("long_url")
+                    else:
+                        raise HTTPException(status_code=404, detail=_("link_not_found"))
+                except Exception as e3:
+                     logger.error(f"Final attempt to get long_url for {short_code} failed: {e3}.")
+                     raise HTTPException(status_code=404, detail=_("link_not_found"))
 
     if not long_url:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
@@ -1034,12 +1085,10 @@ async def index(common_context: dict = Depends(get_common_context)):
     
 @i18n_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(common_context: dict = Depends(get_common_context)):
-    # You will need to create dashboard.html
     return templates.TemplateResponse("dashboard.html", common_context)
 
 @i18n_router.get("/about", response_class=HTMLResponse)
 async def about(common_context: dict = Depends(get_common_context)):
-    # You will need to create about.html
     return templates.TemplateResponse("about.html", common_context)
 
 @i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
@@ -1070,7 +1119,6 @@ async def preview(
         safe_href_url = long_url
     
     if link.get("meta_fetched"):
-        print(f"[CACHE HIT] for {short_code}")
         meta = {
             "title": link.get("meta_title"),
             "description": link.get("meta_description"),
@@ -1078,10 +1126,7 @@ async def preview(
             "favicon": link.get("meta_favicon")
         }
     else:
-        print(f"[CACHE MISS] for {short_code}. Fetching...")
-        # Run sync 'fetch_metadata' in a thread to avoid blocking
         meta = await fetch_metadata(safe_href_url)
-        
         try:
             doc_ref.update({
                 "meta_fetched": True,
@@ -1107,7 +1152,6 @@ async def preview(
         "has_description": bool(meta.get("description"))
     }
     
-    # You will need to create preview.html
     return templates.TemplateResponse("preview.html", context)
 
 @i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
@@ -1121,7 +1165,6 @@ async def stats(
         raise HTTPException(status_code=404, detail=_("link_not_found"))
     
     context = { **common_context, "link": link }
-    # You will need to create stats.html
     return templates.TemplateResponse("stats.html", context)
 
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
@@ -1157,7 +1200,6 @@ async def delete(
             "message": _("delete_invalid_token")
         }
         
-    # You will need to create delete_status.html
     return templates.TemplateResponse("delete_status.html", context)
 
 

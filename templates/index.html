@@ -30,72 +30,9 @@
     {{ ADSENSE_SCRIPT|safe }} 
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        /* ... (Your CSS) ... */
-        :root {
-            --primary-color: #4f46e5;
-            --primary-hover: #6366f1;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --bg-light: #f3f4f6;
-            --bg-white: #ffffff;
-            --border-color: #d1d5db;
-        }
-        body {
-            font-family: 'Inter', Arial, sans-serif; margin: 0; background: var(--bg-light);
-            color: var(--text-primary); display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; padding: 1rem; -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        .container {
-            background: var(--bg-white); padding: 2rem 2.5rem; border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.05);
-            width: 100%; max-width: 480px; text-align: center;
-        }
-        h1 { font-size: 2.25rem; font-weight: 700; margin-bottom: 0.5rem; }
-        h1 span { color: var(--primary-color); }
-        .tagline { color: var(--text-secondary); font-size: 1rem; margin-top: 0; margin-bottom: 2rem; }
-        input, select {
-            padding: 0.8rem; width: 100%; margin-bottom: 0.75rem; border-radius: 8px;
-            border: 1px solid var(--border-color); font-size: 1rem; font-family: 'Inter', Arial, sans-serif;
-            box-sizing: border-box; transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        input:focus, select:focus {
-            border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-            outline: none;
-        }
-        button {
-            background: var(--primary-color); color: white; border: none; padding: 0.8rem 1.5rem;
-            font-size: 1rem; font-weight: 500; border-radius: 8px; cursor: pointer;
-            width: 100%; margin-top: 0.5rem; transition: background-color 0.3s ease;
-        }
-        button:hover { background: var(--primary-hover); }
-        button:disabled { background: #9ca3af; cursor: not-allowed; }
-        #result {
-            opacity: 0; max-height: 0; overflow: hidden;
-            transition: opacity 0.5s ease, max-height 0.5s ease, margin-top 0.5s ease;
-        }
-        #result.show { opacity: 1; max-height: 100px; margin-top: 1.5rem; }
-        .short-link {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.8rem 1rem; background: #f9fafb; border-radius: 8px;
-            border: 1px solid #e5e7eb; word-break: break-all; text-align: left;
-        }
-        #shortUrl { font-weight: 500; }
-        .copy-btn {
-            background: #e5e7eb; color: #374151; padding: 0.5rem 0.8rem; border-radius: 6px;
-            cursor: pointer; margin-left: 1rem; width: auto; margin-top: 0;
-            font-size: 0.9rem; transition: background-color 0.3s ease;
-        }
-        .copy-btn:hover { background: #d1d5db; }
-        .copy-btn:disabled { background: #e5e7eb; color: #6b7280; }
-        #error-msg { color: #dc2626; font-size: 0.9rem; margin-top: 1rem; display: none; }
-        @media(max-width:500px){
-            .container { padding: 2rem 1.5rem; }
-            h1 { font-size: 1.8rem; }
-            .tagline { margin-bottom: 1.5rem; }
-        }
-    </style>
+    
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    
 </head>
 <body>
     <div class="container">
@@ -117,21 +54,44 @@
       <button id="shortenBtn">Shorten</button>
       
       <div id="result">
-        <div class="short-link">
-          <span id="shortUrl"></span>
-          <button class="copy-btn" id="copyBtn">Copy</button>
+        
+        <div class="result-item">
+          <span>Short Link</span>
+          <div>
+            <a href="#" id="shortUrlLink" target="_blank" rel="noopener noreferrer"></a>
+            <button class="copy-btn" id="copyBtn">Copy</button>
+          </div>
+        </div>
+
+        <div class="result-item">
+            <span>Stats Page</span>
+            <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer">View Clicks</a>
+        </div>
+
+        <div id="qr-code-box">
+            <img id="qrCode" src="" alt="QR Code">
+        </div>
+
+        <div id="delete-link-box">
+            <p><strong>Save this link!</strong> This is your unique deletion link. Keep it safe if you ever want to remove your shortlink.</p>
+            <a href="#" id="deleteUrlLink" target="_blank"></a>
         </div>
       </div>
-    </div>
+      </div>
 
     <script>
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
-    const shortUrlSpan = document.getElementById("shortUrl");
-    const copyBtn = document.getElementById("copyBtn");
     const errorDiv = document.getElementById("error-msg");
+    
+    // --- NEW: Result elements ---
+    const shortUrlLink = document.getElementById("shortUrlLink");
+    const copyBtn = document.getElementById("copyBtn");
+    const statsUrlLink = document.getElementById("statsUrlLink");
+    const qrCodeImg = document.getElementById("qrCode");
+    const deleteUrlLink = document.getElementById("deleteUrlLink");
 
-    // --- JS Text is hard-coded in English again ---
+    // JS Text
     const TEXT_ENTER_URL = "Please enter a URL.";
     const TEXT_ERROR = "Error creating short link";
     const TEXT_ERROR_SERVER = "Failed to connect to the server.";
@@ -148,6 +108,7 @@
         
         errorDiv.style.display = "none";
         errorDiv.textContent = "";
+        resultDiv.classList.remove("show"); // Hide old results
 
         if (!longUrl) {
             errorDiv.textContent = TEXT_ENTER_URL;
@@ -167,7 +128,15 @@
             const data = await res.json();
             
             if (res.ok) {
-                shortUrlSpan.textContent = data.short_url;
+                // --- NEW: Populate all result fields ---
+                shortUrlLink.href = data.short_url;
+                shortUrlLink.textContent = data.short_url.replace("https://", "");
+                
+                statsUrlLink.href = data.stats_url;
+                deleteUrlLink.href = data.delete_url;
+                deleteUrlLink.textContent = data.delete_url;
+                qrCodeImg.src = data.qr_code_data;
+                
                 resultDiv.classList.add("show");
             } else {
                 errorDiv.textContent = data.detail || TEXT_ERROR;
@@ -184,7 +153,7 @@
     });
 
     copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(shortUrlSpan.textContent)
+        navigator.clipboard.writeText(shortUrlLink.href)
             .then(() => {
                 copyBtn.textContent = TEXT_COPIED;
                 copyBtn.disabled = true;

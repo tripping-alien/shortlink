@@ -1,85 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ locale }}" dir="{{ 'rtl' if locale in RTL_LOCALES else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _("app_title") }}</title>
     
-    <title>About Shortlinks.art - Safe, Simple, and Private URL Shortener</title>
-    <meta name.="description" content="Learn about Shortlinks.art, a free URL shortener built with privacy and security in mind. See why our link previews and expiring links offer a safer way to browse.">
+    {% for tag in hreflang_tags %}
+    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
+    {% endfor %}
     
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://shortlinks.art/about" />
-
-    {{ ADSENSE_SCRIPT|safe }}
-
+    {{ ADSENSE_SCRIPT|safe }} 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-    
     <style>
-        .about-content {
-            text-align: left;
-            color: var(--text-primary);
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-        .about-content h2 {
-            color: var(--primary-color);
-            margin-top: 2rem;
-            border-bottom: 2px solid var(--border-light);
-            padding-bottom: 0.5rem;
-        }
-        .about-content ul {
-            list-style-type: disc;
-            padding-left: 20px;
-        }
-        .about-content li {
-            margin-bottom: 0.75rem;
-        }
-        .about-content a {
-            color: var(--primary-color);
-            font-weight: 500;
-            text-decoration: none;
-        }
-        .about-content a:hover {
-            text-decoration: underline;
-        }
+      .lang-flag {
+        width: 24px; height: auto; border-radius: 3px;
+        vertical-align: middle; border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .lang-btn.active .lang-flag { border: 2px solid #fff; }
     </style>
 </head>
 <body>
-
-    <div class="card card-wide">
-        <a href="{{ url_for('index') }}" class="header-link">← Back to Home</a>
-        <h1>About Shortlinks.art</h1>
-        
-        <div class="about-content">
-            <p>Welcome to Shortlinks.art! We built this service to be a fast, free, and privacy-focused URL shortener for everyone.</p>
-
-            <p>In a world of opaque, "mystery" short links, our goal is to bring transparency and safety back to browsing. We believe you should know where a link is going *before* you click it.</p>
-
-            <h2>Why Use Shortlinks.art?</h2>
-            <p>We're more than just a shortener. We're a suite of tools designed for safety and convenience:</p>
-            <ul>
-                <li><strong>Safe Link Previews:</strong> Our flagship feature. Every link you create gets a preview page. This allows you to share a "safe" version of a link so your audience can see the destination, title, and description before deciding to proceed.</li>
-                
-                <li><strong>Privacy First:</strong> We don't sell your data. We don't create "user profiles" to track your behavior across the web. The "My Links" feature works anonymously, storing your link history in your browser, not on our servers tied to your name.</li>
-                
-                <li><strong>Expiring Links:</strong> Need to share a link temporarily? You can set your links to expire in an hour, a day, or a week. After that, they're gone for good.</li>
-                
-                <li><strong>Free Analytics:</strong> Our stats page is simple and to the point. See how many clicks your link has received, graphed over time, with no complex dashboards to navigate.</li>
-
-                <li><strong>Secure & Robust:</strong> We actively block malicious use. Our API is rate-limited to prevent spam, and our preview fetcher has built-in security to prevent server-side attacks.</li>
-            </ul>
-
-            <h2>Get Started</h2>
-            <p>Ready to create a safer, smarter short link? <a href="{{ url_for('index') }}">Head back to the homepage</a> and shorten your first URL.</p>
-        </div>
-    </div>
+    <main class="card">
+      <h1>{{ _("nav_about") }}</h1>
+      <p>This is the About page. Please add your content here.</p>
+      <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
+    </main>
 
     <footer class="footer">
-        <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
-        <a href="{{ url_for('index') }}">Home</a>
-        <a href="{{ url_for('about') }}">About</a>
-    </footer>
+        <span>© {{ current_year }} Shortlinks.art</span>
+        <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
+        <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
 
+        <nav class="language-switcher" aria-label="{{ _('language_switcher_label') }}">
+            {% for tag in hreflang_tags %}
+              {% if tag.hreflang != 'x-default' %}
+                <a href="{{ tag.href }}" 
+                   class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
+                   data-lang="{{ tag.hreflang }}">
+                   <img src="{{ url_for('static', path='flags/' + tag.hreflang + '.svg') }}" 
+                        alt="{{ _('lang_name_' + tag.hreflang) }}"
+                        class="lang-flag">
+                </a>
+              {% endif %}
+            {% endfor %}
+        </nav>
+    </footer>
 </body>
 </html>

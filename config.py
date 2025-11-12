@@ -1,84 +1,71 @@
-"""
-Configuration and constants.
-"""
-import os
-from enum import Enum
-from functools import lru_cache
-from datetime import timedelta
-from pathlib import Path
-import secrets
-from pydantic import HttpUrl
-from pydantic_settings import BaseSettings
+# ============================================================================
+# CONFIGURATION & CONSTANTS
+# ============================================================================
 
-# --- Enums and Mappings ---
-# These are used in database.py for direct short code generation.
-SHORT_CODE_LENGTH = 6
-MAX_ID_GENERATION_RETRIES = 10 # Max attempts to find a unique ID
+class Config:
+    """Centralized configuration with validation"""
+    BASE_URL: str = os.getenv("BASE_URL", "https://shortlinks.art")
+    SHORT_CODE_LENGTH: int = 6
+    MAX_ID_RETRIES: int = 10
+    
+    # Security
+    MAX_URL_LENGTH: int = 2048
+    ALLOWED_SCHEMES: tuple = ("http", "https")
+    BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
+    
+    # Rate limiting
+    RATE_LIMIT_CREATE: str = "10/minute"
+    RATE_LIMIT_STATS: str = "30/minute"
+    
+    # Database
+    CLEANUP_INTERVAL_SECONDS: int = 1800  # 30 minutes
+    CLEANUP_BATCH_SIZE: int = 100
+    
+    # External APIs
+    HUGGINGFACE_API_KEY: Optional[str] = os.getenv("HUGGINGFACE_API_KEY")
+    SUMMARIZATION_MODEL: str = "facebook/bart-large-cnn"
+    SUMMARY_MAX_LENGTH: int = 2000
+    
+    # Timeouts
+    HTTP_TIMEOUT: float = 10.0
+    METADATA_FETCH_TIMEOUT: float = 5.0
+    SUMMARY_TIMEOUT: float = 15.0
+    
+    # Localization
+    SUPPORTED_LOCALES: List[str] = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
+    DEFAULT_LOCALE: str = "en"
+    RTL_LOCALES: List[str] = ["ar", "he"]
+    
+    # Google AdSense
+    ADSENSE_CLIENT_ID: str = "pub-6170587092427912"
+    
+    @classmethod
+    def validate(cls):
+        """Validate configuration on startup"""
+        if not cls.BASE_URL:
+            raise ValueError("BASE_URL must be set")
+        if not cls.BASE_URL.startswith(("http://", "https://")):
+            raise ValueError("BASE_URL must include http:// or https://")
+        if cls.SHORT_CODE_LENGTH < 4 or cls.SHORT_CODE_LENGTH > 20:
+            raise ValueError("SHORT_CODE_LENGTH must be between 4 and 20")
 
-class TTL(str, Enum):
-    """Time-to-live options for short links."""
-    ONE_SECOND = "1s"  # Added for testing purposes
-    ONE_HOUR = "1h"
-    ONE_DAY = "1d"
-    ONE_WEEK = "1w"
-    NEVER = "never"
+config = Config()
 
+# Derived Constants (used immediately by the application setup)
+
+# Time-To-Live Mapping
 TTL_MAP = {
-    TTL.ONE_HOUR: timedelta(hours=1),
-    TTL.ONE_SECOND: timedelta(seconds=1),
-    TTL.ONE_DAY: timedelta(days=1),
-    TTL.ONE_WEEK: timedelta(weeks=1),
+    "1h": timedelta(hours=1),
+    "24h": timedelta(days=1),
+    "1w": timedelta(weeks=1),
+    "never": None
 }
 
-# --- Pydantic Settings Management ---
+# AdSense Script (uses the client ID from Config)
+ADSENSE_SCRIPT = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
 
-class Settings(BaseSettings):
-    """
-    Manages application configuration using environment variables.
-    Pydantic-settings automatically reads from environment variables.
-    """
-    # In production, set this to your frontend's domain: "https://your-frontend.com"
-    cors_origins: list[str] = ["*"]
-    cleanup_interval_seconds: int = 3600  # Run cleanup task every hour
-
-    # A long, random, and secret string. Changing this will change all generated links.
-    # For production, this should be set as an environment variable for security.
-    hashids_salt: str
-    hashids_min_length: int = 5  # Ensures all generated IDs have at least this length.
-    hashids_alphabet: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-
-    # The public-facing base URL of the application.
-    # Used for generating canonical URLs in API responses and sitemaps.
-    # For local development, it defaults to localhost. For production, set this env var.
-    base_url: HttpUrl = "https://shortlinks.art"
-    
-    # NOTE: BASE_URL constant is removed here to rely solely on the pydantic property.
-
-@lru_cache
-def get_settings() -> Settings:
-    """
-    Returns a cached instance of the Settings class.
-    Using lru_cache ensures the Settings are created only once, preventing
-    the settings from being reloaded on every import. Pydantic-settings
-    will automatically load variables from a .env file.
-    """
-    # Use an absolute path relative to this config file to ensure stability
-    # across different execution environments (pytest vs. uvicorn).
-    base_dir = Path(__file__).resolve().parent
-    salt_file = base_dir / ".salt"
-
-    # Check for environment variable first (for production)
-    salt = os.environ.get("HASHIDS_SALT")
-
-    if not salt:
-        # If no env var, check for the .salt file (for stable development)
-        if os.path.exists(salt_file):
-            with open(salt_file, "r") as f:
-                salt = f.read().strip()
-        else:
-            # If no file, generate a new salt and save it
-            salt = secrets.token_hex(32)
-            with open(salt_file, "w") as f:
-                f.write(salt)
-
-    return Settings(hashids_salt=salt)
+# Flag Code Mapping (Used for display in templates)
+LOCALE_TO_FLAG_CODE = {
+    "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
+    "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
+}

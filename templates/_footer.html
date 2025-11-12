@@ -1,0 +1,29 @@
+<div class="footer">
+    <div class="container text-center">
+        <p class="mb-3">
+            © {{ current_year }} Shortlinks.art 
+            <a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('nav_home') }}</a>
+            <a href="{{ url_for('localized', locale=locale, path='about') }}">{{ _('nav_about') }}</a>
+        </p>
+        
+        <div class="language-switcher">
+            {% for lang_code in config.SUPPORTED_LOCALES %}
+                {% set flag = FLAG_EMOJIS.get(lang_code) %}
+                {# 
+                   Calculates the new URL while staying on the current page path 
+                   (e.g., /en/about -> /de/about)
+                #}
+                {% set base_path = request.url.path.replace('/' + locale, '', 1) or '/' %}
+                {% set new_path = url_for('localized', locale=lang_code, path=base_path|trim_left('/')) %}
+                
+                <a href="{{ new_path }}"
+                   class="lang-link"
+                   style="opacity: {% if lang_code == locale %}1.0{% else %}0.5{% endif %}; margin: 0 4px; font-size: 1.5rem; text-decoration: none; transition: opacity 0.2s;"
+                   aria-label="Switch to {{ lang_code|upper }}"
+                   title="{{ lang_code|upper }}">
+                    {{ flag }}
+                </a>
+            {% endfor %}
+        </div>
+        </div>
+</div>

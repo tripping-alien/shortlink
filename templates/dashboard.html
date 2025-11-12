@@ -3,43 +3,157 @@
 {% block title %}{{ _('nav_dashboard') }}{% endblock %}
 
 {% block content %}
-<div class="container dashboard-container">
-    <h2 class="text-center mb-4">{{ _('nav_dashboard') }}</h2>
-    <p class="text-lead text-center mb-5">{{ _('dashboard_tagline') }}</p>
+<div class="container py-5">
+    <h2 class="mb-2">{{ _('nav_dashboard') }}</h2>
+    <p class="lead text-muted">{{ _('dashboard_tagline') }}</p>
 
-    <div id="auth-section" class="mb-5 p-4 border rounded">
-        <h3>{{ _('login_required') }}</h3>
-        <p>{{ _('enter_owner_id_prompt') }}</p>
-        <div class="input-group">
-            <input type="text" id="owner-id-input" class="form-control" placeholder="{{ _('owner_id_placeholder') }}">
-            <button class="btn btn-primary" id="load-links-button">{{ _('load_links_button') }}</button>
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title text-danger mb-3"><i class="bi bi-key me-2"></i> {{ _('login_required') }}</h5>
+            <p class="text-muted">{{ _('enter_owner_id_prompt') }}</p>
+            
+            <div class="input-group">
+                <input type="text" id="owner-id-input" class="form-control" 
+                       placeholder="{{ _('owner_id_placeholder') }}" 
+                       aria-label="{{ _('owner_id_placeholder') }}">
+                
+                <button class="btn btn-primary" id="fetch-links-button">
+                    <i class="bi bi-arrow-clockwise me-2"></i> {{ _('load_links_button') }}
+                </button>
+            </div>
         </div>
     </div>
+    
+    <hr class="my-4">
+    
+    <h4 class="mb-4">{{ _('your_links') }} <span id="link-count-badge" class="badge bg-secondary ms-2 d-none"></span></h4>
 
-    <div id="links-view" style="display: none;">
-        <h3 class="mb-3">{{ _('your_links') }}</h3>
-        <div class="table-responsive">
-            <table class="table table-dark table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>{{ _('short_code') }}</th>
-                        <th>{{ _('original_url') }}</th>
-                        <th>{{ _('clicks') }}</th>
-                        <th>{{ _('expires') }}</th>
-                        <th>{{ _('actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody id="links-tbody">
-                    </tbody>
-            </table>
+    <div id="links-container" class="row row-cols-1 g-4">
+        <div id="loading-dashboard" class="col text-center py-5 d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">{{ _('processing_request') }}</span>
+            </div>
+            <p class="mt-2 text-muted">{{ _('processing_request') }}</p>
         </div>
-        <p class="text-center text-muted mt-4">{{ _('dashboard_no_links') }}</p>
+        
+        <div id="no-links-message" class="col text-center py-5">
+            <i class="bi bi-link-45deg display-4 text-muted"></i>
+            <h5 class="mt-3 text-muted">{{ _('dashboard_no_links') }}</h5>
+            <p><a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('create_link_now') }}</a></p>
+        </div>
+        
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Dashboard JavaScript logic goes here
+    const linksContainer = document.getElementById('links-container');
+    const loadingDashboard = document.getElementById('loading-dashboard');
+    const noLinksMessage = document.getElementById('no-links-message');
+    const fetchButton = document.getElementById('fetch-links-button');
+    const ownerIdInput = document.getElementById('owner-id-input');
+    const linkCountBadge = document.getElementById('link-count-badge');
+
+    function showLoading() {
+        loadingDashboard.classList.remove('d-none');
+        noLinksMessage.classList.add('d-none');
+        linksContainer.innerHTML = '';
+        linkCountBadge.classList.add('d-none');
+    }
+
+    function hideLoading() {
+        loadingDashboard.classList.add('d-none');
+    }
+
+    function createLinkCard(linkData) {
+        // MOCK data structure: id, long_url, created_at, clicks, expires_at, ttl_key
+        const shortUrl = `{{ config.BASE_URL }}/r/${linkData.id}`;
+        const statsUrl = `{{ url_for('localized', locale=locale, path='stats') }}/${linkData.id}`;
+        // NOTE: Deletion link requires token, which would ideally be stored client-side securely
+        const deleteUrl = `{{ url_for('localized', locale=locale, path='delete') }}/${linkData.id}`; 
+        
+        // Use translation for date formats in a real app, but for JS demo:
+        const createdAt = new Date(linkData.created_at || new Date()).toLocaleDateString();
+
+        return `
+            <div class="col">
+                <div class="card shadow-sm link-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title text-primary text-truncate mb-1">
+                                <a href="${shortUrl}" target="_blank" class="text-decoration-none">${shortUrl}</a>
+                            </h5>
+                            <span class="badge bg-secondary-subtle text-secondary ms-3">
+                                ${linkData.ttl_key ? '{{ _('ttl_' + linkData.ttl_key) }}' : '{{ _('ttl_never') }}'}
+                            </span>
+                        </div>
+                        <p class="card-text text-muted small mb-3 text-truncate">${linkData.long_url}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                            <div>
+                                <span class="text-success fw-bold me-3"><i class="bi bi-mouse me-1"></i> ${linkData.clicks || 0} {{ _('clicks') }}</span>
+                                <span class="text-secondary small d-block d-md-inline-block">{{ _('expires') }}: ${linkData.expires_at ? new Date(linkData.expires_at).toLocaleDateString() : '{{ _('ttl_never') }}'}</span>
+                            </div>
+                            <div>
+                                <a href="${statsUrl}" class="btn btn-sm btn-outline-info me-2" title="{{ _('stats_link') }}"><i class="bi bi-bar-chart"></i></a>
+                                <a href="${deleteUrl}" class="btn btn-sm btn-outline-danger" title="{{ _('delete_link') }}"><i class="bi bi-trash"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function fetchLinks() {
+        const ownerId = ownerIdInput.value.trim();
+        if (!ownerId) {
+            alert('{{ _('enter_owner_id_prompt') }}');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            // MOCKED RESPONSE LOGIC:
+            // This section should be replaced with:
+            // const response = await fetch(`/api/v1/my-links?owner_id=${ownerId}`);
+            // const data = await response.json();
+            // const links = data.links;
+            
+            await new Promise(resolve => setTimeout(resolve, 800)); 
+            
+            const links = [
+                { id: 'ab1c3d', long_url: 'https://www.google.com/search?q=fastapi+jinja2+bootstrap', clicks: 452, created_at: new Date().toISOString(), ttl_key: 'never', expires_at: '{{ datetime.strftime(timezone.localize(datetime(3000, 1, 1)), "%Y-%m-%dT%H:%M:%S%z") }}' },
+                { id: 'x5y6z7', long_url: 'https://github.com/fastapi/fastapi/issues/5225', clicks: 12, created_at: new Date(Date.now() - 86400000).toISOString(), ttl_key: '24h', expires_at: new Date(Date.now() + 86400000).toISOString() },
+                { id: 'h9i0j1', long_url: 'https://news.ycombinator.com/', clicks: 88, created_at: new Date(Date.now() - 172800000).toISOString(), ttl_key: '1w', expires_at: new Date(Date.now() + 604800000).toISOString() }
+            ].filter(link => ownerId.startsWith('MOCKED_OWNER')); // Only show dummy links if a mocked ID is used
+
+            // END MOCKED RESPONSE LOGIC
+
+            if (links.length === 0) {
+                noLinksMessage.classList.remove('d-none');
+                linkCountBadge.textContent = '0';
+            } else {
+                links.forEach(link => {
+                    linksContainer.insertAdjacentHTML('beforeend', createLinkCard(link));
+                });
+                linkCountBadge.textContent = links.length;
+                linkCountBadge.classList.remove('d-none');
+            }
+
+        } catch (error) {
+            console.error('Error fetching links:', error);
+            linksContainer.innerHTML = `<div class="col"><div class="alert alert-danger">${error.message || '{{ _('network_error_message') }}'}</div></div>`;
+        } finally {
+            hideLoading();
+        }
+    }
+
+    fetchButton.addEventListener('click', fetchLinks);
+
+    // Optional: Load links if a default owner ID is already set (e.g., from cookie/local storage)
+    // window.addEventListener('load', fetchLinks);
 </script>
 {% endblock %}

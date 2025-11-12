@@ -6,22 +6,19 @@ import time
 import asyncio
 import socket
 import ipaddress
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse
 from typing import Dict, Any, List, Tuple, Callable, Optional
-from functools import lru_cache
 
 import validators
 from fastapi import Request, Depends, Path, HTTPException, status
-from firebase_admin import firestore # For type hints
-from pydantic import BaseModel, Field, validator, constr
+from pydantic import BaseModel, Field, validator, constr # Used in Pydantic models
 
 # Import local modules/constants
 import config
 from config import *
-from db_manager import cleanup_expired_links as db_cleanup_expired_links
-from db_manager import get_collection_ref # For cleanup worker logging
+from db_manager import cleanup_expired_links as db_cleanup_expired_links # Import cleanup function
 
 # --- LOGGING SETUP ---
 
@@ -56,7 +53,7 @@ def setup_logging() -> logging.Logger:
 
 logger = setup_logging()
 
-# --- CUSTOM EXCEPTIONS ---
+# --- CUSTOM EXCEPTIONS (REQUIRED BY ROUTERS) ---
 
 class SecurityException(HTTPException):
     def __init__(self, detail: str):
@@ -103,6 +100,7 @@ class CleanupWorker:
     def _worker(self) -> None:
         while self.running:
             try:
+                # Run the async cleanup function from db_manager.py in a synchronous thread
                 deleted = asyncio.run(db_cleanup_expired_links(datetime.now(timezone.utc)))
                 if deleted > 0:
                     logger.info(f"Cleanup: deleted {deleted} expired links")
@@ -194,13 +192,10 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
 # --- URL VALIDATION / SANITIZATION ---
 
 class URLValidator:
-    # ... (URLValidator methods as previously defined, using ValidationException/SecurityException)
-    # NOTE: To save space, the full body of the class is omitted here, but should be included
-    # from your working app.py file.
+    """Comprehensive URL validation and security checks"""
     
     @staticmethod
     def is_public_ip(ip_str: str) -> bool:
-        """Check if IP is public (not private/reserved)"""
         try:
             ip = ipaddress.ip_address(ip_str)
             return ip.is_global
@@ -209,7 +204,6 @@ class URLValidator:
     
     @staticmethod
     async def resolve_hostname(hostname: str) -> str:
-        """Resolve hostname to IP with security checks"""
         try:
             ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
             
@@ -223,7 +217,6 @@ class URLValidator:
     
     @staticmethod
     def validate_url_structure(url: str) -> str:
-        """Validate URL structure and format, prepending https:// if necessary."""
         if not url or not url.strip():
              raise ValidationException("URL cannot be empty") 
         url = url.strip()
@@ -231,16 +224,13 @@ class URLValidator:
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
-        # FIX: Prepend https:// if no scheme is found
         parsed_test = urlparse(url)
         if not parsed_test.scheme:
             url = "https://" + url
-        # END FIX
         
         try:
             parsed = urlparse(url)
             
-            # Check if the scheme, after correction, is allowed
             if parsed.scheme not in config.ALLOWED_SCHEMES:
                 raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
             
@@ -264,12 +254,10 @@ class URLValidator:
     
     @staticmethod
     def validate_url_public(url: str) -> bool:
-        """Validate URL points to public resource"""
         return validators.url(url, public=True)
     
     @classmethod
     async def validate_and_sanitize(cls, url: str) -> str:
-        """Complete URL validation pipeline"""
         url = cls.validate_url_structure(url)
         
         if not cls.validate_url_public(url):
@@ -319,15 +307,15 @@ async def get_common_context(
     """Get common template context"""
     return {
         "request": request,
-        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "ADSENSE_SCRIPT": config.ADSENSE_SCRIPT,
         "_": translator,
         "locale": locale,
         "hreflang_tags": hreflang_tags,
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": config.RTL_LOCALES,
-        "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
-        "FLAG_EMOJIS": LOCALE_TO_EMOJI,
+        "LOCALE_TO_FLAG_CODE": config.LOCALE_TO_FLAG_CODE,
+        "FLAG_EMOJIS": config.LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        "config": config,
+        "config": config.config, # Pass the instance here
     }

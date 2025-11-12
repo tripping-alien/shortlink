@@ -1,77 +1,65 @@
-# ============================================================================
-# CONFIGURATION & CONSTANTS
-# ============================================================================
-# --- Start of config.py ---
 import os
-from datetime import timedelta # <--- ADD THIS
-from typing import Optional, List, Dict
-from functools import lru_cache
-# ... (rest of config.py content)
 
-class Config:
-    """Centralized configuration with validation"""
-    BASE_URL: str = os.getenv("BASE_URL", "https://shortlinks.art")
-    SHORT_CODE_LENGTH: int = 6
-    MAX_ID_RETRIES: int = 10
-    
-    # Security
-    MAX_URL_LENGTH: int = 2048
-    ALLOWED_SCHEMES: tuple = ("http", "https")
-    BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
-    
-    # Rate limiting
-    RATE_LIMIT_CREATE: str = "10/minute"
-    RATE_LIMIT_STATS: str = "30/minute"
-    
-    # Database
-    CLEANUP_INTERVAL_SECONDS: int = 1800  # 30 minutes
-    CLEANUP_BATCH_SIZE: int = 100
-    
-    # External APIs
-    HUGGINGFACE_API_KEY: str = os.getenv("HUGGINGFACE_API_KEY")
-    SUMMARIZATION_MODEL: str = "facebook/bart-large-cnn"
-    SUMMARY_MAX_LENGTH: int = 2000
-    
-    # Timeouts
-    HTTP_TIMEOUT: float = 10.0
-    METADATA_FETCH_TIMEOUT: float = 5.0
-    SUMMARY_TIMEOUT: float = 15.0
-    
-    # Localization
-    SUPPORTED_LOCALES: List[str] = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
-    DEFAULT_LOCALE: str = "en"
-    RTL_LOCALES: List[str] = ["ar", "he"]
-    
-    # Google AdSense
-    ADSENSE_CLIENT_ID: str = "pub-6170587092427912"
-    
-    @classmethod
-    def validate(cls):
-        """Validate configuration on startup"""
-        if not cls.BASE_URL:
-            raise ValueError("BASE_URL must be set")
-        if not cls.BASE_URL.startswith(("http://", "https://")):
-            raise ValueError("BASE_URL must include http:// or https://")
-        if cls.SHORT_CODE_LENGTH < 4 or cls.SHORT_CODE_LENGTH > 20:
-            raise ValueError("SHORT_CODE_LENGTH must be between 4 and 20")
+# --- Configuration Constants ---
 
-config = Config()
+# Locales
+SUPPORTED_LOCALES = ["en", "es", "fr", "de"]
+DEFAULT_LOCALE = "en"
+RTL_LOCALES = [] # Add locales like "ar", "he" if needed
 
-# Derived Constants (used immediately by the application setup)
-
-# Time-To-Live Mapping
-TTL_MAP = {
-    "1h": timedelta(hours=1),
-    "24h": timedelta(days=1),
-    "1w": timedelta(weeks=1),
-    "never": None
-}
-
-# AdSense Script (uses the client ID from Config)
-ADSENSE_SCRIPT = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
-
-# Flag Code Mapping (Used for display in templates)
+# Flags: Mapped locale code to the ISO 3166-1 alpha-2 code for the flag emoji
+# 'en' is mapped to 'US' as requested.
 LOCALE_TO_FLAG_CODE = {
-    "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
-    "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
+    "en": "US",  # United States Flag
+    "es": "ES",  # Spain Flag
+    "fr": "FR",  # France Flag
+    "de": "DE",  # Germany Flag
 }
+
+# Application
+BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8000")
+MAX_URL_LENGTH = 2048
+SHORT_CODE_LENGTH = 8
+MAX_ID_RETRIES = 5
+
+# Rate Limits
+RATE_LIMIT_CREATE = "5/minute"
+RATE_LIMIT_STATS = "30/minute"
+
+# Time-To-Live (TTL)
+TTL_MAP = {
+    "1h": 1,
+    "24h": 24,
+    "1w": 168,
+    "never": None,
+}
+
+# Cleanup
+CLEANUP_INTERVAL_SECONDS = 3600
+CLEANUP_BATCH_SIZE = 500
+
+# Security
+ALLOWED_SCHEMES = ["http", "https"]
+BLOCKED_DOMAINS = ["127.0.0.1", "localhost"]
+
+# Metadata and AI
+METADATA_FETCH_TIMEOUT = 5.0
+HTTP_TIMEOUT = 10.0
+HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
+SUMMARIZATION_MODEL = "facebook/bart-large-cnn"
+SUMMARY_TIMEOUT = 30.0
+SUMMARY_MAX_LENGTH = 1024 * 5 # 5KB of text for summarization
+
+# Frontend (AdSense Script)
+ADSENSE_SCRIPT = "" # Placeholder for actual AdSense script
+
+# --- Validation ---
+def validate():
+    """Basic configuration validation"""
+    if not BASE_URL.startswith("http"):
+        raise ValueError("BASE_URL must start with http or https")
+    
+    # Check if all SUPPORTED_LOCALES have a flag code
+    for locale in SUPPORTED_LOCALES:
+        if locale not in LOCALE_TO_FLAG_CODE:
+            raise ValueError(f"Missing flag code for locale: {locale}")

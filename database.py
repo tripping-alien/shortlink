@@ -6,7 +6,7 @@ import asyncio
 import json 
 import tempfile 
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timezone 
+from datetime import datetime, timezone, timedelta 
 
 from firebase_admin import credentials, initialize_app, firestore, get_app
 from firebase_admin import exceptions 
@@ -17,7 +17,7 @@ from firebase_admin.firestore import AsyncClient, Transaction
 from passlib.context import CryptContext
 
 # Import the necessary constants from the user's config file
-from config import SHORT_CODE_LENGTH, MAX_ID_GENERATION_RETRIES 
+from config import SHORT_CODE_LENGTH, MAX_ID_RETRIES, TTL_MAP 
 
 # --- Environment Setup and Security ---
 
@@ -37,6 +37,11 @@ FAR_FUTURE_EXPIRY = datetime(3000, 1, 1, tzinfo=timezone.utc)
 db: AsyncClient = None
 APP_ID: str = ""
 APP_INSTANCE = None # Global to hold the initialized App instance
+
+# --- Custom Exception (Required for delete_link_with_token_check) ---
+class ResourceNotFoundException(Exception):
+    """Custom exception for resource not found errors."""
+    pass 
 
 # --- Hashing Helper Functions ---
 
@@ -69,21 +74,18 @@ def get_db_connection():
         try:
             cred = None
             
-            # 2. Determine Credential Source
-            if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                cred = credentials.ApplicationDefault()
-                logger.info("Using GOOGLE_APPLICATION_CREDENTIALS path.")
-            elif firebase_config_str:
+            # 2. Determine Credential Source (ONLY checking FIREBASE_CONFIG, as requested)
+            if firebase_config_str:
                 with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
                     tmp_file.write(firebase_config_str)
                     temp_file_path = tmp_file.name 
                 cred = credentials.Certificate(temp_file_path)
-                logger.info(f"Using FIREBASE_CONFIG JSON string via temporary file: {temp_file_path}")
+                logger.info("Using FIREBASE_CONFIG JSON string via temporary file.")
             
             # 3. Handle missing configuration
             if cred is None:
-                logger.error("FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS is not set. Cannot connect to Firebase.")
-                raise ValueError("Firebase configuration is missing.")
+                logger.error("FIREBASE_CONFIG is not set or is empty. Cannot connect to Firebase.")
+                raise ValueError("Firebase configuration is missing. Please set the FIREBASE_CONFIG environment variable.")
 
             # 4. Initialize Firebase App
             try:
@@ -94,11 +96,15 @@ def get_db_connection():
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
             # 5. Get Firestore Client (ASYNCHRONOUS)
-            db = firestore.async_client(app=APP_INSTANCE) # <-- CHANGED
-            logger.info("Firebase Firestore ASYNC client initialized successfully.")
+            # FIX: Use the app instance's client factory method for correct async initialization
+            db = APP_INSTANCE.client(client_type='async') 
+            logger.info("Firebase Firestore ASYNC client initialized successfully via APP_INSTANCE.")
             
         except Exception as e:
-            logger.error(f"Error initializing Firebase or Firestore: {e}")
+            if isinstance(e, json.JSONDecodeError):
+                logger.error(f"Error initializing Firebase or Firestore: The content of FIREBASE_CONFIG is not valid JSON. Detail: {e}")
+            else:
+                logger.error(f"Error initializing Firebase or Firestore: {e}")
             raise RuntimeError("Database connection failure.") from e
         finally:
             # 6. Clean up the temp file
@@ -147,7 +153,8 @@ async def generate_unique_short_code() -> str:
     """
     Generates a unique short code by checking the database and retrying on collision.
     """
-    for attempt in range(MAX_ID_GENERATION_RETRIES):
+    # NOTE: MAX_ID_GENERATION_RETRIES must be MAX_ID_RETRIES from config
+    for attempt in range(MAX_ID_RETRIES):
         new_id = _generate_short_code()
         
         if await _is_short_code_unique(new_id): # <-- Await
@@ -156,7 +163,7 @@ async def generate_unique_short_code() -> str:
         logger.debug(f"Collision detected for ID: {new_id}. Retrying... (Attempt {attempt + 1})")
 
     raise RuntimeError(
-        f"Failed to generate a unique short ID after {MAX_ID_GENERATION_RETRIES} attempts."
+        f"Failed to generate a unique short ID after {MAX_ID_RETRIES} attempts."
     )
 
 # --- Public Database Operations (Async, Secure) ---
@@ -265,7 +272,6 @@ async def delete_link_with_token_check(
 ) -> bool:
     """
     Atomically retrieves a doc, checks the deletion token, and deletes it.
-    This is the new, SECURE replacement for the old delete function.
     
     Returns: True on success, False on failure (bad token/not found).
     """
@@ -274,7 +280,8 @@ async def delete_link_with_token_check(
 
     if not doc_snapshot.exists:
         logger.warning(f"Deletion attempt failed: Link '{short_code}' not found.")
-        return False
+        # Raise ResourceNotFoundException instead of returning False for clear API error handling
+        raise ResourceNotFoundException(f"Link '{short_code}' not found.")
 
     data = doc_snapshot.to_dict()
     hashed_token = data.get("deletion_token")
@@ -282,7 +289,8 @@ async def delete_link_with_token_check(
     # Securely verify the provided token against the stored hash
     if not hashed_token or not _verify_token(token, hashed_token):
         logger.warning(f"Deletion attempt failed: Invalid token for '{short_code}'.")
-        return False
+        # Raise ValueError for clear API error handling
+        raise ValueError("Invalid deletion token.")
         
     # Token is valid, proceed with deletion
     transaction.delete(doc_ref)

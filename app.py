@@ -13,9 +13,9 @@ import io
 import base64
 import tempfile
 import logging
-import json # For loading translations from file
-import threading # For cleanup thread
-import time # For cleanup thread sleep
+import json
+import threading
+import time
 
 import validators
 from pydantic import BaseModel, constr
@@ -42,8 +42,7 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# LLM setup for background tasks
-import google.generativeai as genai
+# REMOVED: import google.generativeai as genai
 
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
@@ -89,18 +88,19 @@ def load_translations_from_json():
         raise RuntimeError("Translation file loading failed.") from e
 
 
-# --- LLM Summarizer Setup ---
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# ---------------- LLM Summarizer Setup (Hugging Face API) ----------------
+# NOTE: Use HUGGINGFACE_API_KEY environment variable.
+HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
 SUMMARIZATION_MODEL = "facebook/bart-large-cnn" 
 HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
-HF_HEADERS = {"Authorization": f"Bearer {GEMINI_API_KEY}"} if GEMINI_API_KEY else {}
+HF_HEADERS = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"} if HUGGINGFACE_API_KEY else {}
 
-if not GEMINI_API_KEY:
-    logger.warning("GEMINI_API_KEY is not set. AI summarizer will be disabled.")
+if not HUGGINGFACE_API_KEY:
+    logger.warning("HUGGINGFACE_API_KEY is not set. AI summarizer will be disabled.")
 
 
 async def query_huggingface(payload: dict) -> Optional[str]:
-    if not GEMINI_API_KEY: 
+    if not HUGGINGFACE_API_KEY: 
         return None
 
     try:
@@ -125,7 +125,7 @@ async def query_huggingface(payload: dict) -> Optional[str]:
 
 async def generate_summary_background(doc_ref: firestore.DocumentReference, url: str):
     """Background task to fetch, summarize using Hugging Face, and save."""
-    if not GEMINI_API_KEY:
+    if not HUGGINGFACE_API_KEY:
         doc_ref.update({"summary_status": "failed"})
         return
 
@@ -707,28 +707,18 @@ def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> st
     
     return link["long_url"]
 
-# ... (all imports and setup remain unchanged) ...
-
-# ---------------- ROUTES ----------------
-# ... (all other routes remain unchanged) ...
-
 @app.get("/r/{short_code}")
 async def redirect_link(
     short_code: str,
-    # We still need the translator to generate the 404/410 errors
-    _ : Callable = Depends(get_api_translator) 
+    _ : Callable = Depends(get_api_translator)
 ):
     """
     FIXED: This route now permanently redirects the user to the
     localized Preview page, ensuring the security screen is seen.
-    
-    The click counting is now triggered ONLY by the 'Continue' button
-    on the preview page.
     """
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
     
-    # 1. Check if the link exists and is not expired
     doc = doc_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
@@ -737,26 +727,13 @@ async def redirect_link(
     expires_at = link.get("expires_at")
     
     if expires_at and expires_at < datetime.now(timezone.utc):
-        # We must check expiration here so the Preview page doesn't waste resources
         raise HTTPException(status_code=410, detail=_("link_expired"))
 
-    # 2. Determine the user's preferred locale
     locale = get_browser_locale(Request(scope={"type": "http", "headers": []}))
     
-    # 3. Construct the full localized preview URL
-    # We use a 301 (Moved Permanently) to signal search engines that the 
-    # canonical version of this short code is now the preview page.
     preview_url = f"/{locale}/preview/{short_code}"
-    
-    # We must use a full URL structure for the redirect location
-    full_redirect_url = str(Request(scope={"type": "http", "headers": []}).url.replace(path=preview_url))
-    
-    # Since we can't reliably get the current request object's URL base 
-    # inside a non-localized router function without trickery, 
-    # the simplest, most stable way is to use the BASE_URL constant:
     full_redirect_url = f"{BASE_URL}{preview_url}"
 
-    # 4. Redirect the user to the Preview Page
     return RedirectResponse(url=full_redirect_url, status_code=301)
 
 
@@ -766,16 +743,13 @@ async def continue_to_link(
     _ : Callable = Depends(get_translator) 
 ):
     """
-    NEW REDIRECT LOGIC: This new endpoint is the ONLY one that will increment
-    the click count and redirect to the final long_url.
-    
-    The link on the Preview Page MUST now point to this URL.
+    This new endpoint is the ONLY one that will increment the click count
+    and redirect to the final long_url.
     """
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
     long_url = None
     
-    # The click counting logic (your old /r/ logic) now lives here
     try:
         transaction = db.transaction()
         long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
@@ -783,7 +757,6 @@ async def continue_to_link(
     except HTTPException as e:
         raise e 
     except Exception as e:
-        # Fallback logic remains the same (robust click counting)
         logger.warning(f"Click count transaction for {short_code} failed: {e}. Retrying non-atomically.")
         
         try:
@@ -796,7 +769,6 @@ async def continue_to_link(
             if expires_at and expires_at < datetime.now(timezone.utc):
                 raise HTTPException(status_code=410, detail=_("link_expired"))
             
-            # Non-atomic update
             today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             day_key = f"clicks_by_day.{today_str}"
             doc_ref.update({
@@ -832,10 +804,7 @@ async def continue_to_link(
     else:
         absolute_url = long_url
 
-    return RedirectResponse(url=absolute_url, status_code=302) # Standard final redirect
-
-# ... (all other routes remain unchanged) ...
-
+    return RedirectResponse(url=absolute_url, status_code=302)
 
 
 # === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===
@@ -856,7 +825,7 @@ async def about(common_context: dict = Depends(get_common_context)):
 async def preview(
     short_code: str,
     common_context: dict = Depends(get_common_context),
-    background_tasks: BackgroundTasks = Depends()
+    background_tasks: BackgroundTasks # FIX: Removed Depends()
 ):
     _ = common_context["_"]
     db_client = init_firebase()
@@ -907,7 +876,7 @@ async def preview(
             logger.error(f"Error updating cache for {short_code}: {e}")
     
     # 2. Trigger LLM Summary (if pending)
-    if summary_status == "pending" and GEMINI_API_KEY: # Using GEMINI_API_KEY as the flag for HF API access
+    if summary_status == "pending" and HUGGINGFACE_API_KEY:
         try:
             background_tasks.add_task(generate_summary_background, doc_ref, safe_href_url)
             doc_ref.update({"summary_status": "in_progress"})

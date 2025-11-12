@@ -9,11 +9,14 @@
         <div class="language-switcher">
             {% for lang_code in config.SUPPORTED_LOCALES %}
                 {% set flag = FLAG_EMOJIS.get(lang_code) %}
+                
                 {# 
-                   Calculates the new URL while staying on the current page path 
+                   Calculates the base path: (e.g., /en/about -> /about)
+                   CRITICAL FIX: Use .lstrip('/') instead of the non-existent 'trim_left' filter.
                 #}
-                {% set base_path = request.url.path.replace('/' + locale, '', 1) or '/' %}
-                {% set new_path = url_for('localized', locale=lang_code, path=base_path|trim_left('/')) %}
+                {% set current_path_no_locale = request.url.path.replace('/' + locale, '', 1) or '/' %}
+                
+                {% set new_path = url_for('localized', locale=lang_code, path=current_path_no_locale.lstrip('/')) %}
                 
                 <a href="{{ new_path }}"
                    class="lang-link {% if lang_code == locale %}active{% endif %}"

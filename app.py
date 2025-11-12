@@ -35,8 +35,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, parse_qs, urlunparse
 from fastapi.templating import Jinja2Templates
 
-# FIX Bug #2 (CRITICAL): Use APIRouter for clean routing structure
-from fastapi import FastAPI, HTTPException, Request, Depends, Path, BackgroundTasks, status, APIRouter
+from fastapi import FastAPI, HTTPException, Request, Depends, Path, BackgroundTasks, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -48,11 +47,11 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# NEW: Import config and constants from the new config.py file
-from config import (
-    config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
-    SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
-)
+# FIX: We now import the module (config) and the instance (config) explicitly.
+# All other constants are accessed directly from the imported config module instance.
+import config
+from config import TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE 
+# Note: Exceptions are NOT imported here.
 
 # ============================================================================
 # LOGGING SETUP
@@ -63,9 +62,8 @@ def setup_logging() -> logging.Logger:
     logger = logging.getLogger("url_shortener")
     logger.setLevel(logging.INFO)
     
-    # CRITICAL FIX (Bug #9): Protect logger setup against duplicate handlers on reload
+    # Console handler
     if not logger.handlers:
-        # Console handler
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
         
@@ -94,19 +92,33 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 
 # ============================================================================
-# PYDANTIC MODELS (Used for type hinting and response validation)
+# CUSTOM EXCEPTIONS (Defined locally, used globally)
 # ============================================================================
 
-# FIX Bug #6: Dictionary to map Pydantic error details to I18n keys
-PYDANTIC_ERROR_MAP = {
-    "field_required": "error_field_required",
-    "value_error": "error_invalid_value",
-    "string_too_long": "error_length_max",
-    "string_too_short": "error_length_min",
-    "invalid_domain": "error_invalid_url",
-    "error_invalid_utm_format": "error_invalid_utm_format", # Custom key
-}
+class SecurityException(HTTPException):
+    """Raised when security validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
+class ValidationException(HTTPException):
+    """Raised when input validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+class ResourceNotFoundException(HTTPException):
+    """Raised when a resource is not found"""
+    def __init__(self, detail: str = "Resource not found"):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+
+class ResourceExpiredException(HTTPException):
+    """Raised when a resource has expired"""
+    def __init__(self, detail: str = "Resource has expired"):
+        super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
+
+
+# ============================================================================
+# PYDANTIC MODELS (Used for type hinting and response validation)
+# ============================================================================
 
 class LinkResponse(BaseModel):
     """Response model for created links"""
@@ -124,19 +136,19 @@ class LinkCreatePayload(BaseModel):
     owner_id: Optional[str] = Field(None, max_length=100)
     
     @validator('long_url')
-    def validate_url(cls, v: str) -> str:
+    def validate_url(cls, v):
         """Validate URL format"""
         if not v or not v.strip():
-            raise ValueError("error_field_required")
+            raise ValueError("URL cannot be empty")
         return v.strip()
     
     @validator('utm_tags')
-    def validate_utm_tags(cls, v: Optional[str]) -> Optional[str]:
-        """FIX Bug #4: Properly validate UTM tags format"""
+    def validate_utm_tags(cls, v):
+        """Validate UTM tags"""
         if v:
             v = v.strip()
-            if v and not (v.startswith('utm_') or v.startswith('?utm_') or v.startswith('&utm_')):
-                raise ValueError("error_invalid_utm_format")
+            if v and not v.startswith(('utm_', '?utm_', '&utm_')):
+                pass 
         return v
 
 # ============================================================================

@@ -1,84 +1,89 @@
-Private, Secure, and Free Shortlinks
+# Private, Secure, and Global Shortlinks
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Online-brightgreen?style=for-the-badge)](https://shortlinks.art/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Language Coverage](https://img.shields.io/badge/Language_Coverage-11%20Locales-blue.svg?style=for-the-badge)](https://github.com/tripping-alien/shortlink)
 
-A simple, high-performance URL shortener built with Python and FastAPI. It uses the **Hashids** library to generate short, non-sequential, and unique codes from database IDs, providing a clean and secure way to shorten links.
+A high-performance, secure, and globally scalable URL shortening service built on Python and Google Firestore. It features advanced security measures, enterprise-grade scalability, and automatic localization for 11 languages.
 
 ## ✨ Features
 
--   **Obfuscated & Reversible IDs**: Uses the Hashids library to convert sequential database IDs into short, non-sequential, and URL-safe codes.
--   **Link Expiration (TTL)**: Set links to expire after a specific duration (1 hour, 24 hours, 1 week) or never.
--   **Link Previews**: Enhances user security by providing a preview page (`/get/<hash>`) to show the destination URL before redirecting.
--   **Persistent & Scalable Storage**: Uses a file-based **SQLite** database that persists across server restarts.
--   **Privacy-Focused**: No tracking or analytics. Just simple, fast redirects.
--   **Spam Protection**: Implements API rate limiting to prevent abuse.
--   **Automatic Internationalization**: The UI automatically detects the user's browser language and displays one of 9 supported languages.
--   **Production-Ready**: Includes a health check endpoint and is configured for easy deployment on platforms like Render.
+* **Global Scalability (Firestore):** Uses Google Firestore for persistent, low-latency, and globally distributed storage, replacing local file-based databases (SQLite).
+* **11-Language Support:** The UI automatically detects the user's browser language and supports 11 locales, including English, Spanish, Japanese, Arabic, and Pirate (`arr`).
+* **Obfuscated & Secure IDs:** Short codes are cryptographically random (`secrets` module) and secured with unique deletion tokens to prevent unauthorized modification or deletion.
+* **Link Management:** Set links to expire (TTL) or manage them via an upcoming user Dashboard.
+* **AI Metadata Enrichment:** Fetches metadata (title, description, favicon) and uses an optional **Hugging Face AI integration** for automated content summarization.
+* **Security Hardened:** Implements custom FastAPI Middleware for **Content Security Policy (CSP)** and **Strict-Transport-Security (HSTS)** to mitigate XSS and Clickjacking attacks.
+* **IP & Domain Filtering:** Includes advanced validation to prevent users from creating links to private IPs (SSRF defense) and known malicious/blocked domains.
 
 ## 🛠️ Tech Stack
 
-!Python
-!FastAPI
-!SQLite
-!JavaScript
-!HTML5
-!CSS3
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend Framework** | Python / FastAPI | High-performance, asynchronous API and routing. |
+| **Database** | Google **Firestore** | Scalable, NoSQL cloud storage for links and analytics. |
+| **Security** | **Starlette Middleware** | CSP, Trusted Hosts, Rate Limiting (via `slowapi`). |
+| **Metadata / AI** | `httpx`, `BeautifulSoup`, **Hugging Face** | External API calls, HTML parsing, and summarization. |
+| **I18N / Flags** | Custom Python Logic | Handles 11 language translations and flag emoji generation. |
 
 ## 🚀 Running Locally
 
+This version requires a connection to a Google Firestore instance.
+
 1.  **Clone the repository:**
     ```sh
-    git clone https://github.com/tripping-alien/shortlink.git
+    git clone [https://github.com/tripping-alien/shortlink.git](https://github.com/tripping-alien/shortlink.git)
     cd shortlink
     ```
 
-2.  **Create and activate a virtual environment:**
+2.  **Setup Google Service Account:**
+    * Create a Firebase project and enable **Firestore**.
+    * Generate a service account key file (`serviceAccountKey.json`).
+    * Convert the JSON file contents into a single base64 string to use as an environment variable (recommended for secure deployments).
     ```sh
-    python -m venv .venv
-    # On macOS/Linux:
-    source .venv/bin/activate
-    # On Windows (Command Prompt/PowerShell):
-    .\.venv\Scripts\activate
+    cat serviceAccountKey.json | base64
     ```
 
-3.  **Install dependencies and run the server:**
+3.  **Create and activate a virtual environment:**
+    ```sh
+    python -m venv .venv
+    source .venv/bin/activate  # macOS/Linux
+    # .\venv\Scripts\activate   # Windows
+    ```
+
+4.  **Install dependencies and run the server:**
     ```sh
     pip install -r requirements.txt
+    
+    # Run the server using environment variables for configuration
+    export FIREBASE_CONFIG='<Base64_Encoded_Firebase_Service_Account_JSON>'
+    export HUGGINGFACE_API_KEY='<Your_HF_API_Key>'  # Optional, for AI summaries
+    export BASE_URL='http://localhost:8000'
+    
     python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
     ```
 
-4.  **Access the application:**
-    -   Open your web browser and navigate to `http://localhost:8000`.
+5.  **Access the application:**
+    * Open your web browser and navigate to `http://localhost:8000`.
 
-## ☁️ Deployment on Render
+## ☁️ Deployment on Cloud Platforms (Render / Google Cloud)
 
-This project is configured for easy deployment on a platform like Render.
+Deployment requires setting the following variables in your cloud provider's environment configuration.
 
-1.  **Create a new Web Service** on Render and connect it to your GitHub repository.
-2.  **Set the Start Command** to:
-    -   **Build Command**: `pip install -r requirements.txt`
-    -   **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+| Variable | Value | Purpose |
+| :--- | :--- | :--- |
+| `FIREBASE_CONFIG` | **Base64 Encoded Service Account JSON.** | **CRITICAL:** Database authentication. |
+| `BASE_URL` | The public URL (e.g., `https://shortlinks.art`). | Essential for constructing correct short links and SEO tags. |
+| `HUGGINGFACE_API_KEY` | Your Hugging Face API Key. | Enables AI summarization feature (Optional). |
+| `ENVIRONMENT` | `production` | Enables restricted security headers (HSTS, Trusted Hosts). |
 
-    *Note: The build command ensures all your Python dependencies are installed before the server starts.*
-
-3.  **Add Environment Variables**:
-    -   `PYTHON_VERSION`: `3.11` (or your desired Python version).
-    -   `HASHIDS_SALT`: A long, random, and secret string. This is **critical** for security and should be set in your production environment. You can generate one locally using the command:
-        ```sh
-        python -c "import secrets; print(secrets.token_hex(32))"
-        ```
-        *Note: For local development, if this variable is not set, the application will automatically generate and use a stable `.salt` file.*
-    -   `BASE_URL`: The public URL of your web service (e.g., `https://shortlinks.art`).
-4.  **Add a Persistent Disk** to store the `shortlinks.db` file.
-    -   **Name**: `data-disk`
-    -   **Mount Path**: `/var/data`
-    -   The application is configured to use the `RENDER_DISK_PATH` environment variable, which Render automatically sets to this mount path.
-5.  **Update the Health Check Path** in your service settings to `/health`.
+### Start Command (Standard for FastAPI)
+* **Build Command**: `pip install -r requirements.txt`
+* **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
 
 ## ✍️ Author
 
--   **Andrey Lopukhov** - tripping-alien
+* **Andrey Lopukhov** - tripping-alien
 
 ## License
 

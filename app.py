@@ -431,6 +431,17 @@ async def stats(
         logger.error(f"Error fetching stats for {short_code}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("stats_error"))
 
+# app.py
+
+@i18n_router.get("/terms", response_class=HTMLResponse)
+async def terms_of_service(
+    locale: str = Path(..., description="The language code"),
+    common_context: Dict = Depends(get_common_context)
+):
+    """Terms of Service page"""
+    return templates.TemplateResponse("terms.html", common_context)
+
+
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete_link(
     short_code: str, # REQUIRED

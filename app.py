@@ -3,7 +3,7 @@ import secrets
 import html
 import string
 import random
-from datetime import datetime, timedelta, timezone 
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Literal, Callable, List, Tuple
 from contextlib import asynccontextmanager
 
@@ -29,7 +29,6 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.staticfiles import StaticFiles
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint 
 
 import httpx
 from bs4 import BeautifulSoup
@@ -41,7 +40,6 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.exceptions import RequestValidationError 
 
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
@@ -49,10 +47,10 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# NEW: Import config module and necessary constants
-import config  
+# NEW: Import config and constants from the new config.py file
 from config import (
-    TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
+    config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
+    SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
 )
 
 # ============================================================================
@@ -93,31 +91,6 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 
 # ============================================================================
-# CUSTOM EXCEPTIONS (Defined locally)
-# ============================================================================
-
-class SecurityException(HTTPException):
-    """Raised when security validation fails"""
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
-
-class ValidationException(HTTPException):
-    """Raised when input validation fails"""
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
-
-class ResourceNotFoundException(HTTPException):
-    """Raised when a resource is not found"""
-    def __init__(self, detail: str = "Resource not found"):
-        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
-
-class ResourceExpiredException(HTTPException):
-    """Raised when a resource has expired"""
-    def __init__(self, detail: str = "Resource has expired"):
-        super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
-
-
-# ============================================================================
 # PYDANTIC MODELS (Used for type hinting and response validation)
 # ============================================================================
 
@@ -140,16 +113,19 @@ class LinkCreatePayload(BaseModel):
     def validate_url(cls, v):
         """Validate URL format"""
         if not v or not v.strip():
-            raise ValueError("URL cannot be empty")
+            # FIX: Use key from Bug #6
+            raise ValueError("error_field_required") 
         return v.strip()
     
     @validator('utm_tags')
     def validate_utm_tags(cls, v):
-        """Validate UTM tags"""
+        """FIX for Bug #4: Properly validate UTM tags format"""
         if v:
             v = v.strip()
-            if v and not v.startswith(('utm_', '?utm_', '&utm_')):
-                pass 
+            # Must start with utm_ or ?utm_ or &utm_ to be considered a tag string
+            if v and not (v.startswith('utm_') or v.startswith('?utm_') or v.startswith('&utm_')):
+                # FIX: Use key from Bug #6
+                raise ValueError("error_invalid_utm_format") 
         return v
 
 # ============================================================================
@@ -169,16 +145,7 @@ def load_translations_from_json() -> None:
             return
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            
-            locales_data = data.get('locales', [])
-            loaded_translations = {}
-            for locale_entry in locales_data:
-                locale_code = locale_entry.get('code')
-                if locale_code:
-                    loaded_translations[locale_code] = locale_entry.get('translations', {})
-            
-            translations = loaded_translations
+            translations = json.load(f)
         
         missing_locales = set(config.SUPPORTED_LOCALES) - set(translations.keys())
         if missing_locales:
@@ -194,38 +161,6 @@ def load_translations_from_json() -> None:
     except Exception as e:
         logger.error(f"Failed to load translations.json: {e}")
         raise RuntimeError("Translation file loading failed") from e
-
-
-def get_flag_emoji(country_code: str) -> str:
-    """Converts a two-letter country code (e.g., 'US') into its flag emoji (e.g., '🇺🇸')."""
-    if not country_code or len(country_code) != 2:
-        return "" # Return empty string for invalid codes
-    
-    # Regional Indicator Symbol A is U+1F1E6.
-    base_unicode = 0x1F1E6
-    
-    def to_ris(char: str) -> str:
-        if 'A' <= char.upper() <= 'Z':
-            return chr(base_unicode + (ord(char.upper()) - ord('A')))
-        return ""
-
-    ris1 = to_ris(country_code[0])
-    ris2 = to_ris(country_code[1])
-
-    return ris1 + ris2
-
-# Mapping Pydantic error types to our localized message keys (Used in the handler below)
-PYDANTIC_ERROR_MAP = {
-    'string_type': 'error_invalid_url',
-    'url_scheme': 'error_invalid_url',
-    'missing': 'error_field_required',
-    'string_min_length': 'error_length_min',
-    'string_max_length': 'error_length_max',
-    'string_pattern_mismatch': 'error_invalid_chars',
-    # Default fallback
-    'value_error': 'generic_error_message'
-}
-
 
 @lru_cache(maxsize=128)
 def get_translation(locale: str, key: str) -> str:
@@ -384,118 +319,90 @@ def get_db() -> firestore.Client:
     return firebase_manager.initialize()
 
 # ============================================================================
-# IMPROVED URL VALIDATION & SECURITY (MERGED BLOCK)
+# URL VALIDATION & SECURITY
 # ============================================================================
 
 class URLValidator:
     """Comprehensive URL validation and security checks"""
     
     @staticmethod
+    def is_public_ip(ip_str: str) -> bool:
+        """Check if IP is public (not private/reserved)"""
+        try:
+            ip = ipaddress.ip_address(ip_str)
+            return ip.is_global
+        except ValueError:
+            return False
+    
+    @staticmethod
+    async def resolve_hostname(hostname: str) -> str:
+        """Resolve hostname to IP with security checks"""
+        try:
+            ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
+            
+            if not URLValidator.is_public_ip(ip_address):
+                raise SecurityException(f"Blocked request to non-public IP: {ip_address}")
+            
+            return ip_address
+        
+        except socket.gaierror as e:
+            raise ValidationException(f"Could not resolve hostname: {hostname}")
+    
+    @staticmethod
     def validate_url_structure(url: str) -> str:
-        """
-        Validate URL structure and format, adding https:// if scheme is missing.
-        
-        FIXED: Now properly handles naked domains (e.g., 'google.com' -> 'https://google.com')
-        """
+        """Validate URL structure and format"""
         if not url or not url.strip():
-            raise ValidationException("URL cannot be empty")
-        
+             raise ValidationException("URL cannot be empty")
         url = url.strip()
         
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
-        # === FIX: Enhanced naked domain handling ===
-        parsed = urlparse(url)
-        
-        # If no scheme is present, add https://
-        if not parsed.scheme:
+        if not url.startswith(("http://", "https://")):
             url = "https://" + url
-            parsed = urlparse(url)  # Re-parse with scheme
         
-        # Validate scheme
-        if parsed.scheme not in config.ALLOWED_SCHEMES:
-            raise ValidationException(
-                f"URL scheme must be http or https. Found: {parsed.scheme}"
-            )
-        
-        # Validate netloc (domain) exists
-        if not parsed.netloc:
-            raise ValidationException(
-                "URL must include a valid domain (e.g., example.com)"
-            )
-        
-        # Check blocked domains
-        hostname = parsed.netloc.split(':')[0].lower()
-        if hostname in config.BLOCKED_DOMAINS:
-            raise SecurityException(f"Domain is blocked: {hostname}")
-        
-        # Basic hostname validation (no spaces, valid characters)
-        if not hostname or ' ' in hostname or hostname.startswith('.') or hostname.endswith('.'):
-            raise ValidationException(f"Invalid hostname format: {hostname}")
-        
-        return url
-
-    @staticmethod
-    def validate_url_public(url: str) -> tuple[bool, str]:
-        """
-        Validate URL points to public resource.
-        
-        FIXED: Returns tuple (is_valid, error_message) for better debugging
-        """
         try:
-            # Use validators library with timeout handling
-            is_valid = validators.url(url, public=True)
+            parsed = urlparse(url)
             
-            if is_valid:
-                return True, ""
-            else:
-                return False, "URL failed basic validation checks"
-                
-        except Exception as e:
-            # Log but don't block - validators can be overly strict
-            logger.warning(f"validators.url() error for {url}: {e}")
-            return False, f"Validation library error: {str(e)}"
+            if parsed.scheme not in config.ALLOWED_SCHEMES:
+                raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
+            
+            if not parsed.netloc:
+                raise ValidationException("URL must include a domain")
+            
+            hostname = parsed.netloc.split(':')[0].lower()
+            if hostname in config.BLOCKED_DOMAINS:
+                raise SecurityException(f"Domain is blocked: {hostname}")
+            
+            if '.' not in hostname:
+                try:
+                    ipaddress.ip_address(hostname)
+                except ValueError:
+                    raise ValidationException("Invalid domain: no TLD found")
+            
+            return url
+        
+        except ValueError as e:
+            raise ValidationException(f"Invalid URL format: {e}")
+    
+    @staticmethod
+    def validate_url_public(url: str) -> bool:
+        """Validate URL points to public resource"""
+        return validators.url(url, public=True)
     
     @classmethod
     async def validate_and_sanitize(cls, url: str) -> str:
-        """
-        Complete URL validation pipeline.
+        """Complete URL validation pipeline"""
+        url = cls.validate_url_structure(url)
         
-        FIXED: Removed crashing DNS check. Now focuses on structural and static safety.
-        """
-        try:
-            # Step 1: Structure validation (adds https:// if needed)
-            url = cls.validate_url_structure(url)
-            
-            # Step 2: Public resource check (RELAXED, logs warning if fails)
-            is_public, error_msg = cls.validate_url_public(url)
-            
-            if not is_public:
-                logger.warning(f"URL may not be publicly accessible: {url} - {error_msg}")
-                # We now allow the URL through unless it's a critical structural issue
-            
-            # Step 3: Additional safety checks (Moved basic IP checks inline, no DNS lookup)
-            parsed = urlparse(url)
-            hostname = parsed.netloc.split(':')[0].lower()
-            
-            # Block localhost and private IPs (basic patterns)
-            if hostname in ['localhost', '127.0.0.1', '0.0.0.0']:
-                raise SecurityException("Cannot shorten localhost URLs")
-            
-            if hostname.startswith(('10.', '172.16.', '192.168.')):
-                raise SecurityException("Cannot shorten private network URLs")
-            
-            return url
-            
-        except (ValidationException, SecurityException):
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during URL validation: {e}", exc_info=True)
-            raise ValidationException(
-                f"URL validation failed: {str(e)}. Please check the URL format."
-            )
-
+        if not cls.validate_url_public(url):
+            raise ValidationException("URL must be publicly accessible")
+        
+        parsed = urlparse(url)
+        hostname = parsed.netloc.split(':')[0]
+        await cls.resolve_hostname(hostname)
+        
+        return url
 
 # ============================================================================
 # SHORT CODE GENERATION
@@ -517,13 +424,12 @@ class ShortCodeGenerator:
         collection = db.collection("links")
         
         for attempt in range(config.MAX_ID_RETRIES):
-            code = self.generate()
-            
-            doc = await asyncio.to_thread(self.collection.document(code).get)
+            # FIX Bug #1: Correctly reference 'collection' instead of 'self.collection'
+            doc = await asyncio.to_thread(collection.document(self.generate()).get) 
             if not doc.exists:
-                return code
+                return doc.id
             
-            logger.debug(f"Short code collision on attempt {attempt + 1}: {code}")
+            logger.debug(f"Short code collision on attempt {attempt + 1}: {doc.id}")
         
         raise RuntimeError(f"Could not generate unique short code after {config.MAX_ID_RETRIES} attempts")
 
@@ -711,8 +617,12 @@ class AISummarizer:
 summarizer = AISummarizer()
 
 # ============================================================================
-# ENHANCED LINK CREATION WITH BETTER ERROR HANDLING (MERGED BLOCK)
+# DATABASE OPERATIONS
 # ============================================================================
+
+# FIX Bug #5: Define reserved codes globally
+RESERVED_CODES = {'api', 'health', 'static', 'r', 'robots', 'sitemap', 
+                  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ar', 'ru', 'he', 'preview', 'dashboard'}
 
 class LinkManager:
     """Manage link CRUD operations"""
@@ -728,57 +638,21 @@ class LinkManager:
         custom_code: Optional[str] = None,
         owner_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        Create new shortened link.
-        
-        FIXED: Better error messages and validation
-        """
-        # Validate custom code if provided
+        """Create new shortened link"""
         if custom_code:
-            # Enhanced validation
-            if len(custom_code) < 4 or len(custom_code) > 20:
-                raise ValidationException(
-                    "Custom code must be between 4 and 20 characters"
-                )
+            # FIX Bug #5: Check against reserved codes
+            if custom_code.lower() in RESERVED_CODES:
+                 raise ValidationException(f"'{custom_code}' is a reserved code and cannot be used.")
             
-            if not custom_code.isalnum():
-                raise ValidationException(
-                    "Custom code must contain only letters and numbers"
-                )
-            
-            try:
-                doc = await asyncio.to_thread(
-                    self.collection.document(custom_code).get
-                )
-                if doc.exists:
-                    raise ValidationException(
-                        f"Custom code '{custom_code}' is already taken. Please choose another."
-                    )
-                code = custom_code
-            except ValidationException:
-                # Re-raise explicit validation error
-                raise
-            except Exception as e:
-                logger.error(f"Database error checking custom code: {e}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Database error. Could not verify custom code availability."
-                )
+            doc = await asyncio.to_thread(self.collection.document(custom_code).get)
+            if doc.exists:
+                raise ValidationException("Custom code already exists")
+            code = custom_code
         else:
-            # Generate unique random code
-            try:
-                code = await code_generator.generate_unique(self.db)
-            except Exception as e:
-                logger.error(f"Failed to generate unique code: {e}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Could not generate short code. Please try again."
-                )
+            code = await code_generator.generate_unique(self.db)
         
-        # Calculate expiration
         expires_at = self._calculate_expiration(ttl)
         
-        # Prepare document data
         data = {
             "long_url": long_url,
             "deletion_token": secrets.token_urlsafe(32),
@@ -798,29 +672,14 @@ class LinkManager:
         if expires_at:
             data["expires_at"] = expires_at
         
-        # Write to database
-        try:
-            await asyncio.to_thread(
-                self.collection.document(code).set,
-                data
-            )
-            logger.info(f"Successfully created link {code} -> {long_url}")
-        except Exception as e:
-            logger.error(f"Database write failed: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to save link to database. Please try again."
-            )
+        await asyncio.to_thread(self.collection.document(code).set, data)
         
+        logger.info(f"Created link {code} -> {long_url}")
         return {**data, "short_code": code}
-
+    
     async def get(self, code: str) -> Optional[Dict[str, Any]]:
         """Retrieve link by short code"""
-        try:
-            doc = await asyncio.to_thread(self.collection.document(code).get)
-        except Exception as e:
-            logger.error(f"Database read failed for code {code}: {e}")
-            return None 
+        doc = await asyncio.to_thread(self.collection.document(code).get)
         
         if not doc.exists:
             return None
@@ -889,22 +748,17 @@ class LinkManager:
                 return link["long_url"]
             
             except Exception as e2:
-                logger.error(f"CRITICAL: All DB updates/fallbacks failed for {code}: {e2}")
+                logger.error(f"Fallback update failed for {code}: {e2}")
                 
                 doc = await asyncio.to_thread(doc_ref.get)
                 if doc.exists:
                     return doc.to_dict().get("long_url")
-                raise ResourceNotFoundException("Link not found after multiple DB failures.")
+                raise ResourceNotFoundException("Link not found")
     
     async def delete(self, code: str, token: str) -> bool:
         """Delete link if token matches"""
         doc_ref = self.collection.document(code)
-        
-        try:
-            doc = await asyncio.to_thread(doc_ref.get)
-        except Exception as e:
-            logger.error(f"Database read error during deletion check for {code}: {e}")
-            raise HTTPException(status_code=500, detail="Database error. Cannot verify token.")
+        doc = await asyncio.to_thread(doc_ref.get)
         
         if not doc.exists:
             raise ResourceNotFoundException("Link not found")
@@ -914,59 +768,41 @@ class LinkManager:
         if link.get("deletion_token") != token:
             raise ValidationException("Invalid deletion token")
         
-        try:
-            await asyncio.to_thread(doc_ref.delete)
-            logger.info(f"Deleted link {code}")
-            return True
-        except Exception as e:
-            logger.error(f"Database delete operation failed for {code}: {e}")
-            raise HTTPException(status_code=500, detail="Database error when deleting link.")
+        await asyncio.to_thread(doc_ref.delete)
+        logger.info(f"Deleted link {code}")
+        return True
     
     async def get_by_owner(self, owner_id: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Get all links for an owner"""
-        try:
-            query = (
-                self.collection
-                .where(filter=FieldFilter("owner_id", "==", owner_id))
-                .order_by("created_at", direction=Query.DESCENDING)
-                .limit(limit)
-            )
+        query = (
+            self.collection
+            .where(filter=FieldFilter("owner_id", "==", owner_id))
+            .order_by("created_at", direction=Query.DESCENDING)
+            .limit(limit)
+        )
+        
+        docs = await asyncio.to_thread(query.stream)
+        
+        links = []
+        for doc in docs:
+            data = doc.to_dict()
+            data["short_code"] = doc.id
             
-            docs = await asyncio.to_thread(query.stream)
+            if "created_at" in data and data["created_at"]:
+                data["created_at"] = data["created_at"].isoformat()
+            if "expires_at" in data and data["expires_at"]:
+                data["expires_at"] = data["expires_at"].isoformat()
             
-            links = []
-            for doc in docs:
-                data = doc.to_dict()
-                data["short_code"] = doc.id
-                
-                if "created_at" in data and data["created_at"]:
-                    data["created_at"] = data["created_at"].isoformat()
-                if "expires_at" in data and data["expires_at"]:
-                    data["expires_at"] = data["expires_at"].isoformat()
-                
-                links.append(data)
-            
-            return links
-        except Exception as e:
-            logger.error(f"Database read error for owner {owner_id}: {e}")
-            raise HTTPException(status_code=500, detail="Database error when fetching links.")
+            links.append(data)
+        
+        return links
     
     @staticmethod
     def _calculate_expiration(ttl: str) -> Optional[datetime]:
-        """
-        FIX 2: Correctly calculate expiration datetime using TTL_MAP values (assumed in seconds).
-        """
-        seconds = config.TTL_MAP.get(ttl)
-        
-        if seconds is None: # "never" option
+        """Calculate expiration datetime from TTL"""
+        delta = TTL_MAP.get(ttl)
+        if delta is None:
             return None
-        
-        if not isinstance(seconds, (int, float)): 
-            logger.error(f"Invalid TTL_MAP value for {ttl}: {seconds}. Expected integer/float seconds.")
-            return None
-        
-        delta = timedelta(seconds=seconds)
-        
         return datetime.now(timezone.utc) + delta
 
 # ============================================================================
@@ -1014,87 +850,27 @@ class CleanupWorker:
     
     def _cleanup_expired(self) -> int:
         """Delete expired links"""
-        try:
-            collection = self.db.collection("links")
-            now = datetime.now(timezone.utc)
-            
-            expired_docs = (
-                collection
-                .where(filter=FieldFilter("expires_at", "<", now))
-                .limit(config.CLEANUP_BATCH_SIZE)
-                .stream()
-            )
-            
-            batch = self.db.batch()
-            count = 0
-            
-            for doc in expired_docs:
-                batch.delete(doc.reference)
-                count += 1
-            
-            if count > 0:
-                batch.commit()
-            
-            return count
-        except Exception as e:
-            logger.error(f"Database error during cleanup: {e}")
-            return 0
-
-
-# ============================================================================
-# HELPER FUNCTIONS (Moved up for Forward Reference Fix)
-# ============================================================================
-
-def is_localized_route(path: str) -> bool:
-    """Checks if the path is intended for a localized HTML page."""
-    if not path.startswith('/'):
-        return False
-    
-    segments = path.split('/')
-    if len(segments) < 2: 
-        return False
+        collection = self.db.collection("links")
+        now = datetime.now(timezone.utc)
         
-    first_segment = segments[1]
-    return first_segment in config.SUPPORTED_LOCALES
-
-# ============================================================================
-# SECURITY MIDDLEWARE
-# ============================================================================
-
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Adds essential security headers to all responses."""
-    
-    def __init__(self, app: FastAPI, max_age: int = 31536000, **kwargs):
-        super().__init__(app)
-        
-        bootstrap_cdn_host = "cdn.jsdelivr.net"
-        adsense_host = "*.google.com *.googleadservices.com *.googlesyndication.com"
-        
-        self.html_csp = (
-            f"default-src 'self'; "
-            f"script-src 'self' 'unsafe-inline' https://{bootstrap_cdn_host} {adsense_host}; "
-            f"style-src 'self' 'unsafe-inline' https://{bootstrap_cdn_host}; "
-            f"img-src 'self' data: https://*;"
+        expired_docs = (
+            collection
+            .where(filter=FieldFilter("expires_at", "<", now))
+            .limit(config.CLEANUP_BATCH_SIZE)
+            .stream()
         )
         
-        self.api_csp = "default-src 'self';"
+        batch = self.db.batch()
+        count = 0
         
-        self.hsts_header = f"max-age={max_age}; includeSubDomains"
-
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        response = await call_next(request)
+        for doc in expired_docs:
+            batch.delete(doc.reference)
+            count += 1
         
-        if response.media_type == "text/html" or is_localized_route(request.url.path):
-            csp = self.html_csp
-        else:
-            csp = self.api_csp
+        if count > 0:
+            batch.commit()
         
-        response.headers["Strict-Transport-Security"] = self.hsts_header
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"
-        response.headers["Content-Security-Policy"] = csp
-        
-        return response
+        return count
 
 # ============================================================================
 # FASTAPI APPLICATION
@@ -1112,28 +888,20 @@ async def lifespan(app: FastAPI):
         load_translations_from_json()
         db = firebase_manager.initialize()
         
-        worker_instance = CleanupWorker(db)
-        worker_instance.start()
+        cleanup_worker = CleanupWorker(db)
+        cleanup_worker.start()
         
         logger.info("Application started successfully")
         yield
         
     finally:
         # Shutdown
-        if worker_instance:
-            worker_instance.stop()
+        if cleanup_worker:
+            cleanup_worker.stop()
         firebase_manager.cleanup()
         logger.info("Application shutdown complete")
 
 # Main app
-# FIX 13 & 14: Used os.getenv for environment-specific host definitions
-allowed_hosts = [
-    "shortlinks.art", 
-    "www.shortlinks.art", 
-    "localhost", 
-    "127.0.0.1",
-] if os.getenv("ENVIRONMENT") == "production" else ["*", "localhost", "127.0.0.1"]
-
 app = FastAPI(
     title="Shortlinks.art - Professional URL Shortener",
     description="A secure, scalable URL shortening service with AI summarization",
@@ -1148,17 +916,11 @@ i18n_router = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
-    # FIX 13: Restricted origins for better security, defaulting to permissive only in non-production
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# NEW: Security Headers Middleware (CRITICAL ADDITION)
-app.add_middleware(SecurityHeadersMiddleware) 
-# FIX 14: Configured TrustedHostMiddleware to use defined allowed_hosts
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
-
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
@@ -1183,15 +945,6 @@ async def get_common_context(
     hreflang_tags: List = Depends(get_hreflang_tags)
 ) -> Dict:
     """Get common template context"""
-    
-    # --- NEW LOGIC: Prepare the flag emojis ---
-    flag_emojis = {
-        loc: get_flag_emoji(code) 
-        for loc, code in LOCALE_TO_FLAG_CODE.items() 
-        if code
-    }
-    # ------------------------------------------
-    
     return {
         "request": request,
         "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
@@ -1201,54 +954,9 @@ async def get_common_context(
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": config.RTL_LOCALES,
         "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
-        "FLAG_EMOJIS": flag_emojis, 
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        
-        # --- CRITICAL FIX: Pass the config module object itself ---
-        "config": config,
     }
-
-# ============================================================================
-# CUSTOM PYDANTIC VALIDATION HANDLER (Robust Error Messages)
-# ============================================================================
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """
-    Handles Pydantic validation errors, localizes the messages, and returns a clean 422 JSON response.
-    """
-    locale = get_browser_locale(request)
-    translator = lambda key: get_translation(locale, key)
-
-    formatted_errors = []
-    for error in exc.errors():
-        # 1. Get the Pydantic error type and map it to our localization key
-        error_type = error.get('type', 'value_error').split('_type')[0]
-        msg_key = PYDANTIC_ERROR_MAP.get(error_type, 'generic_error_message')
-        
-        # 2. Get the localized message
-        message = translator(msg_key)
-
-        # 3. Handle parameters (min/max length, required, etc.)
-        if 'ctx' in error and isinstance(error['ctx'], dict):
-            # Dynamically insert values like min/max length into the message string
-            for key, value in error['ctx'].items():
-                message = message.replace(f"{{{key}}}", str(value))
-        
-        # 4. Construct the localized error detail
-        formatted_errors.append({
-            "loc": " -> ".join(map(str, error['loc'])),
-            "msg": message,
-        })
-
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "error": translator('error_validation_failed'),
-            "details": formatted_errors
-        }
-    )
 
 # ============================================================================
 # NON-LOCALIZED ROUTES
@@ -1305,7 +1013,7 @@ async def health_check(db: firestore.Client = Depends(get_db)):
             content={
                 "status": "unhealthy",
                 "database": "error",
-                "error": "Database connection failed or application startup error."
+                "error": str(e)
             }
         )
 
@@ -1397,7 +1105,6 @@ async def api_get_my_links(
 @app.get("/r/{short_code}")
 async def redirect_short_code(
     short_code: str,
-    request: Request, # FIX 1: Added Request parameter
     translator: Callable = Depends(get_api_translator)
 ):
     """Redirect short code to preview page"""
@@ -1405,8 +1112,7 @@ async def redirect_short_code(
         if not short_code.isalnum() or len(short_code) < 4:
             raise ValidationException(translator("invalid_short_code"))
         
-        # FIX 1: Use the correctly injected request object to determine locale
-        locale = get_browser_locale(request) 
+        locale = get_browser_locale(Request(scope={"type": "http", "headers": []}))
         preview_url = f"/{locale}/preview/{short_code}"
         
         full_redirect_url = f"{config.BASE_URL}{preview_url}"
@@ -1465,6 +1171,7 @@ async def sitemap():
 async def index(request: Request, common_context: Dict = Depends(get_common_context)):
     """Homepage"""
     
+    # PWA Soft-Ask Logic: Check for the flag we set in the root_redirect
     INSTALL_PROMPT_KEY = "show_install_prompt"
     show_prompt = request.cookies.get(INSTALL_PROMPT_KEY) == "true"
     
@@ -1547,7 +1254,7 @@ async def preview(
         elif summary_status == "failed":
             display_description = translator("preview_summary_failed")
         else:
-            display_description = link.get("meta_description") or translator("no_description")
+            display_description = meta_description or translator("no_description")
         
         context = {
             **common_context,
@@ -1685,11 +1392,7 @@ def is_localized_route(path: str) -> bool:
     if not path.startswith('/'):
         return False
     
-    segments = path.split('/')
-    if len(segments) < 2: 
-        return False
-        
-    first_segment = segments[1]
+    first_segment = path.split('/')[1]
     return first_segment in config.SUPPORTED_LOCALES
 
 @app.exception_handler(HTTPException)
@@ -1719,8 +1422,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
             "BOOTSTRAP_JS": BOOTSTRAP_JS,
             "current_year": datetime.now(timezone.utc).year,
-            "RTL_LOCALES": config.RTL_LOCALES,
-            "config": config, # Needed for config values in error template
+            "RTL_LOCALES": config.RTL_LOCALES
         }
         
         return templates.TemplateResponse(

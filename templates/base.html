@@ -20,12 +20,11 @@
             <a href="{{ url_for('localized', locale=locale, path='') }}" class="logo text-decoration-none">
                 <span class="d-none d-sm-inline">⚡</span>Shortlinks.art
             </a>
+            
             <div class="nav-links">
-                <a href="{{ url_for('localized', locale=locale, path='') }}" class="{% if request.url.path == url_for('localized', locale=locale, path='') %}active{% endif %}">{{ _('nav_home') }}</a>
-                <a href="{{ url_for('localized', locale=locale, path='about') }}" class="{% if request.url.path == url_for('localized', locale=locale, path='about') %}active{% endif %}">{{ _('nav_about') }}</a>
                 <a href="{{ url_for('localized', locale=locale, path='dashboard') }}" class="{% if request.url.path == url_for('localized', locale=locale, path='dashboard') %}active{% endif %} btn btn-sm btn-outline-primary ms-2">{{ _('nav_dashboard') }}</a>
             </div>
-        </div>
+            </div>
     </header>
 
     <main>

@@ -47,12 +47,10 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# NEW: Import config and constants from the new config.py file
-# app.py (Line 38) - Change this to import the module 'config' itself
-import config
+# NEW: Import config module and necessary constants
+import config  # <--- CORRECTED: Import the module itself
 from config import (
     TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
-    # Don't try to import 'config' as a name, just use the module name.
 )
 
 # ============================================================================
@@ -1018,9 +1016,12 @@ async def get_common_context(
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": config.RTL_LOCALES,
         "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
-        "FLAG_EMOJIS": flag_emojis, # <-- NEW CONTEXT VARIABLE
+        "FLAG_EMOJIS": flag_emojis, 
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
+        
+        # --- CRITICAL FIX: Pass the config module object itself ---
+        "config": config,
     }
 
 # ============================================================================
@@ -1200,6 +1201,7 @@ async def robots_txt():
 Allow: /
 Disallow: /api/
 Disallow: /r/
+Disallow: /health
 Disallow: /*/delete/
 Sitemap: {config.BASE_URL}/sitemap.xml
 """
@@ -1486,7 +1488,8 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
             "BOOTSTRAP_JS": BOOTSTRAP_JS,
             "current_year": datetime.now(timezone.utc).year,
-            "RTL_LOCALES": config.RTL_LOCALES
+            "RTL_LOCALES": config.RTL_LOCALES,
+            "config": config, # Needed for config values in error template
         }
         
         return templates.TemplateResponse(

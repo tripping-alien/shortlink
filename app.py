@@ -50,7 +50,7 @@ from google.cloud.firestore_v1.query import Query
 # NEW: Import config and constants from the new config.py file
 from config import (
     config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
-    SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
+    # NOTE: Exceptions are defined below, they are NOT imported from config.
 )
 
 # ============================================================================
@@ -91,6 +91,31 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 
 # ============================================================================
+# CUSTOM EXCEPTIONS (Defined locally)
+# ============================================================================
+
+class SecurityException(HTTPException):
+    """Raised when security validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
+class ValidationException(HTTPException):
+    """Raised when input validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+class ResourceNotFoundException(HTTPException):
+    """Raised when a resource is not found"""
+    def __init__(self, detail: str = "Resource not found"):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+
+class ResourceExpiredException(HTTPException):
+    """Raised when a resource has expired"""
+    def __init__(self, detail: str = "Resource has expired"):
+        super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
+
+
+# ============================================================================
 # PYDANTIC MODELS (Used for type hinting and response validation)
 # ============================================================================
 
@@ -126,7 +151,7 @@ class LinkCreatePayload(BaseModel):
         return v
 
 # ============================================================================
-# LOCALIZATION FUNCTIONS (Moved up)
+# LOCALIZATION
 # ============================================================================
 
 translations: Dict[str, Dict[str, str]] = {}
@@ -200,18 +225,18 @@ def get_translator_and_locale(
     
     return translate, valid_locale
 
-def get_api_translator(request: Request) -> Callable[[str], str]:
-    """Get translator for API endpoints (uses browser locale, not path)"""
-    locale = get_browser_locale(request)
-    return lambda key: get_translation(locale, key)
-
 def get_translator(tr: Tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
-    """Get translator function (used by localized web routes)"""
+    """Get translator function"""
     return tr[0]
 
 def get_current_locale(tr: Tuple = Depends(get_translator_and_locale)) -> str:
-    """Get current locale (used by localized web routes)"""
+    """Get current locale"""
     return tr[1]
+
+def get_api_translator(request: Request) -> Callable[[str], str]:
+    """Get translator for API endpoints"""
+    locale = get_browser_locale(request)
+    return lambda key: get_translation(locale, key)
 
 def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale)) -> List[Dict]:
     """Generate hreflang tags for SEO"""
@@ -236,7 +261,6 @@ def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale
     })
     
     return tags
-
 
 # ============================================================================
 # FIREBASE INITIALIZATION

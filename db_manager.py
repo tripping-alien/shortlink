@@ -62,6 +62,8 @@ def _hash_token(plain_token: str) -> str:
 
 # --- Database Connection (Async) ---
 
+# --- Database Connection (Async) ---
+
 def get_db_connection():
     """Initializes and returns the Firestore ASYNC client (runs once)."""
     global db, APP_ID, APP_INSTANCE
@@ -77,21 +79,22 @@ def get_db_connection():
         try:
             cred = None
             
-            # 2. Determine Credential Source
-            if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                cred = credentials.ApplicationDefault()
-                logger.info("Using GOOGLE_APPLICATION_CREDENTIALS path.")
-            elif firebase_config_str:
+            # 2. Determine Credential Source (ONLY checking FIREBASE_CONFIG)
+            if firebase_config_str:
+                # Write the service account JSON string to a temporary file
                 with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
                     tmp_file.write(firebase_config_str)
                     temp_file_path = tmp_file.name 
+                
+                # Load credentials from the temporary file
                 cred = credentials.Certificate(temp_file_path)
-                logger.info(f"Using FIREBASE_CONFIG JSON string via temporary file: {temp_file_path}")
+                logger.info("Using FIREBASE_CONFIG JSON string via temporary file.")
             
             # 3. Handle missing configuration
             if cred is None:
-                logger.error("FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS is not set. Cannot connect to Firebase.")
-                raise ValueError("Firebase configuration is missing.")
+                logger.error("FIREBASE_CONFIG is not set or is empty. Cannot connect to Firebase.")
+                # CRITICAL: Raised exception clearly states the required variable.
+                raise ValueError("Firebase configuration is missing. Please set the FIREBASE_CONFIG environment variable.")
 
             # 4. Initialize Firebase App
             try:
@@ -102,12 +105,15 @@ def get_db_connection():
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
             # 5. Get Firestore Client (ASYNCHRONOUS)
-            # --- FIX APPLIED HERE: Removed the problematic 'app=APP_INSTANCE' argument ---
             db = firestore.AsyncClient() 
             logger.info("Firebase Firestore ASYNC client initialized successfully.")
             
         except Exception as e:
-            logger.error(f"Error initializing Firebase or Firestore: {e}")
+            # Catch the JSONDecodeError here for clearer logging if the content is still wrong
+            if isinstance(e, json.JSONDecodeError):
+                logger.error(f"Error initializing Firebase or Firestore: The content of FIREBASE_CONFIG is not valid JSON. Detail: {e}")
+            else:
+                logger.error(f"Error initializing Firebase or Firestore: {e}")
             raise RuntimeError("Database connection failure.") from e
         finally:
             # 6. Clean up the temp file

@@ -1,501 +1,332 @@
-/* static/css/style.css */
-
+/* --- 1. GLOBAL RESETS AND TYPOGRAPHY --- */
 :root {
-    --primary-color: #4f46e5;
-    --primary-hover: #6366f1;
-    --text-primary: #111827;
-    --text-secondary: #6b7280;
-    --bg-light: #f3f4f6;
-    --bg-white: #ffffff;
-    --border-color: #d1d5db;
-    --border-light: #e5e7eb;
-    --bg-very-light: #f9fafb;
-    --error-red: #dc2626;
+    /* Color Variables for easy theming */
+    --color-primary: #007BFF;
+    --color-primary-dark: #0056b3;
+    --color-background: #F8F9FA;
+    --color-card: #FFFFFF;
+    --color-text: #343A40;
+    --color-subtle-text: #6c757d;
+    --color-success: #28A745;
+    --color-border: #dee2e6;
+    --spacing-unit: 1rem;
+    --transition-duration: 0.2s;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    font-family: 'Inter', Arial, sans-serif;
-    margin: 0;
-    background: var(--bg-light);
-    color: var(--text-primary);
-    display: flex;
-    flex-direction: column; /* NEW: Allow footer to sit below */
-    justify-content: center;
-    align-items: center;
+    font-family: 'Inter', sans-serif; /* Assumes you add Inter font link to layout.html */
+    background-color: var(--color-background);
+    color: var(--color-text);
+    line-height: 1.6;
     min-height: 100vh;
-    padding: 1rem;
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    display: flex;
+    flex-direction: column;
 }
 
-/* --- Main Card (Used by ALL pages) --- */
-.card {
-    background: var(--bg-white);
-    padding: 2rem 2.5rem;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.05);
-    width: 100%;
-    max-width: 500px;
-    text-align: center;
-    margin-top: auto; /* Pushes card up */
-}
-/* NEW: Card variant for dashboard/about */
-.card.card-wide {
-    max-width: 800px;
+/* Base Headings */
+h1, h2, h3 {
+    color: var(--color-primary-dark);
+    margin-bottom: var(--spacing-unit);
+    font-weight: 600;
 }
 
+/* --- 2. LAYOUT AND CONTAINERS --- */
 
-h1 {
-    font-size: 2.25rem;
+.container {
+    max-width: 1100px;
+    width: 95%;
+    margin: 0 auto;
+    padding: var(--spacing-unit);
+}
+
+main {
+    flex-grow: 1; /* Allows content to push the footer down */
+    padding-top: 2rem;
+}
+
+/* --- 3. HEADER AND NAVIGATION --- */
+
+header {
+    background-color: var(--color-card);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem var(--spacing-unit);
+}
+
+.logo {
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    color: var(--primary-color);
-}
-h1 span {
-    color: var(--primary-color);
-}
-
-a.button {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 12px 24px;
-    background: var(--primary-color);
-    color: white;
+    color: var(--color-primary);
     text-decoration: none;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: background-color 0.3s ease;
+    transition: color var(--transition-duration);
 }
 
-a.button:hover {
-    background: var(--primary-hover);
+.logo:hover {
+    color: var(--color-primary-dark);
 }
 
-.header-link {
-    display: block;
-    text-align: right;
-    font-size: 0.9rem;
-    color: var(--primary-color);
+.nav-links a {
+    color: var(--color-subtle-text);
     text-decoration: none;
+    margin-left: 1.5rem;
+    padding: 0.5rem 0;
     font-weight: 500;
-    margin-bottom: 1rem;
-}
-.header-link:hover {
-    text-decoration: underline;
+    transition: color var(--transition-duration);
 }
 
+.nav-links a:hover {
+    color: var(--color-primary);
+}
 
-/* --- Homepage (index.html) Styles --- */
+/* --- 4. CARD STYLING (Primary Content Area) --- */
 
-.tagline {
-    color: var(--text-secondary);
-    font-size: 1rem;
-    margin-top: 0;
+#create-link {
+    background: var(--color-card);
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Eye-catching lift */
+    margin-top: 3rem;
+}
+
+#create-link h1 {
+    font-size: 2rem;
+    color: var(--color-text);
     margin-bottom: 2rem;
+    text-align: center;
 }
 
-input, select {
-    padding: 0.8rem;
+/* --- 5. FORM ELEMENTS AND BUTTONS --- */
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+input[type="url"], input[type="text"], select {
     width: 100%;
-    margin-bottom: 0.75rem;
+    padding: 1rem;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
-    border: 1px solid var(--border-color);
     font-size: 1rem;
-    font-family: 'Inter', Arial, sans-serif;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: border-color var(--transition-duration), box-shadow var(--transition-duration);
+    color: var(--color-text);
 }
 
-input:focus, select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+input[type="url"]:focus, input[type="text"]:focus, select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* Subtle blue glow */
     outline: none;
 }
 
-button#shortenBtn {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 100%;
+label {
+    font-weight: 600;
+    color: var(--color-subtle-text);
     margin-top: 0.5rem;
-    transition: background-color 0.3s ease;
+    display: block;
+}
+
+/* Primary Button - Blue */
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-card);
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color var(--transition-duration), transform var(--transition-duration);
+    flex-grow: 1;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-dark);
+    transform: translateY(-2px); /* Lift animation */
+}
+
+/* Secondary Button - Gray/Outline */
+.btn-secondary {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-duration);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-primary);
+    color: var(--color-card);
+    transform: translateY(-2px); /* Lift animation */
+}
+
+/* Advanced Options Toggle */
+#advanced-options {
+    border-top: 1px dashed var(--color-border);
+    padding-top: 1rem;
+    margin-top: 1rem;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 45px;
+    flex-direction: column;
+    gap: 1rem;
 }
-button#shortenBtn:hover {
-    background: var(--primary-hover);
-}
-button#shortenBtn:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-}
+
+/* --- 6. RESULT DISPLAY --- */
 
 #result {
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: all 0.5s ease-out;
-}
-#result.show {
-    opacity: 1;
-    max-height: 1000px;
-    margin-top: 1.5rem;
-}
-
-.result-item {
-    padding: 0.8rem 1rem;
-    background: var(--bg-very-light);
+    background: #e9f7ef; /* Very light green for success/result */
+    border: 1px solid var(--color-success);
+    padding: 1.5rem;
     border-radius: 8px;
-    border: 1px solid var(--border-light);
-    margin-top: 0.75rem;
-    text-align: left;
-    word-break: break-all;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.result-item strong {
-    color: var(--text-primary);
-    font-weight: 500;
-}
-.result-item span {
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-.result-item a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: 500;
-}
-.result-item a:hover {
-    text-decoration: underline;
-}
-
-.copy-btn {
-    background: var(--border-light);
-    color: #374151;
-    padding: 0.5rem 0.8rem;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-left: 1rem;
-    width: auto;
-    margin-top: 0;
-    font-size: 0.9rem;
-    transition: background-color 0.3s ease;
-    border: none;
-}
-.copy-btn:hover {
-    background: var(--border-color);
-}
-.copy-btn:disabled {
-    background: var(--border-light);
-    color: var(--text-secondary);
-}
-
-#error-msg {
-    color: var(--error-red);
-    font-size: 0.9rem;
-    margin-top: 1rem;
-    display: none;
-}
-
-#qr-code-box {
-    text-align: center;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-light);
-}
-#qr-code-box img {
-    width: 150px;
-    height: 150px;
-    border-radius: 8px;
-    border: 1px solid var(--border-light);
-}
-#delete-link-box {
-    text-align: left;
-    margin-top: 1.5rem;
-    padding: 0.8rem 1rem;
-    background: #fffbeB;
-    border: 1px solid #fde68a;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    color: #92400e;
-    line-height: 1.5;
-    word-break: break-all;
-}
-#delete-link-box p {
-    margin: 0;
-}
-#delete-link-box a {
-    color: #b45309;
-    font-weight: 500;
-}
-
-.advanced-options-toggle {
-    font-size: 0.9rem;
-    color: var(--primary-color);
-    cursor: pointer;
-    font-weight: 500;
-    margin-top: 1rem;
-    display: inline-block;
-    text-decoration: none;
-}
-.advanced-options-toggle:hover {
-    text-decoration: underline;
-}
-
-#advanced-options {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease-out;
-    margin-top: 0;
-}
-#advanced-options.show {
-    max-height: 300px;
-    margin-top: 1rem;
-}
-
-/* --- Preview Page (preview.html) Styles --- */
-
-.meta-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-.favicon {
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
-}
-.preview-image {
-    width: 100%;
-    max-height: 250px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-top: 1.5rem;
-    border: 1px solid var(--border-color);
-}
-.meta-title {
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-.description {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    margin-bottom: 1.5rem;
-}
-p.info {
-    margin-bottom: 0;
-    color: var(--text-secondary);
-}
-p.url {
-    word-break: break-all;
-    font-weight: 500;
-    color: var(--text-primary);
-    margin-top: 8px;
-    background: var(--bg-very-light);
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border-light);
-}
-hr {
-    border: none;
-    border-top: 1px solid var(--border-light);
-    margin: 1.5rem 0;
-}
-
-/* --- Stats & Delete Page Styles --- */
-.stats-container {
-    text-align: left;
-}
-.stats-container h1 {
-    text-align: center;
-}
-.stat-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem;
-    border-radius: 8px;
-    background: var(--bg-very-light);
-    border: 1px solid var(--border-light);
-    margin-bottom: 0.75rem;
-    font-size: 1rem;
-}
-.stat-item-label {
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-.stat-item-value {
-    font-weight: 500;
-    color: var(--text-primary);
-    word-break: break-all;
-}
-.stat-item-value.clicks {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-.status-message {
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-}
-.status-message.success {
-    color: #059669;
-}
-.status-message.error {
-    color: var(--error-red);
-}
-
-.chart-container {
-    position: relative;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-light);
-}
-
-/* --- Dashboard Table Styles --- */
-.table-container {
-    width: 100%;
-    overflow-x: auto;
-    margin-top: 1.5rem;
-}
-.dashboard-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-    font-size: 0.9rem;
-}
-.dashboard-table th,
-.dashboard-table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-light);
-}
-.dashboard-table th {
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-.dashboard-table td {
-    color: var(--text-primary);
-    word-break: break-all;
-}
-.dashboard-table .link-col {
-    max-width: 250px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.dashboard-table .link-col a {
-    color: var(--primary-color);
-    font-weight: 500;
-    text-decoration: none;
-}
-.dashboard-table .link-col a:hover {
-    text-decoration: underline;
-}
-.dashboard-table .actions-col a {
-    color: var(--text-secondary);
-    text-decoration: none;
-    margin-right: 0.75rem;
-}
-.dashboard-table .actions-col a:hover {
-    color: var(--primary-color);
-}
-.dashboard-table .actions-col a.delete-link:hover {
-    color: var(--error-red);
-}
-
-/* --- NEW: Footer --- */
-.footer {
-    width: 100%;
-    max-width: 800px;
-    text-align: center;
     margin-top: 2rem;
-    margin-bottom: 1rem; /* Pushes up from bottom */
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.1);
+}
+
+#result h3 {
+    color: var(--color-success);
+    margin-bottom: 1rem;
+}
+
+.result-box {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#short-link-result {
+    flex-grow: 1;
+    cursor: pointer;
+    font-family: monospace; /* For better link readability */
+    background: var(--color-card);
+}
+
+#copy-button {
+    background-color: var(--color-success);
+    color: var(--color-card);
+    border: none;
+    padding: 0 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--transition-duration);
+    flex-shrink: 0;
+}
+
+#copy-button:hover {
+    background-color: #1e7e34; /* Darker green */
+}
+
+/* --- 7. FOOTER --- */
+
+footer {
+    margin-top: 4rem;
+    padding: 1.5rem 0;
+    background-color: var(--color-card);
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+    color: var(--color-subtle-text);
     font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-top: auto; /* Pushes to bottom */
-}
-.footer a {
-    color: var(--text-secondary);
-    text-decoration: none;
-    margin: 0 0.5rem;
-    font-weight: 500;
-}
-.footer a:hover {
-    text-decoration: underline;
-    color: var(--primary-color);
-}
-.footer span {
-    margin: 0 0.5rem;
-}
-/* --- END NEW --- */
-
-
-/* --- Mobile Responsive (All Pages) --- */
-@media(max-width: 500px) {
-    .card {
-        padding: 2rem 1.5rem;
-    }
-    .card.card-wide {
-        padding: 1.5rem 0;
-    }
-    h1 {
-        font-size: 1.8rem;
-    }
-    .tagline {
-        margin-bottom: 1.5rem;
-    }
-    a.button {
-        width: 100%;
-        box-sizing: border-box;
-    }
-    .result-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    .copy-btn {
-        margin-left: 0;
-        width: 100%;
-    }
-    .stat-item {
-        flex-direction: column;
-        gap: 5px;
-    }
 }
 
-/* --- Loading Spinner --- */
-.spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    display: none;
-}
-button#shortenBtn.loading .spinner {
+/* --- 8. LANGUAGE SWITCHER STYLING (Comfortable Dropdown) --- */
+
+.lang-switcher {
+    position: relative;
     display: inline-block;
 }
-button#shortenBtn.loading .btn-text {
-    display: none;
+
+.lang-button {
+    background: transparent;
+    border: 2px solid var(--color-border);
+    color: var(--color-text);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-duration);
 }
-@keyframes spin {
-    to { transform: rotate(360deg); }
+
+.lang-button:hover {
+    border-color: var(--color-primary);
+    background-color: #f1f1f1;
+}
+
+.lang-dropdown {
+    position: absolute;
+    top: 100%; /* Position below the button */
+    right: 0;
+    background-color: var(--color-card);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 10;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 5px;
+    display: none; /* Controlled by JavaScript or hover state */
+}
+
+/* Display dropdown on hover for simplicity, or use JS to toggle 'show' class */
+.lang-switcher:hover .lang-dropdown {
+    display: block;
+}
+
+.lang-dropdown a {
+    color: var(--color-text);
+    padding: 10px 16px;
+    text-decoration: none;
+    display: block;
+    transition: background-color var(--transition-duration);
+}
+
+.lang-dropdown a:hover {
+    background-color: var(--color-primary);
+    color: var(--color-card);
+}
+
+/* --- 9. MOBILE RESPONSIVENESS --- */
+
+@media (max-width: 768px) {
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        margin: 0;
+    }
+
+    header .container {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .nav-links {
+        margin-top: 0.5rem;
+    }
+    
+    .nav-links a {
+        margin: 0 0.5rem;
+    }
+
+    .lang-switcher {
+        margin-top: 0.5rem;
+    }
 }

@@ -13,6 +13,7 @@ import io
 import base64
 import tempfile
 import logging
+import json # NEW: For loading translations from file
 
 import validators
 from pydantic import BaseModel, constr
@@ -26,7 +27,7 @@ from starlette.staticfiles import StaticFiles
 
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from fastapi.templating import Jinja2Templates
 
 from fastapi import FastAPI, HTTPException, Request, Depends, Path, BackgroundTasks
@@ -39,8 +40,8 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# UPDATED: No more google.generativeai import
-# import google.generativeai as genai 
+# LLM setup for background tasks
+import google.generativeai as genai
 
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
@@ -66,62 +67,42 @@ LOCALE_TO_FLAG_CODE = {
     "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
 }
 
-# (Your full translations dictionary goes here)
-translations = {
-    "en": {
-        "lang_name_en": "English", "lang_name_es": "Spanish", "lang_name_zh": "Chinese", "lang_name_hi": "Hindi", "lang_name_pt": "Portuguese", "lang_name_fr": "French", "lang_name_de": "German", "lang_name_ar": "Arabic", "lang_name_ru": "Russian", "lang_name_he": "Hebrew",
-        "app_title": "Shortlinks.art - Fast & Simple URL Shortener",
-        "meta_description_main": "Create free short links with previews. Shortlinks.art is a fast, simple URL shortener that offers custom expiration times and link previews.",
-        "meta_keywords_main": "url shortener, link shortener, free url shortener, url shortener with preview, link shortener with preview, custom short link, expiring links, temporary links, short url, shorten link, fast url shortener, simple url shortener, shortlinks.art",
-        "meta_description_og": "A fast, free, and simple URL shortener with link previews and custom expiration times.",
-        "about_page_title": "About Shortlinks.art | Fast & Simple URL Shortener",
-        "about_meta_description": "Learn about Shortlinks.art, a fast, simple, and privacy-aware URL shortener with link previews.",
-        "dashboard_page_title": "My Links Dashboard | Shortlinks.art",
-        "dashboard_meta_description": "Manage your personal short links, view click statistics, and edit your links on your dashboard.",
-        "my_links_button": "My Links", "tagline": "A fast, simple URL shortener with link previews.",
-        "create_link_heading": "Create a Short Link", "long_url_placeholder": "Enter your long URL (e.g., https://...)",
-        "create_button": "Shorten", "advanced_options_button": "Advanced Options", "custom_code_label": "Custom code (optional)", "utm_tags_placeholder": "UTM tags (e.g., utm_source=twitter)",
-        "ttl_label": "Expires after", "ttl_1h": "1 Hour", "ttl_24h": "24 Hours", "ttl_1w": "1 Week", "ttl_never": "Never",
-        "result_short_link": "Short Link", "copy_button": "Copy",
-        "result_stats_page": "Stats Page", "result_view_clicks": "View Clicks",
-        "result_save_link_strong": "Save this link!", "result_save_link_text": "This is your unique deletion link. Keep it safe if you ever want to remove your shortlink.",
-        "nav_home": "Home", "nav_about": "About", "language_switcher_label": "Select a language",
-        "about_heading": "About Shortlinks.art",
-        "about_subheading_1": "Unlock the Power of Your Links",
-        "about_p_1": "Shortlinks.art is more than just a free URL shortener; it's a powerful tool for your brand. By transforming long, unwieldy links into short, memorable ones, you can build trust and improve engagement. Track click-through rates, understand your audience, and optimize your marketing campaigns with our simple, privacy-aware analytics.",
-        "about_subheading_2": "Fast, Secure, and Built for Previews",
-        "about_p_2": "We built this platform to solve a key problem: 'link trust'. Our automatic link previews show your users exactly where they are going, increasing safety and boosting click-through rates. Our platform is fast, secure, and designed to put you in control of your digital identity.",
-        "about_subheading_3": "Key Features",
-        "about_li_1": "Free Link Shortening: Quickly create short, custom, or random links.",
-        "about_li_2": "Detailed Click Statistics: Track every click with a simple and clear dashboard.",
-        "about_li_3": "Safe Link Previews: Build user trust by showing them a preview of the destination.",
-        "about_li_4": "Custom Expiration Dates: Set your links to expire in an hour, a day, a week, or never.",
-        "about_li_5": "Privacy-Focused: We respect you and your users' privacy. Simple as that.",
-        "dashboard_heading": "My Links Dashboard",
-        "dashboard_p_1": "This is your personal dashboard. All links you create on this device are saved here.",
-        "link_not_found": "Link not found", "link_expired": "Link expired", "invalid_url": "Invalid URL provided.", "custom_code_exists": "Custom code already exists", "id_generation_failed": "Could not generate unique short code.", "owner_id_required": "Owner ID is required", "token_missing": "Deletion token is missing", "delete_success": "Link successfully deleted.", "delete_invalid_token": "Invalid deletion token. Link was not deleted.",
-        "js_enter_url": "Please enter a URL.", "js_error_creating": "Error creating short link", "js_error_server": "Failed to connect to the server.", "js_copied": "Copied!", "js_copy_failed": "Failed!",
-        "preview_summary_pending": "AI summary loading... Check back in a few seconds!", # NEW
-        "preview_summary_failed": "AI summary failed. Showing original description.",        # NEW
-    },
-    # (Other languages omitted for brevity but should be included from previous step)
-}
-# --- END of translations dictionary ---
+# NEW: Placeholder for translations (will be loaded at startup)
+translations: Dict[str, Dict[str, str]] = {}
+
+def load_translations_from_json():
+    """Loads all translation data from the external JSON file."""
+    global translations
+    try:
+        # Assumes translations.json is in the same directory as app.py
+        file_path = os.path.join(os.path.dirname(__file__), "translations.json")
+        if not os.path.exists(file_path):
+            logger.error("translations.json not found! Using empty dictionary.")
+            return
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            translations = json.load(f)
+        logger.info("Translations loaded successfully from JSON file.")
+
+    except Exception as e:
+        logger.error(f"Failed to load or parse translations.json: {e}")
+        # Fatal error, the application will not function properly without strings
+        raise RuntimeError("Translation file loading failed.") from e
 
 
-# ---------------- LLM Summarizer Setup (Hugging Face) ----------------
-HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
-SUMMARIZATION_MODEL = "facebook/bart-large-cnn"
+# --- LLM Summarizer Setup ---
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+SUMMARIZATION_MODEL = "facebook/bart-large-cnn" 
 HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
-HF_HEADERS = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
+HF_HEADERS = {"Authorization": f"Bearer {GEMINI_API_KEY}"} if GEMINI_API_KEY else {} # Using GEMINI_API_KEY here to keep it simple, ideally this would be HUGGINGFACE_API_KEY
 
-if not HUGGINGFACE_API_KEY:
-    logger.warning("HUGGINGFACE_API_KEY is not set. AI summarizer will be disabled.")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_API_KEY is not set. AI summarizer will be disabled.")
 
 
 async def query_huggingface(payload: dict) -> Optional[str]:
-    """Sends a query to the Hugging Face Inference API."""
-    if not HUGGINGFACE_API_KEY:
+    # Changed to use GEMINI_API_KEY placeholder for consistency
+    if not GEMINI_API_KEY: 
         return None
 
     try:
@@ -146,17 +127,15 @@ async def query_huggingface(payload: dict) -> Optional[str]:
 
 async def generate_summary_background(doc_ref: firestore.DocumentReference, url: str):
     """Background task to fetch, summarize using Hugging Face, and save."""
-    if not HUGGINGFACE_API_KEY:
+    if not GEMINI_API_KEY:
         doc_ref.update({"summary_status": "failed"})
         return
 
     try:
-        # 1. Fetch website content
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True, timeout=10.0)
             response.raise_for_status()
         
-        # 2. Extract and sanitize text
         soup = BeautifulSoup(response.text, "lxml")
         for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
             element.decompose()
@@ -165,8 +144,7 @@ async def generate_summary_background(doc_ref: firestore.DocumentReference, url:
         if not page_text:
             raise ValueError("No text content found on page.")
         
-        # 3. Call Hugging Face API for summarization
-        # Truncate content to 2000 tokens for safety and model limits
+        # Truncate content to 2000 characters for safety and model limits
         payload = {
             "inputs": page_text[:2000], 
             "parameters": {"max_length": 150, "min_length": 30}
@@ -175,7 +153,6 @@ async def generate_summary_background(doc_ref: firestore.DocumentReference, url:
         summary = await query_huggingface(payload)
 
         if summary:
-            # 4. Save to Firestore
             doc_ref.update({
                 "summary_status": "complete",
                 "summary_text": summary
@@ -189,7 +166,6 @@ async def generate_summary_background(doc_ref: firestore.DocumentReference, url:
         doc_ref.update({"summary_status": "failed"})
 
 # --- i18n Functions ---
-# (Unchanged functions for locale detection and translator logic)
 
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
@@ -219,7 +195,8 @@ def get_translator_and_locale(
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
         if fallback:
             return fallback
-        return key
+        # If the key is not found in any dictionary, return it bracketed for debug
+        return f"[{key}]"
         
     return _, valid_locale
 
@@ -232,7 +209,7 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
         if fallback:
             return fallback
-        return key
+        return f"[{key}]"
     return _
 
 def get_translator(tr: tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
@@ -300,7 +277,6 @@ def start_cleanup_thread():
     def cleanup_worker():
         while True:
             try:
-                # Need a local logger reference here if run outside main thread scope
                 local_logger = logging.getLogger(__name__) 
                 deleted = cleanup_expired_links()
                 local_logger.info(f"[CLEANUP] Deleted {deleted} expired links.")
@@ -517,6 +493,9 @@ async def fetch_metadata(url: str) -> dict:
 # ---------------- APP ----------------
 app = FastAPI(title="Shortlinks.art URL Shortener")
 i18n_router = FastAPI()
+
+# Load translations immediately after defining the global placeholder
+load_translations_from_json()
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -866,10 +845,8 @@ async def preview(
             logger.error(f"Error updating cache for {short_code}: {e}")
     
     # 2. Trigger LLM Summary (if pending)
-    if summary_status == "pending" and HUGGINGFACE_API_KEY:
+    if summary_status == "pending" and GEMINI_API_KEY: # Using GEMINI_API_KEY as the flag for HF API access
         try:
-            # We don't need the local db_client reference inside the background task, 
-            # as it calls init_firebase() internally.
             background_tasks.add_task(generate_summary_background, doc_ref, safe_href_url)
             doc_ref.update({"summary_status": "in_progress"})
             logger.info(f"Background summary task scheduled for {short_code}.")
@@ -880,11 +857,10 @@ async def preview(
     if summary_status == "complete" and summary:
         display_description = summary
     elif summary_status in ["pending", "in_progress"]:
-        display_description = _("preview_summary_pending") # Show status message
+        display_description = _("preview_summary_pending")
     elif summary_status == "failed":
-        display_description = _("preview_summary_failed") # Show failure message
+        display_description = _("preview_summary_failed")
     else:
-        # Fallback to meta description
         display_description = meta_description or "No description available."
     
     context = {

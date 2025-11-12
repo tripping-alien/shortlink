@@ -9,8 +9,8 @@
     
     <meta name="robots" content="noindex, nofollow">
     
-    <meta property="og:title" content="{{ _('dashboard_page_title') }}">
-    <meta property="og:description" content="{{ _('dashboard_meta_description') }}">
+    <meta property="og:title" content="{{ _("dashboard_page_title") }}">
+    <meta property="og:description" content="{{ _("dashboard_meta_description") }}">
 
     {% for tag in hreflang_tags %}
     <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
@@ -31,10 +31,12 @@
         border: 1px solid rgba(255, 255, 255, 0.1); background-size: cover; display: inline-block;
       }
       .lang-btn.active .lang-flag { border: 2px solid #fff; }
+      .flag-icon { background-size: cover; display: inline-block; width: 24px !important; height: 18px !important; }
 
       .content-card {
         text-align: left;
         max-width: 700px;
+        padding: 30px;
       }
     </style>
 </head>
@@ -62,7 +64,7 @@
                    class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
                    data-lang="{{ tag.hreflang }}"
                    title="{{ _('lang_name_' + tag.hreflang) }}">
-                   <span class="flag-icon flag-icon-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
+                   <span class="fi fi-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
                        <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
                    </span>
                 </a>

@@ -69,7 +69,7 @@ TTL_MAP = {
 }
 
 # ---------------- LOCALIZATION (i18n) ----------------
-SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he", "en-pirate"] # <-- ADDED
+SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he", "en-pirate"]
 DEFAULT_LOCALE = "en"
 RTL_LOCALES = ["ar", "he"]
 
@@ -85,7 +85,7 @@ LOCALE_TO_EMOJI = {
     "ar": "🇸🇦",
     "ru": "🇷🇺",
     "he": "🇮🇱",
-    "en-pirate": "☠️" # <-- ADDED
+    "en-pirate": "☠️"
 }
 
 translations = {}
@@ -313,7 +313,7 @@ async def fetch_metadata(url: str) -> dict:
             else:
                 parsed_url_fallback = urlparse(final_url)
                 meta["favicon"] = f"{parsed_url_fallback.scheme}://{parsed_url_fallback.netloc}/favicon.ico"
-    except (httpx.RequestError, httpx.HTTPStatusError) as e: print(f"Error fetching metadata for {url}: {e}")
+    except (httpx.RequestError, httptools.HTTPStatusError) as e: print(f"Error fetching metadata for {url}: {e}")
     except SecurityException as e: print(f"SSRF Prevention: {e}")
     except Exception as e: print(f"Error parsing or validating URL for {url}: {e}")
     return meta
@@ -426,7 +426,7 @@ async def generate_and_cache_summary(short_code: str, url: str):
 
 # ---------------- APP ----------------
 app = FastAPI(title="Shortlinks.art URL Shortener")
-i18n_router = FastAPI()
+i18n_router = FastAPI() # This handles the localized routes
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -451,7 +451,9 @@ ADSENSE_SCRIPT = f"""
      crossorigin="anonymous"></script>
 """
 
-# === NON-LOCALIZED ROUTES (Mounted on main 'app') ===
+# === GLOBAL/NON-LOCALIZED ROUTES (Mounted on main 'app') ===
+
+# This handles the root path and redirects to the detected locale
 @app.get("/")
 async def root_redirect(request: Request):
     locale = get_browser_locale(request)
@@ -628,6 +630,9 @@ async def redirect_link(
     return RedirectResponse(url=absolute_url)
 
 # === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===
+# NOTE: The name= parameters are used by the 'app.url_for' call inside the mounting
+# structure to correctly resolve the localized path.
+
 @i18n_router.get("/", response_class=HTMLResponse, name="home_page")
 async def index(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("index.html", common_context)
@@ -640,7 +645,7 @@ async def dashboard(common_context: dict = Depends(get_common_context)):
 async def about(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("about.html", common_context)
 
-@i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
+@i18n_router.get("/preview/{short_code}", response_class=HTMLResponse, name="preview_page")
 async def preview(
     short_code: str,
     common_context: dict = Depends(get_common_context)
@@ -696,7 +701,7 @@ async def preview(
     }
     return templates.TemplateResponse("preview.html", context)
 
-@i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
+@i18n_router.get("/stats/{short_code}", response_class=HTMLResponse, name="stats_page")
 async def stats(
     short_code: str,
     common_context: dict = Depends(get_common_context)
@@ -708,7 +713,7 @@ async def stats(
     context = { **common_context, "link": link }
     return templates.TemplateResponse("stats.html", context)
 
-@i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
+@i18n_router.get("/delete/{short_code}", response_class=HTMLResponse, name="delete_page")
 async def delete(
     short_code: str, token: Optional[str] = None,
     common_context: dict = Depends(get_common_context)
@@ -720,9 +725,6 @@ async def delete(
     doc_ref = collection_ref.document(short_code)
     doc = doc_ref.get()
     if not doc.exists:
-        #
-        # --- SYNTAX ERROR FIX ---
-        #
         raise HTTPException(status_code=404, detail=_("link_not_found"))
     link = doc.to_dict()
     if link.get("deletion_token") == token:
@@ -732,11 +734,9 @@ async def delete(
         context = {**common_context, "success": False, "message": _("delete_invalid_token")}
     return templates.TemplateResponse("delete_status.html", context)
 
-#
-# --- FIX: REMOVED DUPLICATE 'SecurityException' DEFINITION ---
-#
-
 # --- Mount the localized router ---
+# This is the line that caused the bug. The templates expect to call
+# url_for('home_page', locale=locale). This structure supports that.
 app.mount("/{locale}", i18n_router, name="localized")
 
 # --- Background Cleanup Thread ---
@@ -772,10 +772,6 @@ def start_cleanup_thread():
     cleanup_thread.daemon = True 
     cleanup_thread.start()
     logger.info("Cleanup thread is now running in the background.")
-
-#
-# --- FIX: REMOVED DUPLICATE 'start_cleanup_thread' DEFINITION ---
-#
 
 # --- Start background tasks ---
 start_cleanup_thread()

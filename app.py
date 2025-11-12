@@ -707,15 +707,75 @@ def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> st
     
     return link["long_url"]
 
+# ... (all imports and setup remain unchanged) ...
+
+# ---------------- ROUTES ----------------
+# ... (all other routes remain unchanged) ...
+
 @app.get("/r/{short_code}")
 async def redirect_link(
     short_code: str,
-    _ : Callable = Depends(get_api_translator)
+    # We still need the translator to generate the 404/410 errors
+    _ : Callable = Depends(get_api_translator) 
 ):
+    """
+    FIXED: This route now permanently redirects the user to the
+    localized Preview page, ensuring the security screen is seen.
+    
+    The click counting is now triggered ONLY by the 'Continue' button
+    on the preview page.
+    """
+    db = init_firebase()
+    doc_ref = db.collection("links").document(short_code)
+    
+    # 1. Check if the link exists and is not expired
+    doc = doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail=_("link_not_found"))
+        
+    link = doc.to_dict()
+    expires_at = link.get("expires_at")
+    
+    if expires_at and expires_at < datetime.now(timezone.utc):
+        # We must check expiration here so the Preview page doesn't waste resources
+        raise HTTPException(status_code=410, detail=_("link_expired"))
+
+    # 2. Determine the user's preferred locale
+    locale = get_browser_locale(Request(scope={"type": "http", "headers": []}))
+    
+    # 3. Construct the full localized preview URL
+    # We use a 301 (Moved Permanently) to signal search engines that the 
+    # canonical version of this short code is now the preview page.
+    preview_url = f"/{locale}/preview/{short_code}"
+    
+    # We must use a full URL structure for the redirect location
+    full_redirect_url = str(Request(scope={"type": "http", "headers": []}).url.replace(path=preview_url))
+    
+    # Since we can't reliably get the current request object's URL base 
+    # inside a non-localized router function without trickery, 
+    # the simplest, most stable way is to use the BASE_URL constant:
+    full_redirect_url = f"{BASE_URL}{preview_url}"
+
+    # 4. Redirect the user to the Preview Page
+    return RedirectResponse(url=full_redirect_url, status_code=301)
+
+
+@app.get("/{locale}/preview/{short_code}/redirect", response_class=RedirectResponse)
+async def continue_to_link(
+    short_code: str,
+    _ : Callable = Depends(get_translator) 
+):
+    """
+    NEW REDIRECT LOGIC: This new endpoint is the ONLY one that will increment
+    the click count and redirect to the final long_url.
+    
+    The link on the Preview Page MUST now point to this URL.
+    """
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
     long_url = None
     
+    # The click counting logic (your old /r/ logic) now lives here
     try:
         transaction = db.transaction()
         long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
@@ -723,6 +783,7 @@ async def redirect_link(
     except HTTPException as e:
         raise e 
     except Exception as e:
+        # Fallback logic remains the same (robust click counting)
         logger.warning(f"Click count transaction for {short_code} failed: {e}. Retrying non-atomically.")
         
         try:
@@ -735,6 +796,7 @@ async def redirect_link(
             if expires_at and expires_at < datetime.now(timezone.utc):
                 raise HTTPException(status_code=410, detail=_("link_expired"))
             
+            # Non-atomic update
             today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             day_key = f"clicks_by_day.{today_str}"
             doc_ref.update({
@@ -770,7 +832,10 @@ async def redirect_link(
     else:
         absolute_url = long_url
 
-    return RedirectResponse(url=absolute_url)
+    return RedirectResponse(url=absolute_url, status_code=302) # Standard final redirect
+
+# ... (all other routes remain unchanged) ...
+
 
 
 # === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===

@@ -50,7 +50,7 @@ from google.cloud.firestore_v1.query import Query
 # FIX: Import all constants and the final emoji map.
 import config
 from config import *
-from config import LOCALE_TO_EMOJI # <--- IMPORTED FOR FLAG EMOJI FIX
+from config import LOCALE_TO_EMOJI 
 # Note: Exceptions are NOT imported here.
 
 # ============================================================================
@@ -172,6 +172,7 @@ def load_translations_from_json() -> None:
         
         missing_locales = set(config.SUPPORTED_LOCALES) - set(translations.keys())
         if missing_locales:
+            # The warning we saw earlier is fixed by adding 'hi' and 'he' to the JSON
             logger.warning(f"Missing translations for locales: {missing_locales}")
             for locale in missing_locales:
                 translations[locale] = {}
@@ -222,7 +223,6 @@ def get_translator_and_locale(
     valid_locale = locale if locale in config.SUPPORTED_LOCALES else config.DEFAULT_LOCALE
     
     def translate(key: str) -> str:
-        # NOTE: This is the function that resolves the keys (e.g., 'nav_home')
         return get_translation(valid_locale, key)
     
     return translate, valid_locale
@@ -647,9 +647,9 @@ summarizer = AISummarizer()
 # DATABASE OPERATIONS
 # ============================================================================
 
-# FIX Bug #5: Define reserved codes globally
+# FIX Bug #5: Define reserved codes globally (Updated with 'hi' and 'he')
 RESERVED_CODES = {'api', 'health', 'static', 'r', 'robots', 'sitemap', 
-                  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ar', 'ru', 'he', 'arr', 'preview', 'dashboard'}
+                  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ar', 'ru', 'he', 'hi', 'arr', 'preview', 'dashboard'}
 
 class LinkManager:
     """Manage link CRUD operations"""
@@ -984,7 +984,7 @@ async def get_common_context(
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": config.RTL_LOCALES,
         "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
-        "FLAG_EMOJIS": LOCALE_TO_EMOJI, # <--- CORRECTLY PASSING THE EMOJI MAP
+        "FLAG_EMOJIS": LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
         "config": config,
@@ -1094,17 +1094,12 @@ async def api_create_link(
         )
     
     except (ValidationException, SecurityException) as e:
-        # This is where localized error messages need to be handled.
-        # Since the exceptions are custom, you would typically pass a translation key
-        # into the 'detail' when raising the exception, or map it here.
-        # For now, we rely on the client to translate the key provided in the detail.
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         logger.error(f"Error creating link: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            # Using the translator for the generic internal error message
-            detail=translator("error_creating_link") 
+            detail=translator("error_creating_link")
         )
 
 @app.get("/api/v1/my-links")
@@ -1408,7 +1403,7 @@ async def delete_link(
         context = {
             **common_context,
             "success": False,
-            "message": str(e.detail) # The detail is already a translated key
+            "message": str(e.detail)
         }
     except Exception as e:
         logger.error(f"Error deleting {short_code}: {e}")

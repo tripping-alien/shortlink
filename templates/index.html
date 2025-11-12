@@ -46,6 +46,7 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-lg w-100 shadow" id="create-button">
+                    <span id="loading-spinner" class="spinner-border spinner-border-sm spinner" role="status" aria-hidden="true"></span>
                     <span id="button-text">{{ _('create_button') }}</span>
                 </button>
 
@@ -77,7 +78,6 @@
                 </div>
             </div>
         </div>
-    
         <div class="row mt-5 pt-5 justify-content-center">
             <div class="col-lg-10">
                 <h2 class="text-center text-primary mb-4">{{ _('seo_h2_primary') }}</h2>
@@ -133,7 +133,7 @@
     function showLoading() {
         createButton.disabled = true;
         buttonText.textContent = '{{ _('processing_request') }}';
-        loadingSpinner.style.display = 'inline-block';
+        loadingSpinner.style.display = 'inline-block'; // Show spinner
         resultCard.classList.add('d-none'); 
         
         // Hide advanced options if they were open after successful creation
@@ -147,7 +147,7 @@
     function hideLoading() {
         createButton.disabled = false;
         buttonText.textContent = '{{ _('create_button') }}';
-        loadingSpinner.style.display = 'none';
+        loadingSpinner.style.display = 'none'; // Hide spinner
     }
 
     form.addEventListener('submit', async (e) => {

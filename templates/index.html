@@ -51,7 +51,7 @@
                 {{ _('advanced_options_button') }} +
             </button>
             
-            <div class="collapse" id="advanced-options">
+            <div class="collapse d-none" id="advanced-options">
                 <input type="text" id="custom_code" class="form-control" placeholder="{{ _('custom_code_placeholder') }}">
                 <input type="text" id="utm_tags" class="form-control" placeholder="{{ _('utm_tags_placeholder') }}">
             </div>
@@ -103,6 +103,7 @@
     const customCodeInput = document.getElementById('custom_code');
     const utmTagsInput = document.getElementById('utm_tags');
     const copyButton = document.getElementById('copy-button');
+    const advancedOptions = document.getElementById('advanced-options'); // Ensure this is referenced
 
     // --- FEEDBACK FUNCTIONS ---
     function showLoading() {
@@ -126,16 +127,19 @@
         showLoading(); // Show loading indicator
 
         try {
+            // 1. Construct Payload: Use || null for optional fields
             const payload = {
-                long_url: longUrlInput.value,
-                ttl: ttlInput.value,
-                custom_code: customCodeInput.value || null,
-                utm_tags: utmTagsInput.value || null,
+                long_url: longUrlInput.value.trim(), // Required
+                ttl: ttlInput.value, // Required (but validated by Pydantic Literals)
+                
+                // Optional fields: use .trim() and set to null if empty
+                custom_code: customCodeInput.value.trim() || null, 
+                utm_tags: utmTagsInput.value.trim() || null,
             };
             
-            // Clean payload from null/empty strings
+            // 2. Clean Payload: Delete fields that are explicitly null (the optional ones)
             Object.keys(payload).forEach(key => {
-                if (payload[key] === null || payload[key] === '') {
+                if (payload[key] === null) {
                     delete payload[key];
                 }
             });
@@ -166,9 +170,9 @@
                 
             } else {
                 // FAILURE LOGIC: Display localized error from API response
-                // NOTE: This currently alerts the raw message/key from the API.
                 const errorMessage = data.detail || '{{ _('generic_error_message') }}';
                 alert(`Error: ${errorMessage}`);
+                console.error('API Error Response:', data);
             }
 
         } catch (error) {
@@ -187,5 +191,6 @@
         });
     });
 
+    // No need for a custom JS toggle function; Bootstrap's data-bs-toggle handles it.
 </script>
 {% endblock %}

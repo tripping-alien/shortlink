@@ -24,7 +24,7 @@ class Config:
     CLEANUP_BATCH_SIZE: int = 100
     
     # External APIs
-    HUGGINGFACE_API_KEY: Optional[str] = os.getenv("HUGGINGFACE_API_KEY")
+    HUGGINGFACE_API_KEY: str = os.getenv("HUGGINGFACE_API_KEY")
     SUMMARIZATION_MODEL: str = "facebook/bart-large-cnn"
     SUMMARY_MAX_LENGTH: int = 2000
     

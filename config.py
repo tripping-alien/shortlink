@@ -69,8 +69,26 @@ TTL_MAP: Dict[str, Optional[timedelta]] = {
 # AdSense Script (uses the client ID from Config)
 ADSENSE_SCRIPT: str = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
 
-# Flag Code Mapping (Used for display in templates)
+
+# ============================================================================
+# LOCALIZATION CONSTANTS (New and Corrected)
+# ============================================================================
+
+# Maps locale code (en) to two-letter country code (gb)
 LOCALE_TO_FLAG_CODE: Dict[str, str] = {
     "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
     "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
+}
+
+# Mapping of two-letter country codes to actual Unicode flag emojis
+FLAG_CODE_TO_EMOJI: Dict[str, str] = {
+    "gb": "🇬🇧", "es": "🇪🇸", "cn": "🇨🇳", "in": "🇮🇳", "br": "🇧🇷",
+    "fr": "🇫🇷", "de": "🇩🇪", "sa": "🇸🇦", "ru": "🇷🇺", "il": "🇮🇱",
+    "default": "❓" 
+}
+
+# Final, ready-to-use map: Locale Code -> Flag Emoji
+LOCALE_TO_EMOJI: Dict[str, str] = {
+    locale: FLAG_CODE_TO_EMOJI.get(code, FLAG_CODE_TO_EMOJI["default"])
+    for locale, code in LOCALE_TO_FLAG_CODE.items()
 }

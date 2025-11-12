@@ -14,7 +14,7 @@ class Config:
     # Core Constants
     SHORT_CODE_LENGTH: int = 6
     MAX_ID_RETRIES: int = 10
-    
+    METADATA_FETCH_TIMEOUT: float = 5.0
     # Security
     MAX_URL_LENGTH: int = 2048 
     ALLOWED_SCHEMES: Tuple[str, ...] = ("http", "https")

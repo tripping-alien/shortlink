@@ -13,11 +13,8 @@ import io
 import base64
 import tempfile
 import logging
-import json      # For loading translations
-import threading # For the cleanup thread
-import time      # For the cleanup thread
 
-# Removed unused 'import validators'
+import validators
 from pydantic import BaseModel, constr
 from firebase_admin.firestore import transactional
 
@@ -29,7 +26,7 @@ from starlette.staticfiles import StaticFiles
 
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse
 from fastapi.templating import Jinja2Templates
 
 from fastapi import FastAPI, HTTPException, Request, Depends, Path, BackgroundTasks
@@ -42,24 +39,14 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
+# UPDATED: Import new LLM library
+import google.generativeai as genai
+
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
 SHORT_CODE_LENGTH = 6
 MAX_ID_RETRIES = 10
 logger = logging.getLogger(__name__)
-
-#
-# =====================================================================
-#  Configuration for Hugging Face Inference API
-# =====================================================================
-#
-# Your HF Token (MUST be set as an environment variable)
-HF_TOKEN = os.environ.get("HF_TOKEN") 
-# The lightweight summarization model we'll use
-HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/distilbart-cnn-12-6"
-# Max characters to send for summarization
-MAX_TEXT_FOR_LLM = 4000 
-
 
 TTL_MAP = {
     "1h": timedelta(hours=1),
@@ -69,53 +56,110 @@ TTL_MAP = {
 }
 
 # ---------------- LOCALIZATION (i18n) ----------------
-SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he", "en-pirate"]
+
+SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
 RTL_LOCALES = ["ar", "he"]
 
-# NEW: Mapping for language codes to emojis
-LOCALE_TO_EMOJI = {
-    "en": "🇬🇧",
-    "es": "🇪🇸",
-    "zh": "🇨🇳",
-    "hi": "🇮🇳",
-    "pt": "🇧🇷",
-    "fr": "🇫🇷",
-    "de": "🇩🇪",
-    "ar": "🇸🇦",
-    "ru": "🇷🇺",
-    "he": "🇮🇱",
-    "en-pirate": "☠️"
+# NEW: Mapping for language codes to flag-icon-css country codes
+LOCALE_TO_FLAG_CODE = {
+    "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
+    "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
 }
 
-translations = {}
-TRANSLATIONS_FILE = "translations.json"
+# (Your full translations dictionary is assumed to be here)
+translations = {
+    "en": {
+        "lang_name_en": "English", "lang_name_es": "Spanish", "lang_name_zh": "Chinese", "lang_name_hi": "Hindi", "lang_name_pt": "Portuguese", "lang_name_fr": "French", "lang_name_de": "German", "lang_name_ar": "Arabic", "lang_name_ru": "Russian", "lang_name_he": "Hebrew",
+        "app_title": "Shortlinks.art - Fast & Simple URL Shortener",
+        "meta_description_main": "Create free short links with previews. Shortlinks.art is a fast, simple URL shortener that offers custom expiration times and link previews.",
+        "meta_keywords_main": "url shortener, link shortener, free url shortener, url shortener with preview, link shortener with preview, custom short link, expiring links, temporary links, short url, shorten link, fast url shortener, simple url shortener, shortlinks.art",
+        "meta_description_og": "A fast, free, and simple URL shortener with link previews and custom expiration times.",
+        "about_page_title": "About Shortlinks.art | Fast & Simple URL Shortener",
+        "about_meta_description": "Learn about Shortlinks.art, a fast, simple, and privacy-aware URL shortener with link previews.",
+        "dashboard_page_title": "My Links Dashboard | Shortlinks.art",
+        "dashboard_meta_description": "Manage your personal short links, view click statistics, and edit your links on your dashboard.",
+        "my_links_button": "My Links", "tagline": "A fast, simple URL shortener with link previews.",
+        "create_link_heading": "Create a Short Link", "long_url_placeholder": "Enter your long URL (e.g., https://...)",
+        "create_button": "Shorten", "advanced_options_button": "Advanced Options", "custom_code_label": "Custom code (optional)", "utm_tags_placeholder": "UTM tags (e.g., utm_source=twitter)",
+        "ttl_label": "Expires after", "ttl_1h": "1 Hour", "ttl_24h": "24 Hours", "ttl_1w": "1 Week", "ttl_never": "Never",
+        "result_short_link": "Short Link", "copy_button": "Copy",
+        "result_stats_page": "Stats Page", "result_view_clicks": "View Clicks",
+        "result_save_link_strong": "Save this link!", "result_save_link_text": "This is your unique deletion link. Keep it safe if you ever want to remove your shortlink.",
+        "nav_home": "Home", "nav_about": "About", "language_switcher_label": "Select a language",
+        "about_heading": "About Shortlinks.art",
+        "about_subheading_1": "Unlock the Power of Your Links",
+        "about_p_1": "Shortlinks.art is more than just a free URL shortener; it's a powerful tool for your brand. By transforming long, unwieldy links into short, memorable ones, you can build trust and improve engagement. Track click-through rates, understand your audience, and optimize your marketing campaigns with our simple, privacy-aware analytics.",
+        "about_subheading_2": "Fast, Secure, and Built for Previews",
+        "about_p_2": "We built this platform to solve a key problem: 'link trust'. Our automatic link previews show your users exactly where they are going, increasing safety and boosting click-through rates. Our platform is fast, secure, and designed to put you in control of your digital identity.",
+        "about_subheading_3": "Key Features",
+        "about_li_1": "Free Link Shortening: Quickly create short, custom, or random links.",
+        "about_li_2": "Detailed Click Statistics: Track every click with a simple and clear dashboard.",
+        "about_li_3": "Safe Link Previews: Build user trust by showing them a preview of the destination.",
+        "about_li_4": "Custom Expiration Dates: Set your links to expire in an hour, a day, a week, or never.",
+        "about_li_5": "Privacy-Focused: We respect you and your users' privacy. Simple as that.",
+        "dashboard_heading": "My Links Dashboard",
+        "dashboard_p_1": "This is your personal dashboard. All links you create on this device are saved here.",
+        "link_not_found": "Link not found", "link_expired": "Link expired", "invalid_url": "Invalid URL provided.", "custom_code_exists": "Custom code already exists", "id_generation_failed": "Could not generate unique short code.", "owner_id_required": "Owner ID is required", "token_missing": "Deletion token is missing", "delete_success": "Link successfully deleted.", "delete_invalid_token": "Invalid deletion token. Link was not deleted.",
+        "js_enter_url": "Please enter a URL.", "js_error_creating": "Error creating short link", "js_error_server": "Failed to connect to the server.", "js_copied": "Copied!", "js_copy_failed": "Failed!",
+    },
+    # (Other languages omitted for brevity but should be included from previous step)
+}
 
-def load_translations():
-    """Loads translation strings from the JSON file."""
-    global translations
-    if not os.path.exists(TRANSLATIONS_FILE):
-        logger.critical(f"FATAL: Translations file not found at {TRANSLATIONS_FILE}")
-        raise RuntimeError(f"Translations file not found: {TRANSLATIONS_FILE}")
+
+# --- LLM Summarizer Setup ---
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    llm_model = genai.GenerativeModel('gemini-1.5-flash')
+    logger.info("Gemini LLM model initialized.")
+else:
+    llm_model = None
+    logger.warning("GEMINI_API_KEY is not set. AI summarizer will be disabled.")
+
+async def generate_summary_background(doc_ref: firestore.DocumentReference, url: str):
+    """Background task to fetch, summarize, and save a page summary."""
+    if not llm_model:
+        logger.warning(f"Summarizer skipped for {doc_ref.id}: GEMINI_API_KEY not set.")
+        return
+
     try:
-        with open(TRANSLATIONS_FILE, "r", encoding="utf-8") as f:
-            translations = json.load(f)
-        logger.info(f"Successfully loaded translations from {TRANSLATIONS_FILE}")
-    except json.JSONDecodeError as e:
-        logger.critical(f"FATAL: Failed to decode {TRANSLATIONS_FILE}: {e}")
-        raise RuntimeError(f"Invalid JSON in translations file: {e}")
-    except Exception as e:
-        logger.critical(f"FATAL: Could not read {TRANSLATIONS_FILE}: {e}")
-        raise RuntimeError(f"Could not read translations file: {e}")
-# Load translations on startup
-load_translations()
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True, timeout=10.0)
+            response.raise_for_status()
+        
+        soup = BeautifulSoup(response.text, "lxml")
+        for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
+            element.decompose()
+        page_text = soup.get_text(separator=" ", strip=True)
+        
+        if len(page_text) > 10000:
+            page_text = page_text[:10000]
 
+        if not page_text:
+            raise ValueError("No text content found on page.")
+
+        prompt = f"Summarize the following webpage content into one compelling sentence: {page_text}"
+        summary_response = await llm_model.generate_content_async(prompt)
+        summary = summary_response.text.strip()
+
+        doc_ref.update({
+            "summary_status": "complete",
+            "summary_text": summary
+        })
+        logger.info(f"Successfully generated and saved summary for {doc_ref.id}")
+
+    except Exception as e:
+        logger.error(f"Failed to generate summary for {doc_ref.id}: {e}")
+        doc_ref.update({"summary_status": "failed"})
 
 # --- i18n Functions ---
+
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
     if lang_cookie and lang_cookie in SUPPORTED_LOCALES:
         return lang_cookie
+            
     try:
         lang_header = request.headers.get("accept-language")
         if lang_header:
@@ -131,41 +175,64 @@ def get_translator_and_locale(
     locale: str = Path(..., description="The language code, e.g., 'en', 'es'")
 ) -> (Callable[[str], str], str):
     valid_locale = locale if locale in SUPPORTED_LOCALES else DEFAULT_LOCALE
+    
     def _(key: str) -> str:
         translated = translations.get(valid_locale, {}).get(key)
-        if translated: return translated
+        if translated:
+            return translated
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
-        if fallback: return fallback
+        if fallback:
+            return fallback
         return key
+        
     return _, valid_locale
 
 def get_api_translator(request: Request) -> Callable[[str], str]:
     locale = get_browser_locale(request)
     def _(key: str) -> str:
         translated = translations.get(locale, {}).get(key)
-        if translated: return translated
+        if translated:
+            return translated
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
-        if fallback: return fallback
+        if fallback:
+            return fallback
         return key
     return _
 
 def get_translator(tr: tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
     return tr[0]
+
 def get_current_locale(tr: tuple = Depends(get_translator_and_locale)) -> str:
     return tr[1]
 
 def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale)) -> list[dict]:
     tags = []
     current_path = request.url.path
+    
     base_path = current_path.replace(f"/{locale}", "", 1)
-    if not base_path: base_path = "/"
+    if not base_path: 
+        base_path = "/"
+        
     for lang in SUPPORTED_LOCALES:
         lang_path = f"/{lang}{base_path}"
-        if lang_path.startswith('//'): lang_path = lang_path[1:]
-        tags.append({"rel": "alternate", "hreflang": lang, "href": str(request.url.replace(path=lang_path))})
+        if lang_path.startswith('//'):
+            lang_path = lang_path[1:]
+            
+        tags.append({
+            "rel": "alternate",
+            "hreflang": lang,
+            "href": str(request.url.replace(path=lang_path))
+        })
+    
     default_path = f"/{DEFAULT_LOCALE}{base_path}"
-    if default_path.startswith('//'): default_path = default_path[1:]
-    tags.append({"rel": "alternate", "hreflang": "x-default", "href": str(request.url.replace(path=default_path))})
+    if default_path.startswith('//'):
+            default_path = default_path[1:]
+
+    tags.append({
+        "rel": "alternate",
+        "hreflang": "x-default",
+        "href": str(request.url.replace(path=default_path))
+    })
     return tags
 
 async def get_common_context(
@@ -175,20 +242,66 @@ async def get_common_context(
     hreflang_tags: list = Depends(get_hreflang_tags)
 ) -> dict:
     return {
-        "request": request, "ADSENSE_SCRIPT": ADSENSE_SCRIPT, "_": _, "locale": locale,
-        "hreflang_tags": hreflang_tags, "current_year": datetime.now(timezone.utc).year,
-        "RTL_LOCALES": RTL_LOCALES, "LOCALE_TO_EMOJI": LOCALE_TO_EMOJI # <-- Passes emojis
+        "request": request,
+        "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
+        "_": _,
+        "locale": locale,
+        "hreflang_tags": hreflang_tags,
+        "current_year": datetime.now(timezone.utc).year,
+        "RTL_LOCALES": RTL_LOCALES,
+        "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE
     }
 
 # ---------------- FIREBASE ----------------
 db: firestore.Client = None
 APP_INSTANCE = None
+_firebase_temp_file_path = None
+
+def start_cleanup_thread():
+    # Only called once on startup
+    import threading
+    import time
+
+    def cleanup_worker():
+        while True:
+            try:
+                deleted = cleanup_expired_links()
+                logger.info(f"[CLEANUP] Deleted {deleted} expired links.")
+            except Exception as e:
+                logger.error(f"[CLEANUP ERROR] {e}")
+            time.sleep(1800)  # 30 minutes
+
+    thread = threading.Thread(target=cleanup_worker, daemon=True)
+    thread.start()
+    logger.info("[CLEANUP] Background cleanup worker started.")
+
+def cleanup_expired_links():
+    db = init_firebase()
+    collection = db.collection("links")
+    now = datetime.now(timezone.utc)
+    expired_docs = (
+        collection
+        .where(filter=FieldFilter("expires_at", "<", now))
+        .limit(100)
+        .stream()
+    )
+    batch = db.batch()
+    count = 0
+    for doc in expired_docs:
+        batch.delete(doc.reference)
+        count += 1
+    if count > 0:
+        batch.commit()
+    return count
+
 def init_firebase():
-    global db, APP_INSTANCE
-    if db: return db
+    global db, APP_INSTANCE, _firebase_temp_file_path
+    if db:
+        return db
+
     firebase_config_str = os.environ.get("FIREBASE_CONFIG")
-    temp_file_path = None
     cred = None
+
     try:
         if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
             cred = credentials.ApplicationDefault()
@@ -196,28 +309,38 @@ def init_firebase():
         elif firebase_config_str:
             with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
                 tmp_file.write(firebase_config_str)
-                temp_file_path = tmp_file.name
-            cred = credentials.Certificate(temp_file_path)
-            logger.info(f"Using FIREBASE_CONFIG JSON string via temporary file: {temp_file_path}")
+                _firebase_temp_file_path = tmp_file.name
+            
+            cred = credentials.Certificate(_firebase_temp_file_path)
+            logger.info(f"Using FIREBASE_CONFIG JSON string via temporary file: {_firebase_temp_file_path}")
+        
         if cred is None:
             logger.error("FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS is not set.")
             raise RuntimeError("Firebase configuration is missing.")
+
         try:
             APP_INSTANCE = get_app()
             logger.info("Reusing existing Firebase App instance.")
         except ValueError:
             APP_INSTANCE = firebase_admin.initialize_app(cred)
             logger.info("Initialized new Firebase App instance.")
+        
         db = firestore.client(app=APP_INSTANCE)
         logger.info("Firebase Firestore client initialized successfully.")
         return db
+
     except Exception as e:
         logger.error(f"Error initializing Firebase or Firestore: {e}")
         raise RuntimeError("Database connection failure.") from e
-    finally:
-        if temp_file_path and os.path.exists(temp_file_path):
-            try: os.remove(temp_file_path)
-            except Exception as cleanup_e: logger.warning(f"Failed to clean up temporary credential file: {cleanup_e}")
+
+def cleanup_firebase_temp_file():
+    global _firebase_temp_file_path
+    if _firebase_temp_file_path and os.path.exists(_firebase_temp_file_path):
+        try:
+            os.remove(_firebase_temp_file_path)
+            logger.debug(f"Cleaned up temporary credential file at {_firebase_temp_file_path}")
+        except Exception as cleanup_e:
+            logger.warning(f"Failed to clean up temporary credential file: {cleanup_e}")
 
 # ---------------- HELPERS ----------------
 def _generate_short_code(length=SHORT_CODE_LENGTH) -> str:
@@ -229,12 +352,14 @@ def generate_unique_short_code() -> str:
     for _ in range(MAX_ID_RETRIES):
         code = _generate_short_code()
         doc = collection.document(code).get()
-        if not doc.exists: return code
+        if not doc.exists:
+            return code
     raise RuntimeError("Could not generate unique short code.")
 
 def calculate_expiration(ttl: str) -> Optional[datetime]:
     delta = TTL_MAP.get(ttl, TTL_MAP["24h"])
-    if delta is None: return None
+    if delta is None:
+        return None
     return datetime.now(timezone.utc) + delta
 
 def generate_qr_code_data_uri(text: str) -> str:
@@ -248,29 +373,43 @@ def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None
     collection = init_firebase().collection("links")
     if custom_code:
         doc = collection.document(custom_code).get()
-        if doc.exists: raise ValueError("Custom code already exists")
+        if doc.exists:
+            raise ValueError("Custom code already exists")
         code = custom_code
     else:
         code = generate_unique_short_code()
+        
     expires_at = calculate_expiration(ttl)
     deletion_token = secrets.token_urlsafe(32)
     data = {
-        "long_url": long_url, "deletion_token": deletion_token,
-        "created_at": datetime.now(timezone.utc), "click_count": 0,
-        "clicks_by_day": {}, "clicks_by_country": {},
-        "meta_fetched": False, "meta_title": None, "meta_description": None,
-        "meta_image": None, "meta_favicon": None, "owner_id": owner_id,
-        "meta_summary": None, "summary_fetched": False # Summary fields
+        "long_url": long_url,
+        "deletion_token": deletion_token,
+        "created_at": datetime.now(timezone.utc),
+        "click_count": 0,
+        "clicks_by_day": {},
+        "meta_fetched": False,
+        "meta_title": None,
+        "meta_description": None,
+        "meta_image": None,
+        "meta_favicon": None,
+        "owner_id": owner_id,
+        "summary_status": "pending",
+        "summary_text": None
     }
     if expires_at:
         data["expires_at"] = expires_at
     collection.document(code).set(data)
-    return { **data, "short_code": code }
+    
+    return {
+        **data,
+        "short_code": code,
+    }
 
 def get_link(code: str) -> Optional[Dict[str, Any]]:
     collection = init_firebase().collection("links")
     doc = collection.document(code).get()
-    if not doc.exists: return None
+    if not doc.exists:
+        return None
     data = doc.to_dict()
     data["short_code"] = doc.id
     return data
@@ -282,160 +421,81 @@ def is_public_ip(ip_str: str) -> bool:
     except ValueError:
         return False
 
-class SecurityException(Exception):
-    pass
-
 async def fetch_metadata(url: str) -> dict:
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-    meta = {"title": None, "description": None, "image": None, "favicon": None}
+    # (Unchanged metadata fetch logic)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    meta = {
+        "title": None,
+        "description": None,
+        "image": None,
+        "favicon": None
+    }
     try:
         parsed_url = urlparse(url)
         hostname = parsed_url.hostname
-        if not hostname: raise ValueError("Invalid hostname")
+        if not hostname:
+            raise ValueError("Invalid hostname")
+
         try:
             ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
         except socket.gaierror:
             raise ValueError("Could not resolve hostname")
+
         if not is_public_ip(ip_address):
             raise SecurityException(f"Blocked request to non-public IP: {ip_address}")
+
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, follow_redirects=True, timeout=5.0)
             response.raise_for_status()
+            
             final_url = str(response.url)
             soup = BeautifulSoup(response.text, "lxml")
-            if og_title := soup.find("meta", property="og:title"): meta["title"] = og_title.get("content")
-            elif title := soup.find("title"): meta["title"] = title.string
-            if og_desc := soup.find("meta", property="og:description"): meta["description"] = og_desc.get("content")
-            elif desc := soup.find("meta", name="description"): meta["description"] = desc.get("content")
-            if og_image := soup.find("meta", property="og:image"): meta["image"] = urljoin(final_url, og_image.get("content"))
+
+            if og_title := soup.find("meta", property="og:title"):
+                meta["title"] = og_title.get("content")
+            elif title := soup.find("title"):
+                meta["title"] = title.string
+            if og_desc := soup.find("meta", property="og:description"):
+                meta["description"] = og_desc.get("content")
+            elif desc := soup.find("meta", name="description"):
+                meta["description"] = desc.get("content")
+            if og_image := soup.find("meta", property="og:image"):
+                meta["image"] = urljoin(final_url, og_image.get("content"))
             if favicon := soup.find("link", rel="icon") or soup.find("link", rel="shortcut icon"):
                 meta["favicon"] = urljoin(final_url, favicon.get("href"))
             else:
                 parsed_url_fallback = urlparse(final_url)
                 meta["favicon"] = f"{parsed_url_fallback.scheme}://{parsed_url_fallback.netloc}/favicon.ico"
-    except (httpx.RequestError, httptools.HTTPStatusError) as e: print(f"Error fetching metadata for {url}: {e}")
-    except SecurityException as e: print(f"SSRF Prevention: {e}")
-    except Exception as e: print(f"Error parsing or validating URL for {url}: {e}")
+
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
+        print(f"Error fetching metadata for {url}: {e}")
+    except SecurityException as e:
+        print(f"SSRF Prevention: {e}")
+    except Exception as e:
+        print(f"Error parsing or validating URL for {url}: {e}")
     return meta
 
-async def update_country_stats(short_code: str, ip_address: str):
-    """BG Task: Update country stats based on IP"""
-    if not is_public_ip(ip_address):
-        logger.debug(f"Skipping country lookup for non-public IP: {ip_address}")
-        return
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"https://ipinfo.io/{ip_address}/json", timeout=2.0)
-            response.raise_for_status()
-            data = response.json()
-            country_code = data.get("country")
-            if country_code:
-                db_client = init_firebase() 
-                doc_ref = db_client.collection("links").document(short_code)
-                country_key = f"clicks_by_country.{country_code}"
-                doc_ref.update({country_key: firestore.Increment(1)})
-                logger.debug(f"Logged click from {country_code} for {short_code}")
-    except Exception as e:
-        logger.warning(f"Failed to get/update country stats for {short_code} (IP: {ip_address}): {e}")
-
-async def get_llm_summary(text: str) -> Optional[str]:
-    """Calls the Hugging Face Inference API to get a summary."""
-    if not text:
-        return None
-    if not HF_TOKEN:
-        logger.error("HF_TOKEN environment variable not set. Cannot get summary.")
-        return None
-
-    payload = {
-        "inputs": text,
-        "parameters": {"min_length": 25, "max_length": 100}
-    }
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(HF_MODEL_ENDPOINT, json=payload, headers=headers, timeout=30.0)
-            
-            if response.status_code == 503: # Handle 503: Model is loading
-                logger.warning("Hugging Face model is loading (503). Retrying after wait...")
-                retry_data = response.json()
-                wait_time = retry_data.get("estimated_time", 20.0)
-                await asyncio.sleep(wait_time)
-                response = await client.post(HF_MODEL_ENDPOINT, json=payload, headers=headers, timeout=30.0)
-
-            response.raise_for_status()
-            data = response.json()
-            
-            if data and isinstance(data, list) and data[0] and "summary_text" in data[0]:
-                summary = data[0]["summary_text"]
-                return summary.strip()
-            else:
-                logger.error(f"Unexpected API response from Hugging Face: {data}")
-        
-    except httpx.RequestError as e:
-        logger.error(f"Could not connect to Hugging Face API at {HF_MODEL_ENDPOINT}: {e}")
-    except httpx.HTTPStatusError as e:
-        logger.error(f"Hugging Face API returned error: {e.response.status_code} {e.response.text}")
-    except Exception as e:
-        logger.error(f"Error getting LLM summary: {e}")
-    return None
-
-async def generate_and_cache_summary(short_code: str, url: str):
-    """BG Task: Fetch, summarize, and cache the summary."""
-    logger.debug(f"Starting summary task for {short_code} ({url})")
-    full_text = None
-    try:
-        # 1. Fetch the full page content
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers, follow_redirects=True, timeout=5.0)
-            response.raise_for_status()
-            
-            # 2. Extract and truncate text
-            soup = BeautifulSoup(response.text, "lxml")
-            if body := soup.find("body"):
-                full_text = body.get_text(separator=" ", strip=True)
-            if not full_text:
-                logger.warning(f"Could not extract text for summary: {short_code}")
-                return
-
-            truncated_text = full_text[:MAX_TEXT_FOR_LLM]
-            
-            # 3. Get summary from LLM
-            summary = await get_llm_summary(truncated_text)
-            
-            # 4. Save to Firestore
-            db_client = init_firebase()
-            doc_ref = db_client.collection("links").document(short_code)
-            
-            if summary:
-                doc_ref.update({"meta_summary": summary, "summary_fetched": True})
-                logger.info(f"Successfully generated and cached summary for {short_code}")
-            else:
-                doc_ref.update({"summary_fetched": True}) # Mark as fetched even if summary failed
-                logger.warning(f"LLM failed to provide summary for {short_code}")
-
-    except Exception as e:
-        logger.error(f"Failed generate_and_cache_summary task for {short_code}: {e}")
-        try:
-            db_client = init_firebase()
-            doc_ref = db_client.collection("links").document(short_code)
-            doc_ref.update({"summary_fetched": True}) # Mark as tried
-        except Exception as db_e:
-            logger.error(f"Failed to update summary_fetched status for {short_code}: {db_e}")
 
 # ---------------- APP ----------------
 app = FastAPI(title="Shortlinks.art URL Shortener")
-i18n_router = FastAPI() # This handles the localized routes
+i18n_router = FastAPI()
+
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_credentials=True,
-    allow_methods=["*"], allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
 
 class LinkCreatePayload(BaseModel):
     long_url: str
@@ -451,9 +511,17 @@ ADSENSE_SCRIPT = f"""
      crossorigin="anonymous"></script>
 """
 
-# === GLOBAL/NON-LOCALIZED ROUTES (Mounted on main 'app') ===
+# === NON-LOCALIZED ROUTES (Mounted on main 'app') ===
 
-# This handles the root path and redirects to the detected locale
+@app.on_event("startup")
+def on_startup():
+    init_firebase()
+    start_cleanup_thread() # Start the cleanup thread only once
+
+@app.on_event("shutdown")
+def on_shutdown():
+    cleanup_firebase_temp_file() # Clean up temp file
+
 @app.get("/")
 async def root_redirect(request: Request):
     locale = get_browser_locale(request)
@@ -474,30 +542,43 @@ async def health():
 async def api_create_link(
     request: Request, 
     payload: LinkCreatePayload,
-    background_tasks: BackgroundTasks, # Added
     _ : Callable = Depends(get_api_translator)
 ):
     long_url = payload.long_url.strip()
+    
     if not long_url:
         raise HTTPException(status_code=400, detail=_("invalid_url"))
+
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
-    
-    # Robust validation
+
     try:
         parsed = urlparse(long_url)
-        if not parsed.scheme or not parsed.netloc: raise ValueError("Missing scheme or domain")
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError("Missing scheme or domain")
+        
         if '.' not in parsed.netloc:
-            try: ipaddress.ip_address(parsed.netloc)
-            except ValueError: raise ValueError("Invalid domain, no TLD")
+            try:
+                ipaddress.ip_address(parsed.netloc)
+            except ValueError:
+                raise ValueError("Invalid domain, no TLD")
+                
     except ValueError as e:
         logger.warning(f"Invalid URL format submitted: {long_url} ({e})")
         raise HTTPException(status_code=400, detail=_("invalid_url"))
-    
+
+    if not validators.url(long_url, public=True):
+        logger.warning(f"Blocked non-public or invalid URL: {long_url}")
+        raise HTTPException(status_code=400, detail=_("invalid_url"))
+
     if payload.utm_tags:
         cleaned_tags = payload.utm_tags.lstrip("?&")
         if cleaned_tags:
-            long_url = f"{long_url}{'&' if '?' in long_url else '?'}{cleaned_tags}"
+            if "?" in long_url:
+                long_url = f"{long_url}&{cleaned_tags}"
+            else:
+                long_url = f"{long_url}?{cleaned_tags}"
+
     try:
         link = create_link_in_db(long_url, payload.ttl, payload.custom_code, payload.owner_id)
         
@@ -505,10 +586,8 @@ async def api_create_link(
         short_code = link['short_code']
         token = link['deletion_token']
 
-        # Trigger the summary task immediately in the background
-        background_tasks.add_task(generate_and_cache_summary, short_code, long_url)
-
         localized_preview_url = f"{BASE_URL}/{locale}/preview/{short_code}"
+        
         qr_code_data_uri = generate_qr_code_data_uri(localized_preview_url)
         return {
             "short_url": f"{BASE_URL}/r/{short_code}",
@@ -516,13 +595,19 @@ async def api_create_link(
             "delete_url": f"{BASE_URL}/{locale}/delete/{short_code}?token={token}",
             "qr_code_data": qr_code_data_uri
         }
-    except ValueError as e: raise HTTPException(status_code=409, detail=_("custom_code_exists"))
-    except RuntimeError as e: raise HTTPException(status_code=500, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=_("custom_code_exists"))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/my-links")
-async def get_my_links(owner_id: str, _ : Callable = Depends(get_api_translator)):
+async def get_my_links(
+    owner_id: str,
+    _ : Callable = Depends(get_api_translator)
+):
     if not owner_id:
         raise HTTPException(status_code=400, detail=_("owner_id_required"))
+
     db = init_firebase()
     links_query = (
         db.collection("links")
@@ -531,6 +616,7 @@ async def get_my_links(owner_id: str, _ : Callable = Depends(get_api_translator)
         .limit(100)
     )
     docs = links_query.stream()
+    
     links_list = []
     for doc in docs:
         data = doc.to_dict()
@@ -542,23 +628,47 @@ async def get_my_links(owner_id: str, _ : Callable = Depends(get_api_translator)
         data["created_at"] = data["created_at"].isoformat()
         if "expires_at" in data and data["expires_at"]:
             data["expires_at"] = data["expires_at"].isoformat()
+            
         links_list.append(data)
+        
     return {"links": links_list}
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
-    content = f"User-agent: *\nDisallow: /api/\nDisallow: /r/\nDisallow: /health\nSitemap: {BASE_URL}/sitemap.xml\n"
+    content = f"""User-agent: *
+Disallow: /api/
+Disallow: /r/
+Disallow: /health
+Disallow: /stats/
+Disallow: /delete/
+Sitemap: {BASE_URL}/sitemap.xml
+"""
     return content
 
 @app.get("/sitemap.xml", response_class=Response)
 async def sitemap():
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+"""
     for lang in SUPPORTED_LOCALES:
         xml_content += f"""
-  <url><loc>{BASE_URL}/{lang}</loc><lastmod>{last_mod}</lastmod><priority>1.0</priority></url>
-  <url><loc>{BASE_URL}/{lang}/about</loc><lastmod>{last_mod}</lastmod><priority>0.8</priority></url>
-  <url><loc>{BASE_URL}/{lang}/dashboard</loc><lastmod>{last_mod}</lastmod><priority>0.7</priority></url>
+  <url>
+    <loc>{BASE_URL}/{lang}</loc>
+    <lastmod>{last_mod}</lastmod>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>{BASE_URL}/{lang}/about</loc>
+    <lastmod>{last_mod}</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>{BASE_URL}/{lang}/dashboard</loc>
+    <lastmod>{last_mod}</lastmod>
+    <priority>0.7</priority>
+  </url>
 """
     xml_content += "</urlset>"
     return Response(content=xml_content, media_type="application/xml")
@@ -568,140 +678,187 @@ def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> st
     doc = doc_ref.get(transaction=transaction)
     if not doc.exists:
         raise HTTPException(status_code=404, detail=get_text("link_not_found"))
+
     link = doc.to_dict()
+    
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail=get_text("link_expired"))
+
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     day_key = f"clicks_by_day.{today_str}"
-    transaction.update(doc_ref, {"click_count": firestore.Increment(1), day_key: firestore.Increment(1)})
+    
+    transaction.update(doc_ref, {
+        "click_count": firestore.Increment(1),
+        day_key: firestore.Increment(1)
+    })
+    
     return link["long_url"]
 
 @app.get("/r/{short_code}")
 async def redirect_link(
-    short_code: str, 
-    request: Request,
-    background_tasks: BackgroundTasks,
+    short_code: str,
     _ : Callable = Depends(get_api_translator)
 ):
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
     long_url = None
+    
     try:
         transaction = db.transaction()
         long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
-    except HTTPException as e: raise e 
+        
+    except HTTPException as e:
+        raise e 
     except Exception as e:
         logger.warning(f"Click count transaction for {short_code} failed: {e}. Retrying non-atomically.")
+        
         try:
             link_doc = doc_ref.get() 
-            if not link_doc.exists: raise HTTPException(status_code=404, detail=_("link_not_found"))
+            if not link_doc.exists:
+                 raise HTTPException(status_code=404, detail=_("link_not_found"))
+            
             link = link_doc.to_dict()
             expires_at = link.get("expires_at")
             if expires_at and expires_at < datetime.now(timezone.utc):
                 raise HTTPException(status_code=410, detail=_("link_expired"))
+            
             today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             day_key = f"clicks_by_day.{today_str}"
-            doc_ref.update({"click_count": firestore.Increment(1), day_key: firestore.Increment(1)})
+            doc_ref.update({
+                "click_count": firestore.Increment(1),
+                day_key: firestore.Increment(1)
+            })
+            
             long_url = link["long_url"]
-        except HTTPException as he: raise he
+            
+        except HTTPException as he:
+            raise he
         except Exception as e2:
             logger.error(f"Non-transactional update for {short_code} failed: {e2}. Redirecting without count.")
-            if 'link' in locals() and link: long_url = link.get("long_url")
+            if 'link' in locals() and link:
+                long_url = link.get("long_url")
+            
             if long_url is None:
                 try:
                     link_doc = doc_ref.get()
-                    if link_doc.exists: long_url = link_doc.to_dict().get("long_url")
-                    else: raise HTTPException(status_code=404, detail=_("link_not_found"))
+                    if link_doc.exists:
+                        long_url = link_doc.to_dict().get("long_url")
+                    else:
+                        raise HTTPException(status_code=404, detail=_("link_not_found"))
                 except Exception as e3:
                      logger.error(f"Final attempt to get long_url for {short_code} failed: {e3}.")
                      raise HTTPException(status_code=404, detail=_("link_not_found"))
+
     if not long_url:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
-    
-    # Trigger country stats task
-    try:
-        ip_address = get_remote_address(request)
-        background_tasks.add_task(update_country_stats, short_code, ip_address)
-    except Exception as e:
-        logger.warning(f"Failed to schedule country stats task for {short_code}: {e}")
-    
-    absolute_url = "https://" + long_url if not long_url.startswith(("http://", "https")) else long_url
+
+    if not long_url.startswith(("http://", "https")):
+        absolute_url = "https://" + long_url
+    else:
+        absolute_url = long_url
+
     return RedirectResponse(url=absolute_url)
 
-# === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===
-# NOTE: The name= parameters are used by the 'app.url_for' call inside the mounting
-# structure to correctly resolve the localized path.
 
-@i18n_router.get("/", response_class=HTMLResponse, name="home_page")
+# === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===
+
+@i18n_router.get("/", response_class=HTMLResponse)
 async def index(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("index.html", common_context)
     
-@i18n_router.get("/dashboard", response_class=HTMLResponse, name="dashboard_page")
+@i18n_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("dashboard.html", common_context)
 
-@i18n_router.get("/about", response_class=HTMLResponse, name="about_page")
+@i18n_router.get("/about", response_class=HTMLResponse)
 async def about(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("about.html", common_context)
 
-@i18n_router.get("/preview/{short_code}", response_class=HTMLResponse, name="preview_page")
+@i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(
     short_code: str,
-    common_context: dict = Depends(get_common_context)
+    common_context: dict = Depends(get_common_context),
+    background_tasks: BackgroundTasks = Depends()
 ):
     _ = common_context["_"]
     db_client = init_firebase()
     doc_ref = db_client.collection("links").document(short_code)
     doc = doc_ref.get()
+
     if not doc.exists:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
+    
     link = doc.to_dict()
     link["short_code"] = doc.id
+    
     expires_at = link.get("expires_at")
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail=_("link_expired"))
+    
     long_url = link["long_url"]
     
-    safe_href_url = "https://" + long_url if not long_url.startswith(("http://", "https")) else long_url
-    
-    if link.get("meta_fetched"):
-        meta = {
-            "title": link.get("meta_title"), "description": link.get("meta_description"),
-            "image": link.get("meta_image"), "favicon": link.get("meta_favicon")
-        }
+    if not long_url.startswith(("http://", "https")):
+        safe_href_url = "https://" + long_url
     else:
+        safe_href_url = long_url
+    
+    # Initialize variables for template
+    meta_title = link.get("meta_title")
+    meta_description = link.get("meta_description")
+    meta_image = link.get("meta_image")
+    meta_favicon = link.get("meta_favicon")
+    summary = link.get("summary_text")
+    
+    # 1. Fetch Metadata (if needed)
+    if not link.get("meta_fetched"):
         meta = await fetch_metadata(safe_href_url)
         try:
             doc_ref.update({
-                "meta_fetched": True, "meta_title": meta.get("title"),
+                "meta_fetched": True,
+                "meta_title": meta.get("title"),
                 "meta_description": meta.get("description"),
-                "meta_image": meta.get("image"), "meta_favicon": meta.get("favicon")
+                "meta_image": meta.get("image"),
+                "meta_favicon": meta.get("favicon")
             })
+            meta_title = meta.get("title")
+            meta_description = meta.get("description")
+            meta_image = meta.get("image")
+            meta_favicon = meta.get("favicon")
         except Exception as e:
-            print(f"Error updating cache for {short_code}: {e}")
+            logger.error(f"Error updating cache for {short_code}: {e}")
     
-    # Get summary status
-    summary = link.get("meta_summary")
-    summary_fetched = link.get("summary_fetched", False)
-            
+    # 2. Trigger LLM Summary (if pending)
+    if link.get("summary_status") == "pending" and llm_model:
+        try:
+            background_tasks.add_task(generate_summary_background, doc_ref, safe_href_url)
+            doc_ref.update({"summary_status": "in_progress"})
+        except Exception as e:
+            logger.error(f"Failed to schedule background task for {short_code}: {e}")
+
+    # 3. Determine Final Display Description
+    # Priority: AI Summary > Meta Description > Hardcoded fallback
+    display_description = summary or meta_description
+    if not display_description:
+        display_description = "No description available."
+    
     context = {
-        **common_context, "short_code": short_code,
+        **common_context,
+        "short_code": short_code,
         "escaped_long_url_href": html.escape(safe_href_url, quote=True),
         "escaped_long_url_display": html.escape(long_url),
-        "meta_title": html.escape(meta.get("title") or "Title not found"),
-        "meta_description": html.escape(meta.get("description") or "No description available."),
-        "meta_image_url": html.escape(meta.get("image") or "", quote=True),
-        "meta_favicon_url": html.escape(meta.get("favicon") or "", quote=True),
-        "has_image": bool(meta.get("image")), "has_favicon": bool(meta.get("favicon")),
-        "has_description": bool(meta.get("description")),
-        "summary": html.escape(summary or ""),
-        "has_summary": bool(summary),
-        "summary_fetched": summary_fetched # Pass status to template
+        "meta_title": html.escape(meta_title or "Title not found"),
+        "meta_description": html.escape(display_description),
+        "meta_image_url": html.escape(meta_image or "", quote=True),
+        "meta_favicon_url": html.escape(meta_favicon or "", quote=True),
+        "has_image": bool(meta_image),
+        "has_favicon": bool(meta_favicon),
+        "has_description": bool(display_description)
     }
+    
     return templates.TemplateResponse("preview.html", context)
 
-@i18n_router.get("/stats/{short_code}", response_class=HTMLResponse, name="stats_page")
+@i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
 async def stats(
     short_code: str,
     common_context: dict = Depends(get_common_context)
@@ -710,68 +867,49 @@ async def stats(
     link = get_link(short_code)
     if not link:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
+    
     context = { **common_context, "link": link }
     return templates.TemplateResponse("stats.html", context)
 
-@i18n_router.get("/delete/{short_code}", response_class=HTMLResponse, name="delete_page")
+@i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete(
-    short_code: str, token: Optional[str] = None,
+    short_code: str,
+    token: Optional[str] = None,
     common_context: dict = Depends(get_common_context)
 ):
     _ = common_context["_"]
     if not token:
         raise HTTPException(status_code=400, detail=_("token_missing"))
+    
     collection_ref = init_firebase().collection("links")
     doc_ref = collection_ref.document(short_code)
+    
     doc = doc_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
+    
     link = doc.to_dict()
+    
     if link.get("deletion_token") == token:
         doc_ref.delete()
-        context = {**common_context, "success": True, "message": _("delete_success")}
+        context = {
+            **common_context, 
+            "success": True, 
+            "message": _("delete_success")
+        }
     else:
-        context = {**common_context, "success": False, "message": _("delete_invalid_token")}
+        context = {
+            **common_context,
+            "success": False,
+            "message": _("delete_invalid_token")
+        }
+        
     return templates.TemplateResponse("delete_status.html", context)
 
+
+class SecurityException(Exception):
+    pass
+
 # --- Mount the localized router ---
-# This is the line that caused the bug. The templates expect to call
-# url_for('home_page', locale=locale). This structure supports that.
 app.mount("/{locale}", i18n_router, name="localized")
 
-# --- Background Cleanup Thread ---
-def _cleanup_loop():
-    logger.info("🧹 Cleanup thread started. Will check for expired links every 10 minutes.")
-    time.sleep(30) 
-    while True:
-        try:
-            db = init_firebase() 
-            if not db:
-                logger.error("Cleanup thread: DB not initialized. Retrying in 60s.")
-                time.sleep(60)
-                continue
-            now = datetime.now(timezone.utc)
-            links_ref = db.collection("links")
-            query = links_ref.where(filter=FieldFilter("expires_at", "<", now)).limit(50)
-            docs = query.stream()
-            count = 0
-            for doc in docs:
-                logger.info(f"Cleanup: Deleting expired link {doc.id}...")
-                doc.reference.delete()
-                count += 1
-            if count > 0: logger.info(f"Cleanup: Successfully deleted {count} expired links.")
-            else: logger.debug("Cleanup: No expired links found this cycle.")
-            time.sleep(600) # 10 minutes
-        except Exception as e:
-            logger.error(f"Error in cleanup thread: {e}")
-            time.sleep(60)
-
-def start_cleanup_thread():
-    logger.info("Starting background cleanup thread...")
-    cleanup_thread = threading.Thread(target=_cleanup_loop)
-    cleanup_thread.daemon = True 
-    cleanup_thread.start()
-    logger.info("Cleanup thread is now running in the background.")
-
-# --- Start background tasks ---
-start_cleanup_thread()

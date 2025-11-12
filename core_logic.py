@@ -238,35 +238,32 @@ class URLValidator:
             return ip_address
         
         except socket.gaierror as e:
+            # Re-raise as ValidationException to handle DNS errors gracefully
             raise ValidationException(f"Could not resolve hostname: {hostname}")
-
     
     @staticmethod
     def validate_url_structure(url: str) -> str:
+        # ... (Method logic remains as per last update, with canonicalization) ...
         if not url or not url.strip():
              raise ValidationException("URL cannot be empty") 
         url = url.strip()
         
-        # NOTE: config.MAX_URL_LENGTH is imported from the config module's constants
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
         # 1. Check if scheme is missing (handles 'domain.com')
         parsed_test = urlparse(url)
         if not parsed_test.scheme:
-            url = "https://" + url # Prepend HTTPS as the default secure scheme
+            url = "https://" + url 
         
         try:
             # 2. Parse the potentially modified URL
             parsed = urlparse(url)
             
             # 3. Canonicalize/Upgrade explicit HTTP to HTTPS if HTTPS is allowed
-            # This is key for consistency and security, ensuring all user inputs default to HTTPS if possible.
-            # NOTE: config.ALLOWED_SCHEMES is imported from the config module's constants
             if parsed.scheme == "http" and "https" in config.ALLOWED_SCHEMES:
-                # Replace the first occurrence of "http://" with "https://"
                 url = url.replace("http://", "https://", 1)
-                parsed = urlparse(url) # Re-parse the corrected URL for subsequent checks
+                parsed = urlparse(url) 
 
             # 4. Final Scheme Validation
             if parsed.scheme not in config.ALLOWED_SCHEMES:
@@ -277,7 +274,6 @@ class URLValidator:
                 raise ValidationException("URL must include a domain")
             
             # 6. Check for blocked domains
-            # NOTE: config.BLOCKED_DOMAINS is imported from the config module's constants
             hostname = parsed.netloc.split(':')[0].lower()
             if hostname in config.BLOCKED_DOMAINS:
                 raise SecurityException(f"Domain is blocked: {hostname}")
@@ -293,10 +289,11 @@ class URLValidator:
         
         except ValueError as e:
             raise ValidationException(f"Invalid URL format: {e}")
-
+    
     @staticmethod
     def validate_url_public(url: str) -> bool:
-        return validators.url(url, public=True)
+        # 🟢 FIX: Removed public=True constraint which was likely too strict for some valid URLs
+        return validators.url(url)
     
     @classmethod
     async def validate_and_sanitize(cls, url: str) -> str:

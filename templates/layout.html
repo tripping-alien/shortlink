@@ -36,13 +36,13 @@
 
             <div class="lang-switcher">
                 <button class="lang-button">
-                    {{ LOCALE_TO_EMOJI.get(locale, "🌍") }} {{ _(f"lang_name_{locale}") }}
+                    {{ LOCALE_TO_EMOJI.get(locale, "🌍") }} {{ _("lang_name_" ~ locale) }}
                 </button>
                 <div class="lang-dropdown">
                     {% for lang in SUPPORTED_LOCALES %}
                     {% set new_path = request.url.path.replace('/' + locale, '', 1) | default('/') %}
                     <a href="/{{ lang }}{{ new_path }}">
-                        {{ LOCALE_TO_EMOJI.get(lang, "🌍") }} {{ _(f"lang_name_{lang}") }}
+                        {{ LOCALE_TO_EMOJI.get(lang, "🌍") }} {{ _("lang_name_" ~ lang) }}
                     </a>
                     {% endfor %}
                 </div>

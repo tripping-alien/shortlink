@@ -1,97 +1,14 @@
 {
   "locales": [
-  "en": {
-    "error_invalid_url": "Invalid URL format. Please enter a valid web address.",
-    "error_field_required": "This field is required.",
-    "error_length_min": "Must be at least {limit_value} characters long.",
-    "error_length_max": "Must not exceed {limit_value} characters.",
-    "error_invalid_chars": "Contains invalid characters. Only letters and numbers allowed.",
-    "error_validation_failed": "Validation failed. Please check your input."
-  },
-  "es": {
-    "error_invalid_url": "Formato de URL no válido. Por favor ingrese una dirección web válida.",
-    "error_field_required": "Este campo es obligatorio.",
-    "error_length_min": "Debe tener al menos {limit_value} caracteres.",
-    "error_length_max": "No debe exceder {limit_value} caracteres.",
-    "error_invalid_chars": "Contiene caracteres no válidos. Solo se permiten letras y números.",
-    "error_validation_failed": "La validación falló. Por favor revise su entrada."
-  },
-  "fr": {
-    "error_invalid_url": "Format d'URL invalide. Veuillez entrer une adresse web valide.",
-    "error_field_required": "Ce champ est requis.",
-    "error_length_min": "Doit contenir au moins {limit_value} caractères.",
-    "error_length_max": "Ne doit pas dépasser {limit_value} caractères.",
-    "error_invalid_chars": "Contient des caractères non valides. Seuls les lettres et chiffres sont autorisés.",
-    "error_validation_failed": "La validation a échoué. Veuillez vérifier votre saisie."
-  },
-  "de": {
-    "error_invalid_url": "Ungültiges URL-Format. Bitte geben Sie eine gültige Webadresse ein.",
-    "error_field_required": "Dieses Feld ist erforderlich.",
-    "error_length_min": "Muss mindestens {limit_value} Zeichen lang sein.",
-    "error_length_max": "Darf {limit_value} Zeichen nicht überschreiten.",
-    "error_invalid_chars": "Enthält ungültige Zeichen. Nur Buchstaben und Zahlen sind erlaubt.",
-    "error_validation_failed": "Validierung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingabe."
-  },
-  "it": {
-    "error_invalid_url": "Formato URL non valido. Si prega di inserire un indirizzo web valido.",
-    "error_field_required": "Questo campo è obbligatorio.",
-    "error_length_min": "Deve essere lungo almeno {limit_value} caratteri.",
-    "error_length_max": "Non deve superare {limit_value} caratteri.",
-    "error_invalid_chars": "Contiene caratteri non validi. Sono ammesse solo lettere e numeri.",
-    "error_validation_failed": "Validazione fallita. Controllare l'input."
-  },
-  "pt": {
-    "error_invalid_url": "Formato de URL inválido. Por favor, insira um endereço da web válido.",
-    "error_field_required": "Este campo é obrigatório.",
-    "error_length_min": "Deve ter pelo menos {limit_value} caracteres.",
-    "error_length_max": "Não deve exceder {limit_value} caracteres.",
-    "error_invalid_chars": "Contém caracteres inválidos. Apenas letras e números são permitidos.",
-    "error_validation_failed": "A validação falhou. Por favor, verifique sua entrada."
-  },
-  "ja": {
-    "error_invalid_url": "無効なURL形式です。有効なWebアドレスを入力してください。",
-    "error_field_required": "このフィールドは必須です。",
-    "error_length_min": "少なくとも{limit_value}文字である必要があります。",
-    "error_length_max": "{limit_value}文字を超えてはなりません。",
-    "error_invalid_chars": "無効な文字が含まれています。文字と数字のみ使用できます。",
-    "error_validation_failed": "検証に失敗しました。入力を確認してください。"
-  },
-  "zh": {
-    "error_invalid_url": "无效的URL格式。请输入有效的网址。",
-    "error_field_required": "此字段为必填项。",
-    "error_length_min": "必须至少为{limit_value}个字符。",
-    "error_length_max": "不得超过{limit_value}个字符。",
-    "error_invalid_chars": "包含无效字符。仅允许字母和数字。",
-    "error_validation_failed": "验证失败。请检查您的输入。"
-  },
-  "ar": {
-    "error_invalid_url": "تنسيق URL غير صالح. يرجى إدخال عنوان ويب صالح.",
-    "error_field_required": "هذا الحقل مطلوب.",
-    "error_length_min": "يجب أن يكون على الأقل {limit_value} حرفًا.",
-    "error_length_max": "يجب ألا يتجاوز {limit_value} حرفًا.",
-    "error_invalid_chars": "يحتوي على أحرف غير صالحة. يُسمح فقط بالحروف والأرقام.",
-    "error_validation_failed": "فشل التحقق. يرجى التحقق من إدخالك."
-  },
-  "ru": {
-    "error_invalid_url": "Неверный формат URL. Пожалуйста, введите действительный веб-адрес.",
-    "error_field_required": "Это поле обязательно.",
-    "error_length_min": "Должно быть не менее {limit_value} символов.",
-    "error_length_max": "Не должно превышать {limit_value} символов.",
-    "error_invalid_chars": "Содержит недопустимые символы. Разрешены только буквы и цифры.",
-    "error_validation_failed": "Проверка не удалась. Пожалуйста, проверьте ввод."
-  },
-  "arr": {
-    "error_invalid_url": "That URL be cursed! Enter a proper one, ye scallywag.",
-    "error_field_required": "This field be mandatory, savvy?",
-    "error_length_min": "Must be at least {limit_value} characters, or walk the plank!",
-    "error_length_max": "Can't exceed {limit_value} characters, ye barnacle!",
-    "error_invalid_chars": "Invalid characters! Only letters and numbers, matey.",
-    "error_validation_failed": "Validation failed! Check yer map again."
-  }
-  
     {
       "code": "en",
       "translations": {
+        "error_invalid_url": "Invalid URL format. Please enter a valid web address.",
+        "error_field_required": "This field is required.",
+        "error_length_min": "Must be at least {limit_value} characters long.",
+        "error_length_max": "Must not exceed {limit_value} characters.",
+        "error_invalid_chars": "Contains invalid characters. Only letters and numbers allowed.",
+        "error_validation_failed": "Validation failed. Please check your input.",
         "my_links_button": "My Links 🔗",
         "tagline": "A secure, fast, and feature-rich URL shortener. ⚡",
         "long_url_placeholder": "Paste your long URL here...",
@@ -106,7 +23,6 @@
         "nav_dashboard": "Dashboard 📈",
         "custom_code_placeholder": "Custom Code (optional)",
         "utm_tags_placeholder": "UTM Tags (e.g., source=email&medium=...) (optional)",
-
         "dashboard_tagline": "Manage your link portfolio and track performance.",
         "login_required": "Authentication Required 🔑",
         "enter_owner_id_prompt": "Enter your unique Owner ID to access your dashboard.",
@@ -119,7 +35,6 @@
         "expires": "Expires",
         "actions": "Actions",
         "dashboard_no_links": "No links found for this owner ID.",
-
         "seo_h2_primary": "The Fastest & Most Secure URL Shortener Tool 🚀",
         "seo_p_intro": "Shortlinks.art is your free solution for professional link management. We offer lightning-fast link generation, advanced analytics tracking, and full privacy controls for every link you create.",
         "seo_h3_features": "Core Features for Professional Link Management 🛠️",
@@ -132,14 +47,12 @@
         "seo_security_3": "Strict data privacy policy: We never sell your link click data.",
         "seo_h3_cta": "Ready to Start Tracking and Shortening Your Links?",
         "create_link_now": "Create Your Custom Short Link Now! ✨",
-        
         "shorten_success_title": "Success! Your link is ready! 🎉",
         "short_url_label": "Shortened Link",
         "copy_button": "Copy",
         "stats_link": "View Stats 📊",
         "delete_link": "Delete Link 🗑️",
         "copy_success": "Copied to clipboard! ✅",
-        
         "processing_request": "Processing request...",
         "generic_error_message": "An unexpected error occurred.",
         "network_error_message": "A connection error occurred. Please try again.",
@@ -162,6 +75,12 @@
     {
       "code": "es",
       "translations": {
+        "error_invalid_url": "Formato de URL no válido. Por favor ingrese una dirección web válida.",
+        "error_field_required": "Este campo es obligatorio.",
+        "error_length_min": "Debe tener al menos {limit_value} caracteres.",
+        "error_length_max": "No debe exceder {limit_value} caracteres.",
+        "error_invalid_chars": "Contiene caracteres no válidos. Solo se permiten letras y números.",
+        "error_validation_failed": "La validación falló. Por favor revise su entrada.",
         "my_links_button": "Mis Enlaces 🔗",
         "tagline": "Un acortador de URL seguro, rápido y con muchas funciones. ⚡",
         "long_url_placeholder": "Pega tu URL larga aquí...",
@@ -176,7 +95,6 @@
         "nav_dashboard": "Panel de Control 📈",
         "custom_code_placeholder": "Código Personalizado (opcional)",
         "utm_tags_placeholder": "Etiquetas UTM (ej: source=email&medium=...) (opcional)",
-        
         "dashboard_tagline": "Administra tu cartera de enlaces y rastrea el rendimiento.",
         "login_required": "Autenticación Requerida 🔑",
         "enter_owner_id_prompt": "Ingresa tu ID de Propietario único para acceder a tu panel.",
@@ -189,7 +107,6 @@
         "expires": "Caducidad",
         "actions": "Acciones",
         "dashboard_no_links": "No se encontraron enlaces para este ID de Propietario.",
-
         "seo_h2_primary": "La Herramienta para Acortar URL más Rápida y Segura 🚀",
         "seo_p_intro": "Shortlinks.art es tu solución gratuita para la gestión profesional de enlaces. Ofrecemos generación de enlaces ultrarrápida, seguimiento de análisis avanzado y control total de la privacidad.",
         "seo_h3_features": "Funciones Clave para la Gestión Profesional de Enlaces 🛠️",
@@ -202,14 +119,12 @@
         "seo_security_3": "Política de privacidad estricta: Nunca vendemos tus datos de clics.",
         "seo_h3_cta": "¿Listo para Empezar a Rastrear y Acortar tus Enlaces?",
         "create_link_now": "¡Crea tu Enlace Corto Personalizado Ahora! ✨",
-
         "shorten_success_title": "¡Éxito! ¡Tu enlace está listo! 🎉",
         "short_url_label": "Enlace Acortado",
         "copy_button": "Copiar",
         "stats_link": "Ver Estadísticas 📊",
         "delete_link": "Eliminar Enlace 🗑️",
         "copy_success": "¡Copiado al portapapeles! ✅",
-
         "processing_request": "Procesando solicitud...",
         "generic_error_message": "Ocurrió un error inesperado.",
         "network_error_message": "Ocurrió un error de conexión. Por favor, inténtalo de nuevo.",
@@ -232,6 +147,12 @@
     {
       "code": "fr",
       "translations": {
+        "error_invalid_url": "Format d'URL invalide. Veuillez entrer une adresse web valide.",
+        "error_field_required": "Ce champ est requis.",
+        "error_length_min": "Doit contenir au moins {limit_value} caractères.",
+        "error_length_max": "Ne doit pas dépasser {limit_value} caractères.",
+        "error_invalid_chars": "Contient des caractères non valides. Seuls les lettres et chiffres sont autorisés.",
+        "error_validation_failed": "La validation a échoué. Veuillez vérifier votre saisie.",
         "my_links_button": "Mes Liens 🔗",
         "tagline": "Un raccourcisseur d'URL sécurisé, rapide et riche en fonctionnalités. ⚡",
         "long_url_placeholder": "Collez votre longue URL ici...",
@@ -245,7 +166,7 @@
         "nav_about": "À Propos",
         "nav_dashboard": "Tableau de Bord 📈",
         "custom_code_placeholder": "Code Personnalisé (optionnel)",
-        "utm_tags_placeholder": "Balises UTM (ex: source=email&medium=...) (optionnel)",
+        "utm_tags_placeholder": "Balises UTM (ex: source=email&medium=...) (oprionnel)",
         
         "dashboard_tagline": "Gérez votre portefeuille de liens et suivez les performances.",
         "login_required": "Authentification Requise 🔑",
@@ -302,6 +223,12 @@
     {
       "code": "de",
       "translations": {
+        "error_invalid_url": "Ungültiges URL-Format. Bitte geben Sie eine gültige Webadresse ein.",
+        "error_field_required": "Dieses Feld ist erforderlich.",
+        "error_length_min": "Muss mindestens {limit_value} Zeichen lang sein.",
+        "error_length_max": "Darf {limit_value} Zeichen nicht überschreiten.",
+        "error_invalid_chars": "Enthält ungültige Zeichen. Nur Buchstaben und Zahlen sind erlaubt.",
+        "error_validation_failed": "Validierung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingabe.",
         "my_links_button": "Meine Links 🔗",
         "tagline": "Ein sicherer, schneller und funktionsreicher URL-Verkürzer. ⚡",
         "long_url_placeholder": "Fügen Sie Ihre lange URL hier ein...",
@@ -372,6 +299,12 @@
     {
       "code": "it",
       "translations": {
+        "error_invalid_url": "Formato URL non valido. Si prega di inserire un indirizzo web valido.",
+        "error_field_required": "Questo campo è obbligatorio.",
+        "error_length_min": "Deve essere lungo almeno {limit_value} caratteri.",
+        "error_length_max": "Non deve superare {limit_value} caratteri.",
+        "error_invalid_chars": "Contiene caratteri non validi. Sono ammesse solo lettere e numeri.",
+        "error_validation_failed": "Validazione fallita. Controllare l'input.",
         "my_links_button": "I miei link 🔗",
         "tagline": "Un accorciatore di URL sicuro, veloce e ricco di funzionalità. ⚡",
         "long_url_placeholder": "Incolla qui la tua URL lunga...",
@@ -442,6 +375,12 @@
     {
       "code": "pt",
       "translations": {
+        "error_invalid_url": "Formato de URL inválido. Por favor, insira um endereço da web válido.",
+        "error_field_required": "Este campo é obrigatório.",
+        "error_length_min": "Deve ter pelo menos {limit_value} caracteres.",
+        "error_length_max": "Não deve exceder {limit_value} caracteres.",
+        "error_invalid_chars": "Contém caracteres inválidos. Apenas letras e números são permitidos.",
+        "error_validation_failed": "A validação falhou. Por favor, verifique sua entrada.",
         "my_links_button": "Meus Links 🔗",
         "tagline": "Um encurtador de URL seguro, rápido e com muitos recursos. ⚡",
         "long_url_placeholder": "Cole seu URL longo aqui...",
@@ -512,6 +451,12 @@
     {
       "code": "ja",
       "translations": {
+        "error_invalid_url": "無効なURL形式です。有効なWebアドレスを入力してください。",
+        "error_field_required": "このフィールドは必須です。",
+        "error_length_min": "少なくとも{limit_value}文字である必要があります。",
+        "error_length_max": "{limit_value}文字を超えてはなりません。",
+        "error_invalid_chars": "無効な文字が含まれています。文字と数字のみ使用できます。",
+        "error_validation_failed": "検証に失敗しました。入力を確認してください。",
         "my_links_button": "マイリンク 🔗",
         "tagline": "安全で高速、高機能なURL短縮サービス。⚡",
         "long_url_placeholder": "長いURLをここに貼り付けてください...",
@@ -526,7 +471,6 @@
         "nav_dashboard": "ダッシュボード 📈",
         "custom_code_placeholder": "カスタムコード（オプション）",
         "utm_tags_placeholder": "UTMタグ（例：source=email&medium=...）（オプション）",
-        
         "dashboard_tagline": "リンクのポートフォリオを管理し、パフォーマンスを追跡します。",
         "login_required": "認証が必要です 🔑",
         "enter_owner_id_prompt": "一意のオーナーIDを入力してダッシュボードにアクセスしてください。",
@@ -582,6 +526,12 @@
     {
       "code": "zh",
       "translations": {
+        "error_invalid_url": "无效的URL格式。请输入有效的网址。",
+        "error_field_required": "此字段为必填项。",
+        "error_length_min": "必须至少为{limit_value}个字符。",
+        "error_length_max": "不得超过{limit_value}个字符。",
+        "error_invalid_chars": "包含无效字符。仅允许字母和数字。",
+        "error_validation_failed": "验证失败。请检查您的输入。",
         "my_links_button": "我的链接 🔗",
         "tagline": "一个安全、快速、功能丰富的URL缩短服务。⚡",
         "long_url_placeholder": "在此处粘贴您的长URL...",
@@ -596,7 +546,6 @@
         "nav_dashboard": "仪表板 📈",
         "custom_code_placeholder": "自定义代码（可选）",
         "utm_tags_placeholder": "UTM 标签（例如：source=email&medium=...）（可选）",
-        
         "dashboard_tagline": "管理您的链接组合并跟踪性能。",
         "login_required": "需要身份验证 🔑",
         "enter_owner_id_prompt": "输入您唯一的拥有者ID以访问您的仪表板。",
@@ -652,6 +601,12 @@
     {
       "code": "ar",
       "translations": {
+        "error_invalid_url": "تنسيق URL غير صالح. يرجى إدخال عنوان ويب صالح.",
+        "error_field_required": "هذا الحقل مطلوب.",
+        "error_length_min": "يجب أن يكون على الأقل {limit_value} حرفًا.",
+        "error_length_max": "يجب ألا يتجاوز {limit_value} حرفًا.",
+        "error_invalid_chars": "يحتوي على أحرف غير صالحة. يُسمح فقط بالحروف والأرقام.",
+        "error_validation_failed": "فشل التحقق. يرجى التحقق من إدخالك.",
         "my_links_button": "روابـطي 🔗",
         "tagline": "خدمة اختصار عناوين URL آمنة وسريعة وغنية بالميزات. ⚡",
         "long_url_placeholder": "الصق عنوان URL الطويل هنا...",
@@ -666,7 +621,6 @@
         "nav_dashboard": "لوحة التحكم 📈",
         "custom_code_placeholder": "رمز مخصص (اختياري)",
         "utm_tags_placeholder": "علامات UTM (مثال: source=email&medium=...) (اختياري)",
-        
         "dashboard_tagline": "إدارة محفظة الروابط الخاصة بك وتتبع الأداء.",
         "login_required": "المصادقة مطلوبة 🔑",
         "enter_owner_id_prompt": "أدخل معرف المالك الفريد الخاص بك للوصول إلى لوحة التحكم.",
@@ -722,6 +676,12 @@
     {
       "code": "ru",
       "translations": {
+        "error_invalid_url": "Неверный формат URL. Пожалуйста, введите действительный веб-адрес.",
+        "error_field_required": "Это поле обязательно.",
+        "error_length_min": "Должно быть не менее {limit_value} символов.",
+        "error_length_max": "Не должно превышать {limit_value} символов.",
+        "error_invalid_chars": "Содержит недопустимые символы. Разрешены только буквы и цифры.",
+        "error_validation_failed": "Проверка не удалась. Пожалуйста, проверьте ввод.",
         "my_links_button": "Мои ссылки 🔗",
         "tagline": "Безопасный, быстрый и многофункциональный сокращатель URL. ⚡",
         "long_url_placeholder": "Вставьте вашу длинную URL-ссылку сюда...",
@@ -736,7 +696,6 @@
         "nav_dashboard": "Панель управления 📈",
         "custom_code_placeholder": "Пользовательский код (необязательно)",
         "utm_tags_placeholder": "UTM-метки (напр., source=email&medium=...) (необязательно)",
-        
         "dashboard_tagline": "Управляйте своим портфолио ссылок и отслеживайте производительность.",
         "login_required": "Требуется авторизация 🔑",
         "enter_owner_id_prompt": "Введите ваш уникальный ID владельца для доступа к панели.",
@@ -792,6 +751,12 @@
     {
       "code": "arr",
       "translations": {
+        "error_invalid_url": "That URL be cursed! Enter a proper one, ye scallywag.",
+        "error_field_required": "This field be mandatory, savvy?",
+        "error_length_min": "Must be at least {limit_value} characters, or walk the plank!",
+        "error_length_max": "Can't exceed {limit_value} characters, ye barnacle!",
+        "error_invalid_chars": "Invalid characters! Only letters and numbers, matey.",
+        "error_validation_failed": "Validation failed! Check yer map again.",
         "my_links_button": "Me Booty! 🏴‍☠️",
         "tagline": "A secure, fast, and feature-rich URL shortener, ye landlubber. ⚡",
         "long_url_placeholder": "Heave yer long URL here, savvy?",

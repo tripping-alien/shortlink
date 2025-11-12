@@ -5,17 +5,17 @@
 */
 :root {
     /* Define primary brand colors */
-    --color-primary: #007bff; /* Standard Bootstrap Blue */
+    --color-primary: #007bff;        /* Core Blue */
     --color-primary-dark: #0056b3;
-    --color-secondary: #6c757d;
-    --color-background-light: #f4f6f9; /* Light gray background */
-    --color-text-dark: #212529; /* Dark gray for body text */
+    --color-secondary: #6c757d;      /* Text/Subtle elements */
+    --color-background-light: #f8f9fa; /* Very light gray background */
+    --color-text-dark: #343a40;      /* Dark gray for body text */
     --color-shadow: rgba(0, 0, 0, 0.08); /* Subtle shadow color */
 }
 
-/* Apply professional font and smooth scrolling */
+/* Apply Inter font and smooth scrolling */
 body {
-    font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', sans-serif;
     color: var(--color-text-dark);
     background-color: var(--color-background-light);
     line-height: 1.6;
@@ -23,23 +23,14 @@ body {
     padding: 0;
 }
 
-/* Large, prominent headings */
+/* Headings */
 h1, h2, h3 {
     font-weight: 600; /* Semi-bold */
     color: var(--color-text-dark);
 }
 
-/* Custom styling for the main hero container */
-.hero-container {
-    padding-top: 5rem;
-    padding-bottom: 5rem;
-}
-.display-4 {
+.hero-text-area .display-4 {
     color: var(--color-primary-dark);
-}
-.lead {
-    font-size: 1.15rem;
-    color: var(--color-secondary);
 }
 
 /*
@@ -56,24 +47,30 @@ h1, h2, h3 {
     background-color: white; /* Card background is pure white */
     border: 1px solid #e9ecef; /* Very light border */
     border-radius: 12px;
-    box-shadow: 0 8px 15px var(--color-shadow); /* Clear, professional shadow */
+    box-shadow: 0 5px 20px var(--color-shadow); /* Professional, lifted shadow */
     transition: box-shadow 0.3s ease-in-out;
 }
 
-.form-card:hover {
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); /* Slightly darker shadow on hover */
-}
-
-/* Input Overrides (for better height/padding consistency) */
-.form-control, .form-select {
+/* Input Overrides for the form group */
+.input-group-lg > .form-control, 
+.input-group-lg > .form-select,
+.form-control {
     border-radius: 8px; /* Slightly rounded corners */
-    height: 50px;
+    height: 55px; /* Taller input */
     padding: 0.75rem 1rem;
     border-color: #ced4da;
 }
 .form-control:focus, .form-select:focus {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+}
+.input-group-lg > .form-select {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.input-group-lg > .form-control {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
 }
 
 /* Button Styling */
@@ -82,12 +79,17 @@ h1, h2, h3 {
     border-color: var(--color-primary);
     font-weight: 600;
     border-radius: 8px;
-    height: 50px;
-    transition: background-color 0.2s;
+    height: 55px;
+    font-size: 1.1rem;
 }
 .btn-primary:hover {
     background-color: var(--color-primary-dark);
     border-color: var(--color-primary-dark);
+}
+
+/* Advanced options toggle button */
+.btn-outline-secondary {
+    border-radius: 8px;
 }
 
 /*
@@ -99,7 +101,7 @@ h1, h2, h3 {
 /* Success result card background */
 .result-card.card {
     background-color: #e6f5ff !important; /* Very light blue for success background */
-    border-color: #007bff !important;
+    border-color: var(--color-primary) !important;
 }
 
 .result-card .card-title {
@@ -110,20 +112,20 @@ h1, h2, h3 {
 
 /* QR Code & Details Layout */
 .result-details {
-    align-items: flex-start !important; /* Align content to the top */
+    align-items: flex-start !important; 
 }
 
 #qrcode-container img {
     border: 5px solid white; 
     box-shadow: 0 2px 8px var(--color-shadow);
+    background-color: white;
 }
 
 /* Short Link display */
 #short-link-href {
     color: var(--color-primary-dark) !important;
-    font-size: 1.2rem !important;
-    text-decoration: none; /* Remove underline */
-    margin-right: 1rem !important;
+    font-weight: 600 !important;
+    text-decoration: none; 
     transition: color 0.2s;
 }
 #short-link-href:hover {
@@ -133,17 +135,35 @@ h1, h2, h3 {
 
 /* Copy button refinement */
 #copy-button {
-    background-color: transparent !important;
+    background-color: var(--color-primary);
     border: 1px solid var(--color-primary);
-    color: var(--color-primary);
+    color: white;
     padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: all 0.2s;
 }
 #copy-button:hover {
-    background-color: var(--color-primary) !important;
-    color: white;
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
 }
 
 /* Utility Links (Stats/Delete) */
-.link-warning, .link-danger {
+.result-details small a {
+    color: var(--color-secondary) !important;
     font-weight: 500;
+    transition: color 0.2s;
+}
+.result-details small a:hover {
+    color: var(--color-primary) !important;
+}
+
+/* Ad Placeholder */
+.ad-placeholder {
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-style: dashed !important;
+    opacity: 0.7;
 }

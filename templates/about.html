@@ -1,100 +1,23 @@
-<!DOCTYPE html>
-<html lang="{{ locale }}" dir="{{ 'rtl' if locale in RTL_LOCALES else 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "layout.html" %}
+
+{% block content %}
+<section id="about-page">
+    <h2>ℹ️ About Shortlinks.art</h2>
     
-    <title>{{ _("about_page_title") }}</title>
-    <meta name="description" content="{{ _('about_meta_description') }}">
-    
-    <meta name="robots" content="index, follow">
-    <meta property="og:title" content="{{ _('about_page_title') }}">
-    <meta property="og:description" content="{{ _('about_meta_description') }}">
+    <h3>🚀 Unlock the Power of Your Links</h3>
+    <p>Shortlinks.art is more than just a free URL shortener; it's a powerful tool for your brand. By transforming long, unwieldy links into short, memorable ones, you can build trust and improve engagement. Track click-through rates, understand your audience, and optimize your marketing campaigns with our simple, privacy-aware analytics.</p>
 
-    {% for tag in hreflang_tags %}
-    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
-    {% endfor %}
-    
-    {{ ADSENSE_SCRIPT|safe }} 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/4.1.7/css/flag-icons.min.css" integrity="sha512-GwXqu3iKRTNfR2gMDNYS0jYgWGAFfFzLNJYcE0ETGlwLdTwujSxjBOANRSPCvVSBCSFwwVbTR3MpdCweIZiRFA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-    
-    <style>
-      .sr-only {
-        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
-      }
-      .lang-flag {
-        width: 24px; height: 18px; border-radius: 3px; vertical-align: middle;
-        border: 1px solid rgba(255, 255, 255, 0.1); background-size: cover; display: inline-block;
-      }
-      .lang-btn.active .lang-flag { border: 2px solid #fff; }
-      
-      /* Simple styles for the about page content */
-      .content-card {
-        text-align: left;
-        max-width: 700px;
-      }
-      .content-card h2 {
-        margin-top: 2rem;
-        margin-bottom: 0.5rem;
-        font-weight: 700;
-      }
-      .content-card p {
-        margin-bottom: 1rem;
-        line-height: 1.6;
-      }
-      .content-card ul {
-        margin-left: 20px;
-        margin-bottom: 1rem;
-      }
-      .content-card li {
-        margin-bottom: 0.5rem;
-      }
-    </style>
-</head>
-<body>
-    <main class="card content-card">
-      <h1>{{ _("about_heading") }}</h1>
-      
-      <h2>{{ _("about_subheading_1") }}</h2>
-      <p>{{ _("about_p_1") }}</p>
-      
-      <h2>{{ _("about_subheading_2") }}</h2>
-      <p>{{ _("about_p_2") }}</p>
+    <h3>⚡️ Fast, 🔒 Secure, and 🖼️ Built for Previews</h3>
+    <p>We built this platform to solve a key problem: 'link trust'. Our automatic link previews show your users exactly where they are going, increasing safety and boosting click-through rates. Our platform is fast, secure, and designed to put you in control of your digital identity.</p>
 
-      <h2>{{ _("about_subheading_3") }}</h2>
-      <ul>
-        <li>{{ _("about_li_1") }}</li>
-        <li>{{ _("about_li_2") }}</li>
-        <li>{{ _("about_li_3") }}</li>
-        <li>{{ _("about_li_4") }}</li>
-        <li>{{ _("about_li_5") }}</li>
-      </ul>
-
-      <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
-    </main>
-
-    <footer class="footer">
-        <span>© {{ current_year }} Shortlinks.art</span>
-        <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
-        <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
-
-        <nav class="language-switcher" aria-label="{{ _('language_switcher_label') }}">
-            {% for tag in hreflang_tags %}
-              {% if tag.hreflang != 'x-default' %}
-                <a href="{{ tag.href }}" 
-                   class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
-                   data-lang="{{ tag.hreflang }}"
-                   title="{{ _('lang_name_' + tag.hreflang) }}">
-                   <span class="flag-icon flag-icon-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
-                       <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
-                   </span>
-                </a>
-              {% endif %}
-            {% endfor %}
-        </nav>
-    </footer>
-</body>
-</html>
+    <h3>🌟 Key Features</h3>
+    <ul>
+        <li>🔗 Free Link Shortening: Quickly create short, custom, or random links.</li>
+        <li>📊 Detailed Click Statistics: Track every click with a simple and clear dashboard.</li>
+        <li>🖼️ Safe Link Previews: Build user trust by showing them a preview of the destination.</li>
+        <li>⏳ Custom Expiration Dates: Set your links to expire in an hour, a day, a week, or never.</li>
+        <li>🔒 Privacy-Focused: We respect you and your users' privacy. Simple as that.</li>
+        <li>🤖 AI-Powered Summaries: Get a quick, AI-generated summary of the destination link *before* you click.</li>
+    </ul>
+</section>
+{% endblock %}

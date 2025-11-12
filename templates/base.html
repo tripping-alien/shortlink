@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" dir="{% if locale in config.RTL_LOCALES %}rtl{% else %}ltr{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortlinks.art - {% block title %}{{ _('nav_home') }}{% endblock %}</title>
+    
+    {% for tag in hreflang_tags %}
+    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
+    {% endfor %}
+
+    {{ BOOTSTRAP_CDN | safe }}
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+    
+    {% block head %}{% endblock %} 
+</head>
+<body>
+    <header>
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('localized', locale=locale, path='') }}" class="logo text-decoration-none">
+                <span class="d-none d-sm-inline">⚡</span>Shortlinks.art
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('localized', locale=locale, path='') }}" class="{% if request.url.path == url_for('localized', locale=locale, path='') %}active{% endif %}">{{ _('nav_home') }}</a>
+                <a href="{{ url_for('localized', locale=locale, path='about') }}" class="{% if request.url.path == url_for('localized', locale=locale, path='about') %}active{% endif %}">{{ _('nav_about') }}</a>
+                <a href="{{ url_for('localized', locale=locale, path='dashboard') }}" class="{% if request.url.path == url_for('localized', locale=locale, path='dashboard') %}active{% endif %} btn btn-sm btn-outline-primary ms-2">{{ _('my_links_button') }}</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        {% include '_footer.html' %}
+    </footer>
+
+    {{ BOOTSTRAP_JS | safe }}
+    {% block scripts %}{% endblock %}
+
+    {% if config.ADSENSE_SCRIPT %}
+    {{ config.ADSENSE_SCRIPT | safe }}
+    {% endif %}
+
+</body>
+</html>

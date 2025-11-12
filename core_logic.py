@@ -6,24 +6,20 @@ import time
 import asyncio
 import socket
 import ipaddress
-import io
-import base64
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse
 from typing import Dict, Any, List, Tuple, Callable, Optional
 
 import validators
-import httpx
-from bs4 import BeautifulSoup
-import qrcode
 from fastapi import Request, Depends, Path, HTTPException, status
-from pydantic import BaseModel, Field, validator, constr # Used in Pydantic models
+from pydantic import BaseModel, Field, validator, constr
 
 # Import local modules/constants
 import config
 from config import *
 from db_manager import cleanup_expired_links as db_cleanup_expired_links # Import cleanup function
+# NOTE: Necessary imports for MetadataFetcher/AISummarizer are handled inside the class bodies
 
 # --- LOGGING SETUP ---
 
@@ -210,6 +206,9 @@ class URLValidator:
     @staticmethod
     async def resolve_hostname(hostname: str) -> str:
         try:
+            # NOTE: asyncio and socket imports must be available
+            import asyncio
+            import socket
             ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
             
             if not URLValidator.is_public_ip(ip_address):
@@ -279,8 +278,10 @@ class URLValidator:
 def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) -> str:
     """Generate QR code as base64 data URI"""
     try:
-        # NOTE: qrcode requires synchronous libraries, used in app.py
+        # NOTE: qrcode, io, base64 imports must be available
         import qrcode
+        import io
+        import base64
         img = qrcode.make(text, box_size=box_size, border=border)
         buf = io.BytesIO()
         img.save(buf, format="PNG")
@@ -312,14 +313,16 @@ class MetadataFetcher:
         }
         
         try:
-            # httpx and BeautifulSoup imports must be available in the environment
+            # NOTE: httpx, urllib.parse, bs4 imports must be available
+            import httpx
+            from urllib.parse import urljoin, urlparse
+            from bs4 import BeautifulSoup
+            
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(url, headers=self.headers, follow_redirects=True)
                 response.raise_for_status()
                 
                 final_url = str(response.url)
-                # NOTE: BeautifulSoup import must be available
-                from bs4 import BeautifulSoup
                 soup = BeautifulSoup(response.text, "lxml")
                 
                 if og_title := soup.find("meta", property="og:title"):
@@ -370,8 +373,9 @@ class AISummarizer:
         if not self.enabled: return None
         
         try:
+            import httpx
             headers = {"Authorization": f"Bearer {self.api_key}"}
-            payload = {"inputs": text[:config.SUMMARY_MAX_LENGTH],
+            payload = {"inputs": text[:config.SUMMARIZATION_MODEL],
                        "parameters": {"max_length": max_length, "min_length": min_length}}
             
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -398,12 +402,14 @@ class AISummarizer:
         if not self.enabled: return None
         
         try:
+            import httpx
+            from bs4 import BeautifulSoup
+            
             async with httpx.AsyncClient(timeout=config.HTTP_TIMEOUT) as client:
                 headers = {"User-Agent": "Mozilla/5.0"}
                 response = await client.get(url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
             
-            from bs4 import BeautifulSoup
             soup = BeautifulSoup(response.text, "lxml")
             for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
                 tag.decompose()
@@ -420,8 +426,6 @@ class AISummarizer:
             return None
     
     async def summarize_in_background(self, doc_ref, url: str) -> None:
-        # NOTE: This is placeholder logic, requires the doc_ref to be correctly handled
-        # as an AsyncCollectionReference from db_manager.
         if not self.enabled:
             return
         
@@ -430,12 +434,10 @@ class AISummarizer:
             
             if summary:
                 # Placeholder for Async DB Update
-                # This logic must be performed in the main app module
                 pass
             
         except Exception as e:
             logger.error(f"Summary generation failed for {doc_ref.id if hasattr(doc_ref, 'id') else 'link'}: {e}")
-            # Placeholder for Async DB Update Failure
             pass
 
 # --- TEMPLATE CONTEXT DEPENDENCY (Unchanged) ---

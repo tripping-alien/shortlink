@@ -81,14 +81,48 @@
         </div>
         <div class="text-center mt-5">
             <div class="ad-placeholder bg-white p-4 border rounded shadow-sm d-inline-block">
-                {{ _('ad_placeholder_text') }} (AdSense Banner)
+                [AdSense Placeholder: 728x90]
             </div>
         </div>
+
+        <div class="row mt-5 pt-5 justify-content-center">
+            <div class="col-lg-10">
+                <h2 class="text-center text-primary mb-4">{{ _('seo_h2_primary') }}</h2>
+                <p class="lead text-muted text-center">{{ _('seo_p_intro') }}</p>
+
+                <div class="row mt-5">
+                    <div class="col-md-6 mb-4">
+                        <h3 class="text-secondary mb-3"><i class="bi bi-tools me-2"></i> {{ _('seo_h3_features') }}</h3>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> {{ _('seo_feature_1') }}</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> {{ _('seo_feature_2') }}</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> {{ _('seo_feature_3') }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <h3 class="text-secondary mb-3"><i class="bi bi-lock-fill me-2"></i> {{ _('seo_h3_security') }}</h3>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="bi bi-shield-fill-check text-success me-2"></i> {{ _('seo_security_1') }}</li>
+                            <li class="mb-2"><i class="bi bi-shield-fill-check text-success me-2"></i> {{ _('seo_security_2') }}</li>
+                            <li class="mb-2"><i class="bi bi-shield-fill-check text-success me-2"></i> {{ _('seo_security_3') }}</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-5 pt-3 border-top">
+                    <h3 class="text-secondary mb-3">{{ _('seo_h3_cta') }}</h3>
+                    <a href="#shorten-form" class="btn btn-primary btn-lg shadow-lg">{{ _('create_link_now') }}</a>
+                </div>
+            </div>
+        </div>
+        
     </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // ... (Your existing JavaScript remains the same, but ensure 'bootstrap' is referenced for Collapse if needed)
+    // The previous JS for form submission is used here.
     const form = document.getElementById('shorten-form');
     const createButton = document.getElementById('create-button');
     const buttonText = document.getElementById('button-text');
@@ -105,15 +139,15 @@
     const copyButton = document.getElementById('copy-button');
     const advancedOptions = document.getElementById('advanced-options'); 
 
-    // --- FEEDBACK FUNCTIONS ---
     function showLoading() {
         createButton.disabled = true;
         buttonText.textContent = '{{ _('processing_request') }}';
         loadingSpinner.style.display = 'inline-block';
         resultCard.classList.add('d-none'); 
-        // Hide advanced options if they were open after successful creation
+        // Use 'bootstrap' global for Collapse instance if needed.
+        const collapseInstance = new bootstrap.Collapse(advancedOptions, { toggle: false });
         if (advancedOptions.classList.contains('show')) {
-            bootstrap.Collapse.getInstance(advancedOptions).hide();
+            collapseInstance.hide();
         }
     }
 
@@ -122,9 +156,7 @@
         buttonText.textContent = '{{ _('create_button') }}';
         loadingSpinner.style.display = 'none';
     }
-    // --------------------------------
 
-    // Function to handle the actual AJAX submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -164,7 +196,7 @@
                 
                 resultCard.classList.remove('d-none'); 
                 
-                // Clear inputs for next link
+                // Clear inputs
                 longUrlInput.value = ''; 
                 customCodeInput.value = '';
                 utmTagsInput.value = '';
@@ -184,12 +216,10 @@
         }
     });
 
-    // Copy Button Functionality (Uses standard 'bootstrap' global if JS is correctly loaded)
+    // Copy Button Functionality
     copyButton.addEventListener('click', function() {
         const link = shortLinkHref.textContent;
         navigator.clipboard.writeText(link).then(() => {
-            // Use Bootstrap Toast/Alert for a professional copy notification instead of JS alert()
-            // Since we don't have a toast component defined in base.html, we'll use a simple alert for now.
             alert('{{ _('copy_success') }}');
         });
     });

@@ -1,5 +1,94 @@
 {
   "locales": [
+  "en": {
+    "error_invalid_url": "Invalid URL format. Please enter a valid web address.",
+    "error_field_required": "This field is required.",
+    "error_length_min": "Must be at least {limit_value} characters long.",
+    "error_length_max": "Must not exceed {limit_value} characters.",
+    "error_invalid_chars": "Contains invalid characters. Only letters and numbers allowed.",
+    "error_validation_failed": "Validation failed. Please check your input."
+  },
+  "es": {
+    "error_invalid_url": "Formato de URL no válido. Por favor ingrese una dirección web válida.",
+    "error_field_required": "Este campo es obligatorio.",
+    "error_length_min": "Debe tener al menos {limit_value} caracteres.",
+    "error_length_max": "No debe exceder {limit_value} caracteres.",
+    "error_invalid_chars": "Contiene caracteres no válidos. Solo se permiten letras y números.",
+    "error_validation_failed": "La validación falló. Por favor revise su entrada."
+  },
+  "fr": {
+    "error_invalid_url": "Format d'URL invalide. Veuillez entrer une adresse web valide.",
+    "error_field_required": "Ce champ est requis.",
+    "error_length_min": "Doit contenir au moins {limit_value} caractères.",
+    "error_length_max": "Ne doit pas dépasser {limit_value} caractères.",
+    "error_invalid_chars": "Contient des caractères non valides. Seuls les lettres et chiffres sont autorisés.",
+    "error_validation_failed": "La validation a échoué. Veuillez vérifier votre saisie."
+  },
+  "de": {
+    "error_invalid_url": "Ungültiges URL-Format. Bitte geben Sie eine gültige Webadresse ein.",
+    "error_field_required": "Dieses Feld ist erforderlich.",
+    "error_length_min": "Muss mindestens {limit_value} Zeichen lang sein.",
+    "error_length_max": "Darf {limit_value} Zeichen nicht überschreiten.",
+    "error_invalid_chars": "Enthält ungültige Zeichen. Nur Buchstaben und Zahlen sind erlaubt.",
+    "error_validation_failed": "Validierung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingabe."
+  },
+  "it": {
+    "error_invalid_url": "Formato URL non valido. Si prega di inserire un indirizzo web valido.",
+    "error_field_required": "Questo campo è obbligatorio.",
+    "error_length_min": "Deve essere lungo almeno {limit_value} caratteri.",
+    "error_length_max": "Non deve superare {limit_value} caratteri.",
+    "error_invalid_chars": "Contiene caratteri non validi. Sono ammesse solo lettere e numeri.",
+    "error_validation_failed": "Validazione fallita. Controllare l'input."
+  },
+  "pt": {
+    "error_invalid_url": "Formato de URL inválido. Por favor, insira um endereço da web válido.",
+    "error_field_required": "Este campo é obrigatório.",
+    "error_length_min": "Deve ter pelo menos {limit_value} caracteres.",
+    "error_length_max": "Não deve exceder {limit_value} caracteres.",
+    "error_invalid_chars": "Contém caracteres inválidos. Apenas letras e números são permitidos.",
+    "error_validation_failed": "A validação falhou. Por favor, verifique sua entrada."
+  },
+  "ja": {
+    "error_invalid_url": "無効なURL形式です。有効なWebアドレスを入力してください。",
+    "error_field_required": "このフィールドは必須です。",
+    "error_length_min": "少なくとも{limit_value}文字である必要があります。",
+    "error_length_max": "{limit_value}文字を超えてはなりません。",
+    "error_invalid_chars": "無効な文字が含まれています。文字と数字のみ使用できます。",
+    "error_validation_failed": "検証に失敗しました。入力を確認してください。"
+  },
+  "zh": {
+    "error_invalid_url": "无效的URL格式。请输入有效的网址。",
+    "error_field_required": "此字段为必填项。",
+    "error_length_min": "必须至少为{limit_value}个字符。",
+    "error_length_max": "不得超过{limit_value}个字符。",
+    "error_invalid_chars": "包含无效字符。仅允许字母和数字。",
+    "error_validation_failed": "验证失败。请检查您的输入。"
+  },
+  "ar": {
+    "error_invalid_url": "تنسيق URL غير صالح. يرجى إدخال عنوان ويب صالح.",
+    "error_field_required": "هذا الحقل مطلوب.",
+    "error_length_min": "يجب أن يكون على الأقل {limit_value} حرفًا.",
+    "error_length_max": "يجب ألا يتجاوز {limit_value} حرفًا.",
+    "error_invalid_chars": "يحتوي على أحرف غير صالحة. يُسمح فقط بالحروف والأرقام.",
+    "error_validation_failed": "فشل التحقق. يرجى التحقق من إدخالك."
+  },
+  "ru": {
+    "error_invalid_url": "Неверный формат URL. Пожалуйста, введите действительный веб-адрес.",
+    "error_field_required": "Это поле обязательно.",
+    "error_length_min": "Должно быть не менее {limit_value} символов.",
+    "error_length_max": "Не должно превышать {limit_value} символов.",
+    "error_invalid_chars": "Содержит недопустимые символы. Разрешены только буквы и цифры.",
+    "error_validation_failed": "Проверка не удалась. Пожалуйста, проверьте ввод."
+  },
+  "arr": {
+    "error_invalid_url": "That URL be cursed! Enter a proper one, ye scallywag.",
+    "error_field_required": "This field be mandatory, savvy?",
+    "error_length_min": "Must be at least {limit_value} characters, or walk the plank!",
+    "error_length_max": "Can't exceed {limit_value} characters, ye barnacle!",
+    "error_invalid_chars": "Invalid characters! Only letters and numbers, matey.",
+    "error_validation_failed": "Validation failed! Check yer map again."
+  }
+  
     {
       "code": "en",
       "translations": {

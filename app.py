@@ -35,7 +35,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, parse_qs, urlunparse
 from fastapi.templating import Jinja2Templates
 
-from fastapi import FastAPI, HTTPException, Request, Depends, Path, BackgroundTasks, status
+# FIX Bug #2 (CRITICAL): Use APIRouter for clean routing structure
+from fastapi import FastAPI, HTTPException, Request, Depends, Path, BackgroundTasks, status, APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -50,6 +51,7 @@ from google.cloud.firestore_v1.query import Query
 # NEW: Import config and constants from the new config.py file
 from config import (
     config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
+    SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
 )
 
 # ============================================================================
@@ -61,62 +63,50 @@ def setup_logging() -> logging.Logger:
     logger = logging.getLogger("url_shortener")
     logger.setLevel(logging.INFO)
     
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    
-    # File handler with rotation
-    log_dir = os.path.join(os.path.dirname(__file__), "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    file_handler = RotatingFileHandler(
-        os.path.join(log_dir, "app.log"),
-        maxBytes=10_485_760,  # 10MB
-        backupCount=5
-    )
-    file_handler.setLevel(logging.INFO)
-    
-    # Formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
-    )
-    console_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-    
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
+    # CRITICAL FIX (Bug #9): Protect logger setup against duplicate handlers on reload
+    if not logger.handlers:
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        
+        # File handler with rotation
+        log_dir = os.path.join(os.path.dirname(__file__), "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        file_handler = RotatingFileHandler(
+            os.path.join(log_dir, "app.log"),
+            maxBytes=10_485_760,  # 10MB
+            backupCount=5
+        )
+        file_handler.setLevel(logging.INFO)
+        
+        # Formatter
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+        )
+        console_handler.setFormatter(formatter)
+        file_handler.setFormatter(formatter)
+        
+        logger.addHandler(console_handler)
+        logger.addHandler(file_handler)
     
     return logger
 
 logger = setup_logging()
 
 # ============================================================================
-# CUSTOM EXCEPTIONS (Defined locally)
-# ============================================================================
-
-class SecurityException(HTTPException):
-    """Raised when security validation fails"""
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
-
-class ValidationException(HTTPException):
-    """Raised when input validation fails"""
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
-
-class ResourceNotFoundException(HTTPException):
-    """Raised when a resource is not found"""
-    def __init__(self, detail: str = "Resource not found"):
-        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
-
-class ResourceExpiredException(HTTPException):
-    """Raised when a resource has expired"""
-    def __init__(self, detail: str = "Resource has expired"):
-        super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
-
-
-# ============================================================================
 # PYDANTIC MODELS (Used for type hinting and response validation)
 # ============================================================================
+
+# FIX Bug #6: Dictionary to map Pydantic error details to I18n keys
+PYDANTIC_ERROR_MAP = {
+    "field_required": "error_field_required",
+    "value_error": "error_invalid_value",
+    "string_too_long": "error_length_max",
+    "string_too_short": "error_length_min",
+    "invalid_domain": "error_invalid_url",
+    "error_invalid_utm_format": "error_invalid_utm_format", # Custom key
+}
+
 
 class LinkResponse(BaseModel):
     """Response model for created links"""
@@ -137,22 +127,20 @@ class LinkCreatePayload(BaseModel):
     def validate_url(cls, v: str) -> str:
         """Validate URL format"""
         if not v or not v.strip():
-            # Using custom error key from translations
             raise ValueError("error_field_required")
         return v.strip()
     
     @validator('utm_tags')
     def validate_utm_tags(cls, v: Optional[str]) -> Optional[str]:
-        """Validate UTM tags"""
+        """FIX Bug #4: Properly validate UTM tags format"""
         if v:
             v = v.strip()
-            # FIX Bug #4: Ensure we only validate if it looks like a parameter set
             if v and not (v.startswith('utm_') or v.startswith('?utm_') or v.startswith('&utm_')):
                 raise ValueError("error_invalid_utm_format")
         return v
 
 # ============================================================================
-# LOCALIZATION UTILITIES
+# LOCALIZATION
 # ============================================================================
 
 translations: Dict[str, Dict[str, str]] = {}

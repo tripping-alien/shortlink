@@ -100,6 +100,9 @@ class Config:
 
 config = Config()
 
+# FIX: Define ADSENSE_SCRIPT immediately after config is initialized
+ADSENSE_SCRIPT = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
+
 # ============================================================================
 # LOGGING SETUP
 # ============================================================================
@@ -800,7 +803,6 @@ class LinkManager:
             except Exception as e2:
                 logger.error(f"Fallback update failed for {code}: {e2}")
                 
-                # Last resort: just return URL without incrementing
                 doc = await asyncio.to_thread(doc_ref.get)
                 if doc.exists:
                     return doc.to_dict().get("long_url")
@@ -924,30 +926,8 @@ class CleanupWorker:
         return count
 
 # ============================================================================
-# PYDANTIC MODELS
+# PYDANTIC MODELS (Used for type hinting and response validation)
 # ============================================================================
-
-class LinkCreatePayload(BaseModel):
-    """Request model for creating links"""
-    long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH)
-    ttl: Literal["1h", "24h", "1w", "never"] = "24h"
-    custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}')] = None
-    utm_tags: Optional[str] = Field(None, max_length=500)
-    owner_id: Optional[str] = Field(None, max_length=100)
-    
-    @validator('long_url')
-    def validate_url(cls, v):
-        if not v or not v.strip():
-            raise ValueError("URL cannot be empty")
-        return v.strip()
-    
-    @validator('utm_tags')
-    def validate_utm_tags(cls, v):
-        if v:
-            v = v.strip()
-            if v and not v.startswith(('utm_', '?utm_', '&utm_')):
-                raise ValueError("Invalid UTM tags format")
-        return v
 
 class LinkResponse(BaseModel):
     """Response model for created links"""
@@ -960,7 +940,6 @@ class LinkResponse(BaseModel):
 # FASTAPI APPLICATION SETUP
 # ============================================================================
 
-# Worker instance (needs to be defined before lifespan)
 worker_instance: Optional[CleanupWorker] = None
 
 @asynccontextmanager
@@ -973,7 +952,6 @@ async def lifespan(app: FastAPI):
         load_translations_from_json()
         db = firebase_manager.initialize()
         
-        # Start cleanup worker
         worker_instance = CleanupWorker(db)
         worker_instance.start()
         
@@ -1007,8 +985,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Optional: Use TrustedHostMiddleware if deploying to a fixed domain
-# app.add_middleware(TrustedHostMiddleware, allowed_hosts=[config.BASE_URL.split('//')[-1]])
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
@@ -1022,6 +998,9 @@ templates = Jinja2Templates(directory="templates")
 # ============================================================================
 # TEMPLATE CONTEXT
 # ============================================================================
+
+BOOTSTRAP_CDN = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
+BOOTSTRAP_JS = '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'
 
 async def get_common_context(
     request: Request,
@@ -1169,7 +1148,6 @@ async def redirect_short_code(
         locale = get_browser_locale(Request(scope={"type": "http", "headers": []}))
         preview_url = f"/{locale}/preview/{short_code}"
         
-        # We must use the BASE_URL constant for reliability
         full_redirect_url = f"{config.BASE_URL}{preview_url}"
         
         return RedirectResponse(url=full_redirect_url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
@@ -1459,10 +1437,8 @@ async def expired_exception_handler(request: Request, exc: ResourceExpiredExcept
 if __name__ == "__main__":
     import uvicorn
     
-    # NOTE: When running locally, uvicorn will handle the module loading.
-    # When deploying to Render, the 'uvicorn app:app' command will handle it.
     uvicorn.run(
-        "app:app", # Corrected to reference the file itself
+        "app:app",
         host="0.0.0.0",
         port=8000,
         reload=True,

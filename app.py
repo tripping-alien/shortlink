@@ -42,8 +42,6 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# REMOVED: import google.generativeai as genai
-
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
 SHORT_CODE_LENGTH = 6
@@ -63,6 +61,7 @@ SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
 RTL_LOCALES = ["ar", "he"]
 
+# FIX: Correct ISO country codes for flag-icon-css
 LOCALE_TO_FLAG_CODE = {
     "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
     "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
@@ -89,7 +88,6 @@ def load_translations_from_json():
 
 
 # ---------------- LLM Summarizer Setup (Hugging Face API) ----------------
-# NOTE: Use HUGGINGFACE_API_KEY environment variable.
 HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
 SUMMARIZATION_MODEL = "facebook/bart-large-cnn" 
 HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
@@ -713,8 +711,8 @@ async def redirect_link(
     _ : Callable = Depends(get_api_translator)
 ):
     """
-    FIXED: This route now permanently redirects the user to the
-    localized Preview page, ensuring the security screen is seen.
+    FIXED SECURITY FLOW: This route redirects to the localized Preview page (301)
+    to enforce the security check.
     """
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
@@ -743,8 +741,7 @@ async def continue_to_link(
     _ : Callable = Depends(get_translator) 
 ):
     """
-    This new endpoint is the ONLY one that will increment the click count
-    and redirect to the final long_url.
+    NEW ENDPOINT: Handles the click count and final redirect.
     """
     db = init_firebase()
     doc_ref = db.collection("links").document(short_code)
@@ -825,7 +822,7 @@ async def about(common_context: dict = Depends(get_common_context)):
 async def preview(
     short_code: str,
     common_context: dict = Depends(get_common_context),
-    background_tasks: BackgroundTasks # FIX: Removed Depends()
+    background_tasks: BackgroundTasks = Depends()
 ):
     _ = common_context["_"]
     db_client = init_firebase()
@@ -849,7 +846,6 @@ async def preview(
     else:
         safe_href_url = long_url
     
-    # Initialize variables for template
     meta_title = link.get("meta_title")
     meta_description = link.get("meta_description")
     meta_image = link.get("meta_image")

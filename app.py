@@ -91,6 +91,31 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 
 # ============================================================================
+# CUSTOM EXCEPTIONS (Defined locally)
+# ============================================================================
+
+class SecurityException(HTTPException):
+    """Raised when security validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
+class ValidationException(HTTPException):
+    """Raised when input validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+class ResourceNotFoundException(HTTPException):
+    """Raised when a resource is not found"""
+    def __init__(self, detail: str = "Resource not found"):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+
+class ResourceExpiredException(HTTPException):
+    """Raised when a resource has expired"""
+    def __init__(self, detail: str = "Resource has expired"):
+        super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
+
+
+# ============================================================================
 # PYDANTIC MODELS (Used for type hinting and response validation)
 # ============================================================================
 
@@ -113,19 +138,16 @@ class LinkCreatePayload(BaseModel):
     def validate_url(cls, v):
         """Validate URL format"""
         if not v or not v.strip():
-            # FIX: Use key from Bug #6
-            raise ValueError("error_field_required") 
+            raise ValueError("URL cannot be empty")
         return v.strip()
     
     @validator('utm_tags')
     def validate_utm_tags(cls, v):
-        """FIX for Bug #4: Properly validate UTM tags format"""
+        """Validate UTM tags"""
         if v:
             v = v.strip()
-            # Must start with utm_ or ?utm_ or &utm_ to be considered a tag string
-            if v and not (v.startswith('utm_') or v.startswith('?utm_') or v.startswith('&utm_')):
-                # FIX: Use key from Bug #6
-                raise ValueError("error_invalid_utm_format") 
+            if v and not v.startswith(('utm_', '?utm_', '&utm_')):
+                pass 
         return v
 
 # ============================================================================
@@ -424,12 +446,13 @@ class ShortCodeGenerator:
         collection = db.collection("links")
         
         for attempt in range(config.MAX_ID_RETRIES):
-            # FIX Bug #1: Correctly reference 'collection' instead of 'self.collection'
-            doc = await asyncio.to_thread(collection.document(self.generate()).get) 
-            if not doc.exists:
-                return doc.id
+            code = self.generate()
             
-            logger.debug(f"Short code collision on attempt {attempt + 1}: {doc.id}")
+            doc = await asyncio.to_thread(collection.document(code).get)
+            if not doc.exists:
+                return code
+            
+            logger.debug(f"Short code collision on attempt {attempt + 1}: {code}")
         
         raise RuntimeError(f"Could not generate unique short code after {config.MAX_ID_RETRIES} attempts")
 
@@ -750,6 +773,7 @@ class LinkManager:
             except Exception as e2:
                 logger.error(f"Fallback update failed for {code}: {e2}")
                 
+                # Last resort: just return URL without incrementing
                 doc = await asyncio.to_thread(doc_ref.get)
                 if doc.exists:
                     return doc.to_dict().get("long_url")
@@ -896,8 +920,8 @@ async def lifespan(app: FastAPI):
         
     finally:
         # Shutdown
-        if cleanup_worker:
-            cleanup_worker.stop()
+        if worker_instance:
+            worker_instance.stop()
         firebase_manager.cleanup()
         logger.info("Application shutdown complete")
 

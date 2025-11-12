@@ -21,8 +21,8 @@ class Config:
     BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
     
     # Rate limiting
-    RATE_LIMIT_CREATE: str = os.getenv("RATE_LIMIT_CREATE", "10/minute") # Defined in class
-    RATE_LIMIT_STATS: str = os.getenv("RATE_LIMIT_STATS", "30/minute") # Defined in class
+    RATE_LIMIT_CREATE: str = os.getenv("RATE_LIMIT_CREATE", "10/minute")
+    RATE_LIMIT_STATS: str = os.getenv("RATE_LIMIT_STATS", "30/minute")
     
     # Database/Cleanup
     CLEANUP_INTERVAL_SECONDS: int = 1800  # 30 minutes
@@ -63,7 +63,7 @@ class Config:
 # Initialize the config instance
 config = Config()
 
-# --- CRITICAL FIX: Expose class attributes as module constants ---
+# --- Expose class attributes as module constants ---
 SHORT_CODE_LENGTH = config.SHORT_CODE_LENGTH
 MAX_ID_RETRIES = config.MAX_ID_RETRIES 
 MAX_URL_LENGTH = config.MAX_URL_LENGTH 
@@ -81,8 +81,7 @@ TTL_MAP: Dict[str, Optional[timedelta]] = {
 # AdSense Script (uses the client ID from Config)
 ADSENSE_SCRIPT: str = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
 
-# 🌟 FIX FOR ATTRIBUTEERROR: Attach the module constant to the config object
-# This ensures that config.ADSENSE_SCRIPT can be accessed without error.
+# 📌 FIX 1: Attach AdSense script to config object
 setattr(config, 'ADSENSE_SCRIPT', ADSENSE_SCRIPT)
 
 
@@ -112,3 +111,8 @@ LOCALE_TO_EMOJI: Dict[str, str] = {
     locale: FLAG_CODE_TO_EMOJI.get(code, FLAG_CODE_TO_EMOJI["default"])
     for locale, code in LOCALE_TO_FLAG_CODE.items()
 }
+
+# 📌 FIX 2: Attach localization constants to the config object
+setattr(config, 'LOCALE_TO_FLAG_CODE', LOCALE_TO_FLAG_CODE)
+setattr(config, 'FLAG_CODE_TO_EMOJI', FLAG_CODE_TO_EMOJI)
+setattr(config, 'LOCALE_TO_EMOJI', LOCALE_TO_EMOJI)

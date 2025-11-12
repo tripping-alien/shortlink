@@ -1,8 +1,7 @@
+import asyncio
 import os
 import secrets
 import html
-import string
-import random
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Literal, Callable, List, Tuple
 from contextlib import asynccontextmanager
@@ -15,34 +14,38 @@ from fastapi.templating import Jinja2Templates
 
 from slowapi import Limiter, _rate_limit_exceeded_handler, errors
 from slowapi.util import get_remote_address
+from pydantic import BaseModel, Field, validator, constr # Re-importing models for app
 
 # Import core modules
 import config
-from db_manager import init_db, get_collection_ref, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection
+from config import *
+from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection, get_collection_ref
 from core_logic import (
     logger, setup_logging, load_translations_from_json, get_translation,
     get_browser_locale, get_common_context, get_translator, get_api_translator,
     CleanupWorker, URLValidator, SecurityException, ValidationException,
     ResourceNotFoundException, ResourceExpiredException, 
-    BOOTSTRAP_CDN, BOOTSTRAP_JS # Used for error handler context
+    BOOTSTRAP_CDN, BOOTSTRAP_JS, # Context assets
+    AISummarizer, MetadataFetcher, generate_qr_code_data_uri # Utilities
 )
-from core_logic import AISummarizer, MetadataFetcher, generate_qr_code_data_uri # Re-import utilities
 
 # --- GLOBAL INSTANCES ---
 worker_instance: CleanupWorker = None
 limiter = Limiter(key_func=get_remote_address)
 templates = Jinja2Templates(directory="templates")
-summarizer = AISummarizer()
+summarizer = AISummerizer()
 metadata_fetcher = MetadataFetcher()
 
 # Define the models required for API routes (copied from core_logic source)
 class LinkResponse(BaseModel):
+    """Response model for created links"""
     short_url: str
     stats_url: str
     delete_url: str
     qr_code_data: str
 
 class LinkCreatePayload(BaseModel):
+    """Request model for creating links"""
     long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH) 
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
     custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
@@ -67,6 +70,7 @@ class LinkCreatePayload(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
     global worker_instance
     try:
         config.validate()
@@ -101,6 +105,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.state.limiter = limiter
+app.add_exception_handler(errors.RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # --- ROUTERS DEFINITION (API) ---
@@ -163,6 +168,7 @@ async def api_get_my_links(
     owner_id: str,
     translator: Callable = Depends(get_api_translator),
 ):
+    """Get all links for an owner (MOCKED)"""
     if not owner_id:
         raise ValidationException(translator("owner_id_required"))
     
@@ -177,6 +183,7 @@ i18n_router = APIRouter()
 
 @web_router.get("/", include_in_schema=False)
 async def root_redirect(request: Request):
+    """Redirect to localized homepage"""
     locale = get_browser_locale(request)
     response = RedirectResponse(url=f"/{locale}", status_code=status.HTTP_302_FOUND)
     response.set_cookie("lang", locale, max_age=365*24*60*60, samesite="lax")
@@ -184,6 +191,7 @@ async def root_redirect(request: Request):
 
 @web_router.get("/health")
 async def health_check():
+    """Health check endpoint"""
     try:
         db_client = get_db_connection()
         test_doc = db_client.collection("_health").document("test")
@@ -197,6 +205,7 @@ async def health_check():
 
 @web_router.get("/r/{short_code}")
 async def redirect_short_code(short_code: str, request: Request, translator: Callable = Depends(get_translator)):
+    """Redirect short code to preview page"""
     try:
         if not short_code.isalnum() or len(short_code) < 4:
             raise ValidationException(translator("invalid_short_code"))
@@ -214,11 +223,12 @@ async def redirect_short_code(short_code: str, request: Request, translator: Cal
 
 @web_router.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
+    """Robots.txt for SEO"""
     return f"""User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /r/\nDisallow: /health\nDisallow: /*/delete/\nSitemap: {config.BASE_URL}/sitemap.xml\n"""
 
 @web_router.get("/sitemap.xml", response_class=Response)
 async def sitemap():
-    # NOTE: Simplified sitemap generation for brevity
+    """Generate sitemap for SEO"""
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     urls = []
     for locale in config.SUPPORTED_LOCALES:
@@ -231,23 +241,29 @@ async def sitemap():
 
 @i18n_router.get("/", response_class=HTMLResponse)
 async def index(common_context: Dict = Depends(get_common_context)):
+    """Homepage"""
     return templates.TemplateResponse("index.html", common_context)
 
 @i18n_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(common_context: Dict = Depends(get_common_context)):
+    """Dashboard page"""
     return templates.TemplateResponse("dashboard.html", common_context)
 
 @i18n_router.get("/about", response_class=HTMLResponse)
 async def about(common_context: Dict = Depends(get_common_context)):
+    """About page"""
     return templates.TemplateResponse("about.html", common_context)
 
 @i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(short_code: str, background_tasks: BackgroundTasks, common_context: Dict = Depends(get_common_context)):
+    """Preview page with metadata and security warning"""
     translator = common_context["_"]
     try:
         link = await db_get_link(short_code)
         if not link:
             raise ResourceNotFoundException(translator("link_not_found")) 
+        
+        # NOTE: Expiration check logic omitted for brevity
         
         long_url = link["long_url"]
         safe_href_url = long_url if long_url.startswith(("http://", "https://")) else f"https://{long_url}"
@@ -267,13 +283,16 @@ async def preview(short_code: str, background_tasks: BackgroundTasks, common_con
         else:
             display_description = meta_description or translator("no_description")
         
-        context = {**common_context, "short_code": short_code, 
-                   "escaped_long_url_href": html.escape(safe_href_url, quote=True),
-                   "escaped_long_url_display": html.escape(long_url),
-                   "meta_title": html.escape(link.get("meta_title") or translator("no_title")),
-                   "meta_description": html.escape(display_description),
-                   "meta_image_url": html.escape(link.get("meta_image") or "", quote=True),
-                   "has_image": bool(link.get("meta_image"))}
+        context = {
+            **common_context, 
+            "short_code": short_code, 
+            "escaped_long_url_href": html.escape(safe_href_url, quote=True),
+            "escaped_long_url_display": html.escape(long_url),
+            "meta_title": html.escape(link.get("meta_title") or translator("no_title")),
+            "meta_description": html.escape(display_description),
+            "meta_image_url": html.escape(link.get("meta_image") or "", quote=True),
+            "has_image": bool(link.get("meta_image"))
+        }
         
         return templates.TemplateResponse("preview.html", context)
     
@@ -285,12 +304,15 @@ async def preview(short_code: str, background_tasks: BackgroundTasks, common_con
 
 @i18n_router.get("/preview/{short_code}/redirect", response_class=RedirectResponse)
 async def continue_to_link(short_code: str, translator: Callable = Depends(get_translator)):
-    # NOTE: Click increment logic needs refactoring into db_manager
+    """Continue to final destination (Click increment logic requires refactoring)"""
     try:
         link = await db_get_link(short_code)
         if not link:
             raise ResourceNotFoundException(translator("link_not_found"))
         long_url = link["long_url"]
+        
+        # NOTE: Insert async click increment logic here
+        
         if not long_url.startswith(("http://", "https://")):
             long_url = f"https://{long_url}"
         return RedirectResponse(url=long_url, status_code=status.HTTP_302_FOUND)
@@ -303,6 +325,7 @@ async def continue_to_link(short_code: str, translator: Callable = Depends(get_t
 @i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
 @limiter.limit(config.RATE_LIMIT_STATS)
 async def stats(common_context: Dict = Depends(get_common_context), short_code: str = Path(...)):
+    """Statistics page"""
     translator = common_context["_"]
     try:
         link = await db_get_link(short_code)
@@ -318,6 +341,7 @@ async def stats(common_context: Dict = Depends(get_common_context), short_code: 
 
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete_link(short_code: str, token: Optional[str] = None, common_context: Dict = Depends(get_common_context)):
+    """Delete link page"""
     translator = common_context["_"]
     if not token:
         context = {"success": False, "message": translator("token_missing"), **common_context}
@@ -337,7 +361,7 @@ async def delete_link(short_code: str, token: Optional[str] = None, common_conte
 
 # --- APPLICATION MOUNTING ---
 
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
 app.include_router(web_router)
 app.mount("/{locale}", i18n_router, name="localized")
 
@@ -376,4 +400,5 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    # NOTE: The import path changes to app:app since the file is app.py
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

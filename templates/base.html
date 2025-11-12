@@ -77,14 +77,14 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="text-center py-4 text-muted border-top mt-5">
+        <footer class="text-center py-4 text-muted border-top mt-5">
         <div class="container">
             <p class="mb-1">
                 &copy; {{ current_year }} Shortlinks.art. {{ _('license_all_rights') }}
             </p>
             <p class="small mb-0">
                 <a href="{{ url_for('localized', locale=locale, path='about') }}" class="text-decoration-none text-secondary me-3">{{ _('nav_about') }}</a>
-                <a href="#" class="text-decoration-none text-secondary">{{ _('footer_terms_placeholder') }}</a>
+                <a href="{{ url_for('localized', locale=locale, path='terms') }}" class="text-decoration-none text-secondary">{{ _('nav_terms') }}</a>
             </p>
         </div>
     </footer>

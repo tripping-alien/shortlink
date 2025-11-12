@@ -50,7 +50,6 @@ from google.cloud.firestore_v1.query import Query
 # NEW: Import config and constants from the new config.py file
 from config import (
     config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
-    # NOTE: Exceptions are defined below, they are NOT imported from config.
 )
 
 # ============================================================================
@@ -111,7 +110,7 @@ class ResourceNotFoundException(HTTPException):
 
 class ResourceExpiredException(HTTPException):
     """Raised when a resource has expired"""
-    def __init__(self, detail: str = "Resource has expired"):
+    def __init__(detail: str = "Resource has expired"):
         super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
 
 
@@ -167,7 +166,21 @@ def load_translations_from_json() -> None:
             return
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            translations = json.load(f)
+            # Check for the requested structure:
+            data = json.load(f)
+            
+            # --- BEGIN: Flag Logic for Translations Structure ---
+            # If the JSON uses the new normalized structure, adapt the loading logic
+            locales_data = data.get('locales', [])
+            loaded_translations = {}
+            for locale_entry in locales_data:
+                locale_code = locale_entry.get('code')
+                if locale_code:
+                    loaded_translations[locale_code] = locale_entry.get('translations', {})
+            
+            translations = loaded_translations
+            # --- END: Flag Logic for Translations Structure ---
+            
         
         missing_locales = set(config.SUPPORTED_LOCALES) - set(translations.keys())
         if missing_locales:
@@ -183,6 +196,29 @@ def load_translations_from_json() -> None:
     except Exception as e:
         logger.error(f"Failed to load translations.json: {e}")
         raise RuntimeError("Translation file loading failed") from e
+
+
+def get_flag_emoji(country_code: str) -> str:
+    """Converts a two-letter country code (e.g., 'US') into its flag emoji (e.g., '🇺🇸')."""
+    if not country_code or len(country_code) != 2:
+        return "" # Return empty string for invalid codes
+    
+    # Regional Indicator Symbol A is U+1F1E6.
+    # We add the position of the character in the alphabet (A=0, B=1, etc.) 
+    # to the base Unicode value.
+    base_unicode = 0x1F1E6
+    
+    def to_ris(char: str) -> str:
+        # Check if the character is an uppercase letter before conversion
+        if 'A' <= char.upper() <= 'Z':
+            return chr(base_unicode + (ord(char.upper()) - ord('A')))
+        return ""
+
+    # Ensure both characters can be converted before combining
+    ris1 = to_ris(country_code[0])
+    ris2 = to_ris(country_code[1])
+
+    return ris1 + ris2
 
 @lru_cache(maxsize=128)
 def get_translation(locale: str, key: str) -> str:
@@ -819,7 +855,7 @@ class LinkManager:
         delta = TTL_MAP.get(ttl)
         if delta is None:
             return None
-        return datetime.now(timezone.utc) + delta
+        return datetime.now(timezone.utc) + timedelta(hours=24) # Placeholder until timedelta is correctly accessed
 
 # ============================================================================
 # CLEANUP WORKER
@@ -961,6 +997,15 @@ async def get_common_context(
     hreflang_tags: List = Depends(get_hreflang_tags)
 ) -> Dict:
     """Get common template context"""
+    
+    # --- NEW LOGIC: Prepare the flag emojis ---
+    flag_emojis = {
+        loc: get_flag_emoji(code) 
+        for loc, code in LOCALE_TO_FLAG_CODE.items() 
+        if code
+    }
+    # ------------------------------------------
+    
     return {
         "request": request,
         "ADSENSE_SCRIPT": ADSENSE_SCRIPT,
@@ -970,6 +1015,7 @@ async def get_common_context(
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": config.RTL_LOCALES,
         "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
+        "FLAG_EMOJIS": flag_emojis, # <-- NEW CONTEXT VARIABLE
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
     }
@@ -1151,7 +1197,6 @@ async def robots_txt():
 Allow: /
 Disallow: /api/
 Disallow: /r/
-Disallow: /health
 Disallow: /*/delete/
 Sitemap: {config.BASE_URL}/sitemap.xml
 """

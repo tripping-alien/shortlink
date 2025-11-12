@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shortlinks.art | {% block title %}{{ _('app_tagline') }}{% endblock %}</title>
+    <title>Shortlinks.art | {% block title %}{{ _('tagline') }}{% endblock %}</title>
 
     {% for tag in hreflang_tags %}
     <link rel="{{ tag.rel }}" href="{{ tag.href }}" hreflang="{{ tag.hreflang }}">
@@ -20,7 +20,7 @@
     
     {% block head %}{% endblock %}
 
-    {{ ADSENSE_SCRIPT | safe }}
+    {{ config.ADSENSE_SCRIPT | safe }}
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm fixed-top">
@@ -45,14 +45,14 @@
 
                     <div class="dropdown">
                         <a class="btn btn-sm btn-outline-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            {{ FLAG_EMOJIS[locale] }} {{ locale.upper() }}
+                            {{ config.LOCALE_TO_EMOJI[locale] }} {{ locale.upper() }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             {% for lang in config.SUPPORTED_LOCALES %}
                             <li>
                                 <a class="dropdown-item d-flex justify-content-between align-items-center" 
                                    href="{{ url_for('localized', locale=lang, path=request.url.path.split('/')[2:]|join('/') or '') }}">
-                                    {{ FLAG_EMOJIS[lang] }} 
+                                    {{ config.LOCALE_TO_EMOJI[lang] }} 
                                     <span class="ms-2 text-uppercase">{{ lang }}</span>
                                 </a>
                             </li>
@@ -70,11 +70,11 @@
     <footer class="text-center py-4 text-muted border-top mt-5">
         <div class="container">
             <p class="mb-1">
-                &copy; {{ current_year }} Shortlinks.art. {{ _('footer_rights') }}
+                &copy; {{ current_year }} Shortlinks.art. {{ _('license_all_rights') }}
             </p>
             <p class="small mb-0">
                 <a href="{{ url_for('localized', locale=locale, path='about') }}" class="text-decoration-none text-secondary me-3">{{ _('nav_about') }}</a>
-                <a href="#" class="text-decoration-none text-secondary">{{ _('footer_terms') }}</a>
+                <a href="#" class="text-decoration-none text-secondary">{{ _('footer_terms_placeholder') }}</a>
             </p>
         </div>
     </footer>

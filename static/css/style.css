@@ -260,7 +260,7 @@ header .container {
     width: 100%; /* Full width underline */
 }
 
-/* --- 5. HERO CARD - PRIMARY CONTENT --- */
+/* --- 5. HERO CARD - PRIMARY CONTENT (Updated Animation) --- */
 #create-link {
     background: var(--gradient-card);
     padding: var(--space-3xl);
@@ -271,6 +271,8 @@ header .container {
     overflow: hidden;
     border: 1px solid var(--color-border); /* Slightly stronger border */
     transition: all var(--transition-slow);
+    /* 🟢 ADDED: Apply the custom card animation */
+    animation: card-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; 
 }
 
 #create-link::before {
@@ -288,13 +290,7 @@ header .container {
     transform: translateY(-4px); /* Increased lift */
 }
 
-#create-link h1 {
-    text-align: center;
-    margin-bottom: var(--space-2xl);
-    animation: fade-in-up 0.6s ease-out;
-}
-
-/* --- 6. FORM ELEMENTS --- */
+/* --- 6. FORM ELEMENTS (Enhanced Focus) --- */
 form {
     display: flex;
     flex-direction: column;
@@ -343,9 +339,10 @@ select {
 input[type="url"]:focus,
 input[type="text"]:focus,
 select:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 5px var(--color-primary-glow), var(--shadow-md); /* Enhanced glow and shadow */
-    transform: translateY(-2px); /* Increased lift */
+    /* 🟢 ENHANCED FOCUS: Use accent color for glow and reduced lift */
+    border-color: var(--color-accent); 
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3), var(--shadow-md); 
+    transform: translateY(-1px); 
     background: var(--color-card);
 }
 
@@ -366,7 +363,7 @@ select {
     cursor: pointer;
 }
 
-/* --- 7. BUTTONS --- */
+/* --- 7. BUTTONS (Micro-Interaction: Active State) --- */
 .form-actions {
     display: flex;
     gap: var(--space-md);
@@ -419,7 +416,7 @@ select {
 }
 
 .btn-primary:active {
-    transform: translateY(0);
+    transform: scale(0.98); /* 🟢 ACTIVE: Subtle scale-down on click */
     box-shadow: var(--shadow-md);
 }
 
@@ -436,6 +433,10 @@ select {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
     border-color: var(--color-primary);
+}
+
+.btn-secondary:active {
+    transform: scale(0.98); /* 🟢 ACTIVE: Subtle scale-down on click */
 }
 
 /* Button Icons */
@@ -610,7 +611,7 @@ select {
     transform: scale(1.1); /* Increased hover scale */
 }
 
-/* --- 10. LANGUAGE SWITCHER --- */
+/* --- 10. LANGUAGE SWITCHER (Dropdown Animation) --- */
 
 /* Integrated Language Switcher Style */
 .nav-actions {
@@ -672,8 +673,9 @@ select {
     overflow: hidden;
     display: none;
     opacity: 0;
-    transform: translateY(-10px);
-    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    /* 🟢 ANIMATION FIX: Smoother slide-down start position */
+    transform: translateY(-8px); 
+    transition: opacity var(--transition-base), transform var(--transition-base);
 }
 
 .lang-switcher:hover .lang-dropdown {
@@ -817,7 +819,8 @@ footer a:hover {
     flex-shrink: 0;
 }
 
-/* --- 14. ANIMATIONS (No change) --- */
+/* --- 14. ANIMATIONS (New Keyframe) --- */
+
 @keyframes fade-in-up {
     from {
         opacity: 0;
@@ -826,6 +829,20 @@ footer a:hover {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+/* 🟢 NEW KEYFRAME for Hero Card entrance */
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95) rotateX(15deg); 
+        filter: blur(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotateX(0deg);
+        filter: blur(0);
     }
 }
 

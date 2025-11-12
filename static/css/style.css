@@ -1,49 +1,49 @@
 /* ============================================================================
-MODERN URL SHORTENER - POLISHED MASTERPIECE DESIGN SYSTEM
-A contemporary, visually striking design with smooth animations
+MODERN URL SHORTENER - POLISHED DARK MASTERPIECE DESIGN SYSTEM
+A contemporary, visually striking dark design with smooth animations
 ============================================================================ */
 
-/* --- 1. DESIGN TOKENS & CSS VARIABLES --- */
+/* --- 1. DESIGN TOKENS & CSS VARIABLES (Dark Mode Default) --- */
 :root {
     /* Brand Colors - Modern Blue Palette */
-    --color-primary: #2563eb;
-    --color-primary-light: #3b82f6;
-    --color-primary-dark: #1e40af;
-    --color-primary-glow: rgba(37, 99, 235, 0.2);
+    --color-primary: #3b82f6; /* Slightly lighter primary for contrast */
+    --color-primary-light: #60a5fa;
+    --color-primary-dark: #2563eb;
+    --color-primary-glow: rgba(59, 130, 246, 0.25); /* Enhanced glow */
 
     /* Accent Colors */
-    --color-accent: #8b5cf6;
-    --color-accent-light: #a78bfa;
-    --color-success: #10b981;
-    --color-success-light: #34d399;
+    --color-accent: #a78bfa; /* Lighter accent */
+    --color-accent-light: #c4b5fd;
+    --color-success: #34d399; /* Lighter success */
+    --color-success-light: #5eead4;
     --color-warning: #f59e0b;
-    --color-error: #ef4444;
+    --color-error: #f87171; /* Lighter error */
 
-    /* Neutrals - Refined Gray Scale */
-    --color-background: #f8fafc;
-    --color-background-alt: #f1f5f9;
-    --color-card: #ffffff;
-    --color-text: #0f172a;
-    --color-text-muted: #64748b;
-    --color-border: #e2e8f0;
-    --color-border-light: #f1f5f9;
-    --color-highlight: #e0f2fe; /* New light blue highlight */
+    /* Neutrals - Refined Dark Scale (Grey/Blue) */
+    --color-background: #0f172a; /* Deep blue-grey background */
+    --color-background-alt: #1e293b; /* Slightly lighter for sections */
+    --color-card: #1e293b; /* Cards match background-alt for depth */
+    --color-text: #f1f5f9; /* Near white text */
+    --color-text-muted: #94a3b8; /* Soft grey for muted text */
+    --color-border: #334155; /* Subtle border color */
+    --color-border-light: #334155;
+    --color-highlight: #334155; /* Highlight blends subtly */
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-hero: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%);
+    --gradient-hero: linear-gradient(135deg, #3b82f6 0%, #c4b5fd 100%);
     --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    --gradient-card: linear-gradient(145deg, #1e293b 0%, #111827 100%); /* Dark gradient for card depth */
 
-    /* Shadows - Layered Depth */
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 10px -2px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 35px -8px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
-    --shadow-glow: 0 0 25px var(--color-primary-glow); /* Enhanced glow radius */
+    /* Shadows - Must be toned down for dark mode */
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 10px -2px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 35px -8px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 25px var(--color-primary-glow); 
 
-    /* Spacing System */
+    /* Spacing System, Radius, Transitions, Typography remain the same */
     --space-xs: 0.5rem;
     --space-sm: 0.75rem;
     --space-md: 1rem;
@@ -52,7 +52,6 @@ A contemporary, visually striking design with smooth animations
     --space-2xl: 3rem;
     --space-3xl: 4rem;
 
-    /* Border Radius */
     --radius-sm: 0.375rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
@@ -60,13 +59,11 @@ A contemporary, visually striking design with smooth animations
     --radius-2xl: 1.5rem;
     --radius-full: 9999px;
 
-    /* Transitions */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    /* Typography */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; 
 }
@@ -106,9 +103,10 @@ body::before {
     right: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.07) 0%, transparent 50%), /* Slightly stronger effect */
-                radial-gradient(circle at 70% 80%, rgba(139, 92, 246, 0.07) 0%, transparent 50%);
-    animation: gradient-shift 25s ease-in-out infinite alternate; /* Slower and alternating */
+    /* 🟢 Dark mode background glow */
+    background: radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), 
+                radial-gradient(circle at 70% 80%, rgba(167, 139, 250, 0.1) 0%, transparent 50%);
+    animation: gradient-shift 25s ease-in-out infinite alternate; 
     z-index: -1;
     pointer-events: none;
     opacity: 0.8;
@@ -116,7 +114,7 @@ body::before {
 
 @keyframes gradient-shift {
     0% { transform: translate(0, 0) rotate(0deg); }
-    100% { transform: translate(-25px, 25px) rotate(3deg); } /* Subtle change */
+    100% { transform: translate(-25px, 25px) rotate(3deg); } 
 }
 
 /* Typography */
@@ -124,11 +122,11 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     line-height: 1.2;
     color: var(--color-text);
-    letter-spacing: -0.03em; /* Slightly tighter tracking for modern feel */
+    letter-spacing: -0.03em; 
 }
 
 h1 {
-    font-size: clamp(2.2rem, 5vw, 3.5rem); /* Slightly larger */
+    font-size: clamp(2.2rem, 5vw, 3.5rem); 
     background: var(--gradient-hero);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -137,13 +135,13 @@ h1 {
 }
 
 h2 {
-    font-size: clamp(1.75rem, 3vw, 2.25rem); /* Slightly larger */
+    font-size: clamp(1.75rem, 3vw, 2.25rem); 
     margin-bottom: var(--space-md);
 }
 
 p {
     color: var(--color-text-muted);
-    line-height: 1.75; /* Improved readability */
+    line-height: 1.75; 
 }
 
 /* NEW: Utility class for focused text blocks */
@@ -156,8 +154,8 @@ p {
 
 /* --- 3. LAYOUT CONTAINERS --- */
 .container {
-    max-width: 1280px; /* Increased max width */
-    width: 90%; /* Increased width percentage for smaller screens */
+    max-width: 1280px; 
+    width: 90%; 
     margin: 0 auto;
     padding: var(--space-md);
 }
@@ -168,11 +166,12 @@ main {
     padding-bottom: var(--space-3xl);
 }
 
-/* --- 4. HEADER & NAVIGATION --- */
+/* --- 4. HEADER & NAVIGATION (Dark Mode Adjustments) --- */
 header {
-    background: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
-    backdrop-filter: blur(15px); /* Increased blur */
-    border-bottom: 1px solid var(--color-border); /* Stronger border */
+    /* 🟢 Dark header background */
+    background: rgba(30, 41, 59, 0.95); 
+    backdrop-filter: blur(15px); 
+    border-bottom: 1px solid var(--color-border); 
     box-shadow: var(--shadow-sm);
     position: sticky;
     top: 0;
@@ -182,7 +181,7 @@ header {
 
 header.scrolled {
     box-shadow: var(--shadow-lg);
-    background: var(--color-card); /* Less transparent when scrolled */
+    background: var(--color-card); 
 }
 
 header .container {
@@ -205,7 +204,7 @@ header .container {
     display: inline-flex;
     align-items: center;
     gap: var(--space-sm);
-    padding: var(--space-xs); /* Added padding for a larger hit area */
+    padding: var(--space-xs); 
     border-radius: var(--radius-md);
 }
 
@@ -215,7 +214,7 @@ header .container {
 }
 
 .logo::before {
-    content: '⚡'; /* Changed emoji for a stronger feel */
+    content: '⚡'; 
     font-size: 1.5rem;
 }
 
@@ -242,7 +241,7 @@ header .container {
     bottom: 0;
     left: 50%;
     width: 0;
-    height: 3px; /* Slightly thicker underline */
+    height: 3px; 
     background: var(--gradient-primary);
     transition: all var(--transition-base);
     transform: translateX(-50%);
@@ -250,14 +249,14 @@ header .container {
 }
 
 .nav-links a:hover,
-.nav-links a.active { /* Added active state */
+.nav-links a.active { 
     color: var(--color-primary);
-    background: var(--color-highlight); /* Use highlight color */
+    background: var(--color-highlight); 
 }
 
 .nav-links a:hover::after,
 .nav-links a.active::after {
-    width: 100%; /* Full width underline */
+    width: 100%; 
 }
 
 /* --- 5. HERO CARD - PRIMARY CONTENT (Updated Animation) --- */
@@ -269,9 +268,8 @@ header .container {
     margin-top: var(--space-2xl);
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--color-border); /* Slightly stronger border */
+    border: 1px solid var(--color-border); 
     transition: all var(--transition-slow);
-    /* 🟢 ADDED: Apply the custom card animation */
     animation: card-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; 
 }
 
@@ -281,16 +279,16 @@ header .container {
     top: 0;
     left: 0;
     right: 0;
-    height: 5px; /* Slightly thicker accent line */
+    height: 5px; 
     background: var(--gradient-primary);
 }
 
 #create-link:hover {
     box-shadow: var(--shadow-2xl), var(--shadow-glow);
-    transform: translateY(-4px); /* Increased lift */
+    transform: translateY(-4px); 
 }
 
-/* --- 6. FORM ELEMENTS (Enhanced Focus) --- */
+/* --- 6. FORM ELEMENTS (Dark Mode Adjustments) --- */
 form {
     display: flex;
     flex-direction: column;
@@ -314,7 +312,7 @@ label {
 }
 
 label::before {
-    content: '✦'; /* Changed marker for a more modern feel */
+    content: '✦'; 
     color: var(--color-primary);
     font-size: 1.2rem;
     line-height: 0;
@@ -325,23 +323,24 @@ input[type="text"],
 select {
     width: 100%;
     padding: var(--space-md) var(--space-lg);
-    border: 1px solid var(--color-border); /* Thinner border for cleaner look */
+    border: 1px solid var(--color-border); 
     border-radius: var(--radius-lg);
-    font-size: 1.05rem; /* Slightly larger font */
+    font-size: 1.05rem; 
     font-family: var(--font-sans);
     color: var(--color-text);
-    background: var(--color-background-alt); /* Slightly off-white background */
+    /* 🟢 Dark Input Background */
+    background: var(--color-background-alt); 
     transition: all var(--transition-base);
     outline: none;
-    box-shadow: var(--shadow-sm); /* Subtle inner shadow */
+    box-shadow: none; /* Removed inner shadow for cleaner dark look */
 }
 
 input[type="url"]:focus,
 input[type="text"]:focus,
 select:focus {
-    /* 🟢 ENHANCED FOCUS: Use accent color for glow and reduced lift */
+    /* 🟢 Dark Focus */
     border-color: var(--color-accent); 
-    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3), var(--shadow-md); 
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.3), var(--shadow-md); /* Accent glow */
     transform: translateY(-1px); 
     background: var(--color-card);
 }
@@ -355,10 +354,10 @@ input[type="text"]::placeholder {
 /* Custom Select Styling */
 select {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); /* Darker, thicker arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394A3B8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); /* 🟢 Lighter arrow for dark mode */
     background-position: right var(--space-md) center;
     background-repeat: no-repeat;
-    background-size: 1.25em 1.25em; /* Slightly smaller arrow */
+    background-size: 1.25em 1.25em; 
     padding-right: var(--space-3xl);
     cursor: pointer;
 }
@@ -373,7 +372,7 @@ select {
 .btn-primary,
 .btn-secondary {
     padding: var(--space-md) var(--space-xl);
-    border-radius: var(--radius-xl); /* More rounded corners */
+    border-radius: var(--radius-xl); 
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
@@ -386,7 +385,7 @@ select {
     align-items: center;
     justify-content: center;
     gap: var(--space-sm);
-    text-decoration: none; /* Ensure it works as a link too */
+    text-decoration: none; 
 }
 
 .btn-primary {
@@ -399,15 +398,16 @@ select {
     content: '';
     position: absolute;
     top: 0;
-    left: -150%; /* Wider swipe */
+    left: -150%; 
     width: 150%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); /* Brighter swipe */
-    transition: left 0.7s; /* Slower, more dramatic swipe */
+    /* 🟢 White swipe on dark background */
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); 
+    transition: left 0.7s; 
 }
 
 .btn-primary:hover {
-    transform: translateY(-4px); /* Increased lift */
+    transform: translateY(-4px); 
     box-shadow: var(--shadow-2xl);
 }
 
@@ -416,43 +416,44 @@ select {
 }
 
 .btn-primary:active {
-    transform: scale(0.98); /* 🟢 ACTIVE: Subtle scale-down on click */
+    transform: scale(0.98); 
     box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
     background: var(--color-card);
     color: var(--color-primary);
-    border: 1px solid var(--color-border); /* Thinner border */
+    border: 1px solid var(--color-border); 
     box-shadow: var(--shadow-md);
 }
 
 .btn-secondary:hover {
-    background: var(--color-highlight); /* Light highlight background */
-    color: var(--color-primary-dark);
+    /* 🟢 Dark highlight background */
+    background: var(--color-background);
+    color: var(--color-primary-light);
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
     border-color: var(--color-primary);
 }
 
 .btn-secondary:active {
-    transform: scale(0.98); /* 🟢 ACTIVE: Subtle scale-down on click */
+    transform: scale(0.98); 
 }
 
 /* Button Icons */
 .btn-primary::after {
-    content: '🚀'; /* More exciting emoji */
+    content: '🚀'; 
     font-size: 1.2rem;
     transition: transform var(--transition-base);
 }
 
 .btn-primary:hover::after {
-    transform: translateX(6px) rotate(10deg); /* Angled move */
+    transform: translateX(6px) rotate(10deg); 
 }
 
 /* --- 8. ADVANCED OPTIONS --- */
 #advanced-options {
-    border-top: 1px solid var(--color-border); /* Solid border for separation */
+    border-top: 1px solid var(--color-border); 
     padding-top: var(--space-xl);
     margin-top: var(--space-xl);
     display: flex;
@@ -464,7 +465,7 @@ select {
 @keyframes slide-down {
     from {
         opacity: 0;
-        transform: translateY(-15px); /* Increased start position */
+        transform: translateY(-15px); 
     }
     to {
         opacity: 1;
@@ -479,7 +480,7 @@ select {
     border-radius: var(--radius-lg);
     cursor: pointer;
     font-weight: 600;
-    color: var(--color-text-muted); /* Less vibrant color for secondary action */
+    color: var(--color-text-muted); 
     transition: all var(--transition-base);
     display: flex;
     align-items: center;
@@ -495,21 +496,22 @@ select {
     box-shadow: var(--shadow-md);
 }
 
-/* --- 9. RESULT DISPLAY --- */
+/* --- 9. RESULT DISPLAY (Dark Mode Adjustments) --- */
 #result {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); /* Lighter, softer green background */
+    /* 🟢 Dark success background */
+    background: linear-gradient(135deg, #065f46 0%, #10b981 10%); 
     border: 1px solid var(--color-success);
-    padding: var(--space-2xl); /* More padding */
-    border-radius: var(--radius-2xl); /* More rounded corners */
+    padding: var(--space-2xl); 
+    border-radius: var(--radius-2xl); 
     margin-top: var(--space-2xl);
-    box-shadow: var(--shadow-xl), 0 0 40px rgba(16, 185, 129, 0.2); /* Stronger glow */
+    box-shadow: var(--shadow-xl), 0 0 40px rgba(16, 185, 129, 0.2); 
     animation: scale-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 @keyframes scale-in {
     from {
         opacity: 0;
-        transform: scale(0.8); /* More dramatic scale */
+        transform: scale(0.8); 
     }
     to {
         opacity: 1;
@@ -526,9 +528,9 @@ select {
 }
 
 #result h3::before {
-    content: '✅'; /* Better success emoji */
+    content: '✅'; 
     font-size: 1.5rem;
-    width: 2.5rem; /* Larger icon */
+    width: 2.5rem; 
     height: 2.5rem;
     background: var(--color-success);
     color: white;
@@ -547,12 +549,12 @@ select {
 #short-link-result {
     flex-grow: 1;
     font-family: var(--font-mono);
-    background: white;
+    background: var(--color-background); /* Dark background for the output field */
     border: 1px solid var(--color-success-light);
-    border-radius: var(--radius-lg); /* Slightly larger radius */
+    border-radius: var(--radius-lg); 
     padding: var(--space-md) var(--space-lg);
     font-size: 1.1rem;
-    color: var(--color-primary-dark); /* Darker text for contrast */
+    color: var(--color-text); /* Light text for contrast */
     cursor: pointer;
     transition: all var(--transition-base);
     user-select: all;
@@ -560,7 +562,7 @@ select {
 }
 
 #short-link-result:hover {
-    background: var(--color-highlight);
+    background: var(--color-background-alt);
     border-color: var(--color-success);
     transform: scale(1.005);
 }
@@ -593,9 +595,9 @@ select {
     flex-direction: column;
     align-items: center;
     gap: var(--space-md);
-    padding: var(--space-xl); /* Increased padding */
-    background: white;
-    border-radius: var(--radius-xl); /* More rounded */
+    padding: var(--space-xl); 
+    background: var(--color-background); /* Dark background for QR section */
+    border-radius: var(--radius-xl); 
     border: 1px solid var(--color-success-light);
     box-shadow: var(--shadow-md);
 }
@@ -603,17 +605,17 @@ select {
 .qr-code-section img {
     max-width: 200px;
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg); /* Deeper shadow on QR code */
-    transition: transform var(--transition-bounce); /* Bouncier transition */
+    box-shadow: var(--shadow-lg); 
+    transition: transform var(--transition-bounce); 
 }
 
 .qr-code-section img:hover {
-    transform: scale(1.1); /* Increased hover scale */
+    transform: scale(1.1); 
 }
 
-/* --- 10. LANGUAGE SWITCHER (Dropdown Animation) --- */
+/* --- 10. LANGUAGE SWITCHER (Dark Mode Adjustments) --- */
+/* ... (Logic remains the same, colors are now dark-mode defaults) ... */
 
-/* Integrated Language Switcher Style */
 .nav-actions {
     display: flex;
     align-items: center;
@@ -623,14 +625,14 @@ select {
 .lang-switcher {
     position: relative;
     display: inline-block;
-    z-index: 101; /* Ensure it's above other header elements */
+    z-index: 101; 
 }
 
 .lang-button {
-    background: var(--color-background-alt);
+    background: var(--color-card); /* Use card background for button */
     border: 1px solid var(--color-border);
     color: var(--color-text);
-    padding: var(--space-sm) var(--space-md); /* Adjusted padding */
+    padding: var(--space-sm) var(--space-md); 
     border-radius: var(--radius-lg);
     font-weight: 600;
     cursor: pointer;
@@ -639,11 +641,11 @@ select {
     align-items: center;
     gap: var(--space-xs);
     box-shadow: var(--shadow-sm);
-    font-size: 1.1rem; /* Slightly larger text/emoji */
+    font-size: 1.1rem; 
 }
 
 .lang-button::after {
-    content: '▼'; /* Changed to a simpler triangle */
+    content: '▼'; 
     font-size: 0.6rem;
     margin-left: var(--space-xs);
     transition: transform var(--transition-base);
@@ -651,7 +653,7 @@ select {
 
 .lang-button:hover {
     border-color: var(--color-primary);
-    background: var(--color-highlight);
+    background: var(--color-background-alt);
     box-shadow: var(--shadow-md);
     transform: translateY(-1px);
 }
@@ -665,7 +667,7 @@ select {
     top: calc(100% + var(--space-xs));
     right: 0;
     background: var(--color-card);
-    min-width: 180px; /* Reduced width slightly */
+    min-width: 180px; 
     box-shadow: var(--shadow-xl);
     z-index: 1000;
     border-radius: var(--radius-lg);
@@ -673,7 +675,6 @@ select {
     overflow: hidden;
     display: none;
     opacity: 0;
-    /* 🟢 ANIMATION FIX: Smoother slide-down start position */
     transform: translateY(-8px); 
     transition: opacity var(--transition-base), transform var(--transition-base);
 }
@@ -696,25 +697,25 @@ select {
 }
 
 .lang-dropdown a:hover {
-    background: var(--color-primary); /* Solid primary background for hover */
+    background: var(--color-primary); 
     color: white;
 }
 .lang-dropdown a.active {
-    background: var(--color-highlight);
-    color: var(--color-primary-dark);
+    background: var(--color-background-alt);
+    color: var(--color-primary-light);
     font-weight: 600;
 }
 
 
-/* --- 11. FOOTER --- */
+/* --- 11. FOOTER (Dark Mode Adjustments) --- */
 footer {
     margin-top: auto;
-    padding: var(--space-2xl) 0; /* Increased vertical padding */
-    background: var(--color-background-alt); /* Light background for separation */
+    padding: var(--space-2xl) 0; 
+    background: var(--color-background-alt); 
     border-top: 1px solid var(--color-border);
     text-align: center;
     color: var(--color-text-muted);
-    box-shadow: var(--shadow-md); /* Stronger shadow */
+    box-shadow: var(--shadow-md); 
 }
 
 footer p {
@@ -729,11 +730,11 @@ footer a {
 }
 
 footer a:hover {
-    color: var(--color-primary-dark);
+    color: var(--color-primary-light);
     text-decoration: underline;
 }
 
-/* --- 12. LOADING SPINNER (No Change - It's already great) --- */
+/* --- 12. LOADING SPINNER (No Change) --- */
 .spinner-container {
     display: flex;
     align-items: center;
@@ -764,14 +765,14 @@ footer a:hover {
 
 @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; } /* Less opacity at 50% */
+    50% { opacity: 0.3; } 
 }
 
-/* --- 13. PREVIEW PAGE STYLES --- */
+/* --- 13. PREVIEW PAGE STYLES (Dark Mode Adjustments) --- */
 .preview-card {
     background: var(--gradient-card);
     border-radius: var(--radius-2xl);
-    padding: var(--space-3xl); /* Increased padding */
+    padding: var(--space-3xl); 
     box-shadow: var(--shadow-xl);
     border: 1px solid var(--color-border);
     margin-top: var(--space-2xl);
@@ -779,7 +780,7 @@ footer a:hover {
 
 .preview-metadata {
     display: flex;
-    gap: var(--space-xl); /* Increased gap */
+    gap: var(--space-xl); 
     padding: var(--space-xl);
     background: var(--color-background-alt);
     border-radius: var(--radius-lg);
@@ -788,7 +789,7 @@ footer a:hover {
 }
 
 .preview-image {
-    max-width: 250px; /* Slightly larger image */
+    max-width: 250px; 
     height: auto;
     object-fit: cover;
     border-radius: var(--radius-md);
@@ -802,9 +803,10 @@ footer a:hover {
 }
 
 .security-warning {
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); /* Lighter, softer yellow */
+    /* 🟢 Dark warning background */
+    background: linear-gradient(135deg, #78350f 0%, #a16207 100%); 
     border: 2px solid var(--color-warning);
-    padding: var(--space-xl); /* Increased padding */
+    padding: var(--space-xl); 
     border-radius: var(--radius-lg);
     margin: var(--space-xl) 0;
     display: flex;
@@ -814,13 +816,12 @@ footer a:hover {
 }
 
 .security-warning::before {
-    content: '🚨'; /* More serious warning emoji */
+    content: '🚨'; 
     font-size: 1.5rem;
     flex-shrink: 0;
 }
 
-/* --- 14. ANIMATIONS (New Keyframe) --- */
-
+/* --- 14. ANIMATIONS (No Change) --- */
 @keyframes fade-in-up {
     from {
         opacity: 0;
@@ -832,7 +833,6 @@ footer a:hover {
     }
 }
 
-/* 🟢 NEW KEYFRAME for Hero Card entrance */
 @keyframes card-in {
     from {
         opacity: 0;
@@ -860,8 +860,8 @@ footer a:hover {
     box-shadow: var(--shadow-lg);
 }
 
-/* --- 15. RESPONSIVE DESIGN --- */
-@media (max-width: 900px) { /* Changed breakpoint slightly */
+/* --- 15. RESPONSIVE DESIGN (No Change) --- */
+@media (max-width: 900px) { 
     .preview-metadata {
         flex-direction: column;
     }
@@ -893,9 +893,8 @@ footer a:hover {
         gap: var(--space-sm); 
     }
     
-    /* NEW: Ensure nav and lang switcher are side-by-side if space allows */
     header .container > :not(.logo) {
-        width: 100%; /* Take full width */
+        width: 100%; 
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -906,54 +905,6 @@ footer a:hover {
     
     .preview-metadata { flex-direction: column; }
     .preview-image { max-width: 100%; }
-}
-
-/* Dark mode support (optional enhancement) */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --color-background: #0f172a;
-        --color-background-alt: #1e293b;
-        --color-card: #1e293b;
-        --color-text: #f1f5f9;
-        --color-text-muted: #94a3b8;
-        --color-border: #334155;
-        --color-border-light: #334155;
-        --color-highlight: #374151; /* Darker highlight */
-    }
-
-    body::before { 
-        background: radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%), 
-                    radial-gradient(circle at 70% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%); 
-    } 
-    
-    header { background: rgba(30, 41, 59, 0.95); } /* Dark header transparency */
-
-    input[type="url"], input[type="text"], select { 
-        background: var(--color-background-alt);
-        border-color: var(--color-border);
-        color: var(--color-text);
-        box-shadow: none;
-    } 
-
-    input[type="url"]:focus, input[type="text"]:focus, select:focus {
-        background: var(--color-background);
-        border-color: var(--color-primary-light);
-    }
-    
-    .lang-button {
-        background: var(--color-card);
-        border-color: var(--color-border);
-        color: var(--color-text);
-    }
-    
-    #result {
-        background: linear-gradient(135deg, #065f46 0%, #10b981 10%); /* Darker success background */
-    }
-    
-    .security-warning {
-        background: linear-gradient(135deg, #78350f 0%, #a16207 100%); /* Dark warning background */
-        border-color: var(--color-warning);
-    }
 }
 
 /* Print styles */
@@ -974,7 +925,7 @@ footer a:hover {
     } 
 }
 
-/* Accessibility enhancements (No change - already great) */
+/* Accessibility enhancements */
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -988,11 +939,11 @@ footer a:hover {
 }
 
 *:focus-visible {
-    outline: 3px solid var(--color-primary); /* Slightly thicker focus ring */
+    outline: 3px solid var(--color-primary); 
     outline-offset: 3px;
 }
 
-/* Reduced motion support (No change - already great) */
+/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

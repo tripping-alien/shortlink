@@ -57,6 +57,8 @@ def _hash_token(plain_token: str) -> str:
 
 # --- Database Connection (Async) ---
 
+# --- In db_manager.py (The corrected function) ---
+
 def get_db_connection():
     """Initializes and returns the Firestore ASYNC client (runs once)."""
     global db, APP_ID, APP_INSTANCE
@@ -103,7 +105,7 @@ def get_db_connection():
         except Exception as e:
             logger.error(f"Error initializing Firebase or Firestore: {e}")
             raise RuntimeError("Database connection failure.") from e
-        finally:
+        finally: # <--- This block MUST be aligned with the 'try' and 'except' blocks
             # 6. Clean up the temp file
             if temp_file_path and os.path.exists(temp_file_path):
                 try:

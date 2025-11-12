@@ -72,10 +72,21 @@ TTL_MAP = {
 SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
 RTL_LOCALES = ["ar", "he"]
-LOCALE_TO_FLAG_CODE = {
-    "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br", 
-    "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
+
+# NEW: Mapping for language codes to emojis
+LOCALE_TO_EMOJI = {
+    "en": "🇬🇧",
+    "es": "🇪🇸",
+    "zh": "🇨🇳",
+    "hi": "🇮🇳",
+    "pt": "🇧🇷",
+    "fr": "🇫🇷",
+    "de": "🇩🇪",
+    "ar": "🇸🇦",
+    "ru": "🇷🇺",
+    "he": "🇮🇱",
 }
+
 translations = {}
 TRANSLATIONS_FILE = "translations.json"
 
@@ -165,7 +176,7 @@ async def get_common_context(
     return {
         "request": request, "ADSENSE_SCRIPT": ADSENSE_SCRIPT, "_": _, "locale": locale,
         "hreflang_tags": hreflang_tags, "current_year": datetime.now(timezone.utc).year,
-        "RTL_LOCALES": RTL_LOCALES, "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE
+        "RTL_LOCALES": RTL_LOCALES, "LOCALE_TO_EMOJI": LOCALE_TO_EMOJI # <-- Passes emojis
     }
 
 # ---------------- FIREBASE ----------------
@@ -465,6 +476,8 @@ async def api_create_link(
         raise HTTPException(status_code=400, detail=_("invalid_url"))
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
+    
+    # Robust validation (FIXED: removed validators.url)
     try:
         parsed = urlparse(long_url)
         if not parsed.scheme or not parsed.netloc: raise ValueError("Missing scheme or domain")
@@ -474,9 +487,7 @@ async def api_create_link(
     except ValueError as e:
         logger.warning(f"Invalid URL format submitted: {long_url} ({e})")
         raise HTTPException(status_code=400, detail=_("invalid_url"))
-    if not validators.url(long_url, public=True):
-        logger.warning(f"Blocked non-public or invalid URL: {long_url}")
-        raise HTTPException(status_code=400, detail=_("invalid_url"))
+    
     if payload.utm_tags:
         cleaned_tags = payload.utm_tags.lstrip("?&")
         if cleaned_tags:
@@ -642,7 +653,7 @@ async def preview(
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail=_("link_expired"))
     long_url = link["long_url"]
-    safe_href_url = "https://" + long_url if not long_url.startswith(("http://", "https")) else long_url
+    safe_href_url = "https:///" + long_url if not long_url.startswith(("http://", "https")) else long_url
     
     if link.get("meta_fetched"):
         meta = {
@@ -694,11 +705,27 @@ async def stats(
 
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete(
-    short_code: str,
-    token: Optional[str] = None,
+    short_code: str, token: Optional[str] = None,
     common_context: dict = Depends(get_common_context)
 ):
+    _ = common_context["_"]
+    if not token:
+        raise HTTPException(status_code=400, detail=_("token_missing"))
+    collection_ref = init_firebase().collection("links")
+    doc_ref = collection_ref.document(short_code)
+    doc = doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail=_("link_not_found"))
+    link = doc.to_dict()
+    if link.get("deletion_token") == token:
+        doc_ref.delete()
+        context = {**common_context, "success": True, "message": _("delete_success")}
+    else:
+        context = {**common_context, "success": False, "message": _("delete_invalid_token")}
+    return templates.TemplateResponse("delete_status.html", context)
 
+class SecurityException(Exception):
+    pass
 
 # --- Mount the localized router ---
 app.mount("/{locale}", i18n_router, name="localized")

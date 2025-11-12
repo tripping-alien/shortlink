@@ -1,955 +1,149 @@
-/* ============================================================================
-MODERN URL SHORTENER - POLISHED DARK MASTERPIECE DESIGN SYSTEM
-A contemporary, visually striking dark design with smooth animations
-============================================================================ */
-
-/* --- 1. DESIGN TOKENS & CSS VARIABLES (Dark Mode Default) --- */
+/*
+=============================================================================
+1. BASE STYLES & TYPOGRAPHY
+=============================================================================
+*/
 :root {
-    /* Brand Colors - Modern Blue Palette */
-    --color-primary: #3b82f6; /* Slightly lighter primary for contrast */
-    --color-primary-light: #60a5fa;
-    --color-primary-dark: #2563eb;
-    --color-primary-glow: rgba(59, 130, 246, 0.25); /* Enhanced glow */
-
-    /* Accent Colors */
-    --color-accent: #a78bfa; /* Lighter accent */
-    --color-accent-light: #c4b5fd;
-    --color-success: #34d399; /* Lighter success */
-    --color-success-light: #5eead4;
-    --color-warning: #f59e0b;
-    --color-error: #f87171; /* Lighter error */
-
-    /* Neutrals - Refined Dark Scale (Grey/Blue) */
-    --color-background: #0f172a; /* Deep blue-grey background */
-    --color-background-alt: #1e293b; /* Slightly lighter for sections */
-    --color-card: #1e293b; /* Cards match background-alt for depth */
-    --color-text: #f1f5f9; /* Near white text */
-    --color-text-muted: #94a3b8; /* Soft grey for muted text */
-    --color-border: #334155; /* Subtle border color */
-    --color-border-light: #334155;
-    --color-highlight: #334155; /* Highlight blends subtly */
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%);
-    --gradient-hero: linear-gradient(135deg, #3b82f6 0%, #c4b5fd 100%);
-    --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    --gradient-card: linear-gradient(145deg, #1e293b 0%, #111827 100%); /* Dark gradient for card depth */
-
-    /* Shadows - Must be toned down for dark mode */
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 10px -2px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-    --shadow-xl: 0 20px 35px -8px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 25px var(--color-primary-glow); 
-
-    /* Spacing System, Radius, Transitions, Typography remain the same */
-    --space-xs: 0.5rem;
-    --space-sm: 0.75rem;
-    --space-md: 1rem;
-    --space-lg: 1.5rem;
-    --space-xl: 2rem;
-    --space-2xl: 3rem;
-    --space-3xl: 4rem;
-
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
-    --radius-2xl: 1.5rem;
-    --radius-full: 9999px;
-
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; 
+    /* Define primary brand colors */
+    --color-primary: #007bff; /* Standard Bootstrap Blue */
+    --color-primary-dark: #0056b3;
+    --color-secondary: #6c757d;
+    --color-background-light: #f4f6f9; /* Light gray background */
+    --color-text-dark: #212529; /* Dark gray for body text */
+    --color-shadow: rgba(0, 0, 0, 0.08); /* Subtle shadow color */
 }
 
-/* --- 2. GLOBAL RESETS & BASE STYLES --- */
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
+/* Apply professional font and smooth scrolling */
+body {
+    font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--color-text-dark);
+    background-color: var(--color-background-light);
+    line-height: 1.6;
     margin: 0;
     padding: 0;
 }
 
-html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+/* Large, prominent headings */
+h1, h2, h3 {
+    font-weight: 600; /* Semi-bold */
+    color: var(--color-text-dark);
 }
 
-body {
-    font-family: var(--font-sans);
-    background: var(--color-background);
-    color: var(--color-text);
-    line-height: 1.6;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow-x: hidden;
+/* Custom styling for the main hero container */
+.hero-container {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
 }
-
-/* Animated background gradient */
-body::before {
-    content: '';
-    position: fixed;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    /* 🟢 Dark mode background glow */
-    background: radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), 
-                radial-gradient(circle at 70% 80%, rgba(167, 139, 250, 0.1) 0%, transparent 50%);
-    animation: gradient-shift 25s ease-in-out infinite alternate; 
-    z-index: -1;
-    pointer-events: none;
-    opacity: 0.8;
+.display-4 {
+    color: var(--color-primary-dark);
 }
-
-@keyframes gradient-shift {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    100% { transform: translate(-25px, 25px) rotate(3deg); } 
-}
-
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--color-text);
-    letter-spacing: -0.03em; 
-}
-
-h1 {
-    font-size: clamp(2.2rem, 5vw, 3.5rem); 
-    background: var(--gradient-hero);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: var(--space-lg);
-}
-
-h2 {
-    font-size: clamp(1.75rem, 3vw, 2.25rem); 
-    margin-bottom: var(--space-md);
-}
-
-p {
-    color: var(--color-text-muted);
-    line-height: 1.75; 
-}
-
-/* NEW: Utility class for focused text blocks */
-.text-lead {
+.lead {
     font-size: 1.15rem;
-    font-weight: 400;
-    color: var(--color-text);
+    color: var(--color-secondary);
 }
 
+/*
+=============================================================================
+2. CARD & FORM STYLING
+=============================================================================
+*/
 
-/* --- 3. LAYOUT CONTAINERS --- */
-.container {
-    max-width: 1280px; 
-    width: 90%; 
-    margin: 0 auto;
-    padding: var(--space-md);
+/* Card structure for the form and results */
+.form-card {
+    max-width: 550px; 
+    margin: 0 auto; 
+    padding: 30px;
+    background-color: white; /* Card background is pure white */
+    border: 1px solid #e9ecef; /* Very light border */
+    border-radius: 12px;
+    box-shadow: 0 8px 15px var(--color-shadow); /* Clear, professional shadow */
+    transition: box-shadow 0.3s ease-in-out;
 }
 
-main {
-    flex-grow: 1;
-    padding-top: var(--space-2xl);
-    padding-bottom: var(--space-3xl);
+.form-card:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); /* Slightly darker shadow on hover */
 }
 
-/* --- 4. HEADER & NAVIGATION (Dark Mode Adjustments) --- */
-header {
-    /* 🟢 Dark header background */
-    background: rgba(30, 41, 59, 0.95); 
-    backdrop-filter: blur(15px); 
-    border-bottom: 1px solid var(--color-border); 
-    box-shadow: var(--shadow-sm);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    transition: all var(--transition-base);
+/* Input Overrides (for better height/padding consistency) */
+.form-control, .form-select {
+    border-radius: 8px; /* Slightly rounded corners */
+    height: 50px;
+    padding: 0.75rem 1rem;
+    border-color: #ced4da;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
 }
 
-header.scrolled {
-    box-shadow: var(--shadow-lg);
-    background: var(--color-card); 
-}
-
-header .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: var(--space-sm);
-    padding-bottom: var(--space-sm);
-}
-
-.logo {
-    font-size: 1.75rem;
-    font-weight: 800;
-    background: var(--gradient-hero);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-decoration: none;
-    transition: transform var(--transition-base), box-shadow var(--transition-base);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-xs); 
-    border-radius: var(--radius-md);
-}
-
-.logo:hover {
-    transform: scale(1.05);
-    text-shadow: 0 0 5px var(--color-primary-glow);
-}
-
-.logo::before {
-    content: '⚡'; 
-    font-size: 1.5rem;
-}
-
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: var(--space-lg);
-}
-
-.nav-links a {
-    color: var(--color-text-muted);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-lg);
-    transition: all var(--transition-base);
-    position: relative;
-}
-
-.nav-links a::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 3px; 
-    background: var(--gradient-primary);
-    transition: all var(--transition-base);
-    transform: translateX(-50%);
-    border-radius: var(--radius-full);
-}
-
-.nav-links a:hover,
-.nav-links a.active { 
-    color: var(--color-primary);
-    background: var(--color-highlight); 
-}
-
-.nav-links a:hover::after,
-.nav-links a.active::after {
-    width: 100%; 
-}
-
-/* --- 5. HERO CARD - PRIMARY CONTENT (Updated Animation) --- */
-#create-link {
-    background: var(--gradient-card);
-    padding: var(--space-3xl);
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
-    margin-top: var(--space-2xl);
-    position: relative;
-    overflow: hidden;
-    border: 1px solid var(--color-border); 
-    transition: all var(--transition-slow);
-    animation: card-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; 
-}
-
-#create-link::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px; 
-    background: var(--gradient-primary);
-}
-
-#create-link:hover {
-    box-shadow: var(--shadow-2xl), var(--shadow-glow);
-    transform: translateY(-4px); 
-}
-
-/* --- 6. FORM ELEMENTS (Dark Mode Adjustments) --- */
-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-    animation: fade-in-up 0.6s ease-out 0.1s both;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-}
-
-label {
-    font-weight: 600;
-    color: var(--color-text);
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-}
-
-label::before {
-    content: '✦'; 
-    color: var(--color-primary);
-    font-size: 1.2rem;
-    line-height: 0;
-}
-
-input[type="url"],
-input[type="text"],
-select {
-    width: 100%;
-    padding: var(--space-md) var(--space-lg);
-    border: 1px solid var(--color-border); 
-    border-radius: var(--radius-lg);
-    font-size: 1.05rem; 
-    font-family: var(--font-sans);
-    color: var(--color-text);
-    /* 🟢 Dark Input Background */
-    background: var(--color-background-alt); 
-    transition: all var(--transition-base);
-    outline: none;
-    box-shadow: none; /* Removed inner shadow for cleaner dark look */
-}
-
-input[type="url"]:focus,
-input[type="text"]:focus,
-select:focus {
-    /* 🟢 Dark Focus */
-    border-color: var(--color-accent); 
-    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.3), var(--shadow-md); /* Accent glow */
-    transform: translateY(-1px); 
-    background: var(--color-card);
-}
-
-input[type="url"]::placeholder,
-input[type="text"]::placeholder {
-    color: var(--color-text-muted);
-    opacity: 0.7;
-}
-
-/* Custom Select Styling */
-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394A3B8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); /* 🟢 Lighter arrow for dark mode */
-    background-position: right var(--space-md) center;
-    background-repeat: no-repeat;
-    background-size: 1.25em 1.25em; 
-    padding-right: var(--space-3xl);
-    cursor: pointer;
-}
-
-/* --- 7. BUTTONS (Micro-Interaction: Active State) --- */
-.form-actions {
-    display: flex;
-    gap: var(--space-md);
-    margin-top: var(--space-md);
-}
-
-.btn-primary,
-.btn-secondary {
-    padding: var(--space-md) var(--space-xl);
-    border-radius: var(--radius-xl); 
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    border: none;
-    transition: all var(--transition-base);
-    position: relative;
-    overflow: hidden;
-    flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-sm);
-    text-decoration: none; 
-}
-
+/* Button Styling */
 .btn-primary {
-    background: var(--gradient-primary);
-    color: white;
-    box-shadow: var(--shadow-lg);
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    font-weight: 600;
+    border-radius: 8px;
+    height: 50px;
+    transition: background-color 0.2s;
 }
-
-.btn-primary::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -150%; 
-    width: 150%;
-    height: 100%;
-    /* 🟢 White swipe on dark background */
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); 
-    transition: left 0.7s; 
-}
-
 .btn-primary:hover {
-    transform: translateY(-4px); 
-    box-shadow: var(--shadow-2xl);
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
 }
 
-.btn-primary:hover::before {
-    left: 150%;
+/*
+=============================================================================
+3. RESULT CARD STYLING
+=============================================================================
+*/
+
+/* Success result card background */
+.result-card.card {
+    background-color: #e6f5ff !important; /* Very light blue for success background */
+    border-color: #007bff !important;
 }
 
-.btn-primary:active {
-    transform: scale(0.98); 
-    box-shadow: var(--shadow-md);
-}
-
-.btn-secondary {
-    background: var(--color-card);
-    color: var(--color-primary);
-    border: 1px solid var(--color-border); 
-    box-shadow: var(--shadow-md);
-}
-
-.btn-secondary:hover {
-    /* 🟢 Dark highlight background */
-    background: var(--color-background);
-    color: var(--color-primary-light);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--color-primary);
-}
-
-.btn-secondary:active {
-    transform: scale(0.98); 
-}
-
-/* Button Icons */
-.btn-primary::after {
-    content: '🚀'; 
-    font-size: 1.2rem;
-    transition: transform var(--transition-base);
-}
-
-.btn-primary:hover::after {
-    transform: translateX(6px) rotate(10deg); 
-}
-
-/* --- 8. ADVANCED OPTIONS --- */
-#advanced-options {
-    border-top: 1px solid var(--color-border); 
-    padding-top: var(--space-xl);
-    margin-top: var(--space-xl);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-    animation: slide-down 0.4s ease-out;
-}
-
-@keyframes slide-down {
-    from {
-        opacity: 0;
-        transform: translateY(-15px); 
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.toggle-advanced {
-    background: var(--color-background-alt);
-    border: 1px solid var(--color-border);
-    padding: var(--space-md);
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--color-text-muted); 
-    transition: all var(--transition-base);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-sm);
-    text-decoration: none;
-}
-
-.toggle-advanced:hover {
-    background: var(--color-highlight);
-    color: var(--color-primary);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-/* --- 9. RESULT DISPLAY (Dark Mode Adjustments) --- */
-#result {
-    /* 🟢 Dark success background */
-    background: linear-gradient(135deg, #065f46 0%, #10b981 10%); 
-    border: 1px solid var(--color-success);
-    padding: var(--space-2xl); 
-    border-radius: var(--radius-2xl); 
-    margin-top: var(--space-2xl);
-    box-shadow: var(--shadow-xl), 0 0 40px rgba(16, 185, 129, 0.2); 
-    animation: scale-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-@keyframes scale-in {
-    from {
-        opacity: 0;
-        transform: scale(0.8); 
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-#result h3 {
-    color: var(--color-success);
-    margin-bottom: var(--space-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-}
-
-#result h3::before {
-    content: '✅'; 
-    font-size: 1.5rem;
-    width: 2.5rem; 
-    height: 2.5rem;
-    background: var(--color-success);
-    color: white;
-    border-radius: var(--radius-full);
-    font-weight: 800;
-    line-height: 2.5rem;
-    text-align: center;
-}
-
-.result-box {
-    display: flex;
-    gap: var(--space-md);
-    margin-bottom: var(--space-md);
-}
-
-#short-link-result {
-    flex-grow: 1;
-    font-family: var(--font-mono);
-    background: var(--color-background); /* Dark background for the output field */
-    border: 1px solid var(--color-success-light);
-    border-radius: var(--radius-lg); 
-    padding: var(--space-md) var(--space-lg);
-    font-size: 1.1rem;
-    color: var(--color-text); /* Light text for contrast */
-    cursor: pointer;
-    transition: all var(--transition-base);
-    user-select: all;
-    box-shadow: var(--shadow-sm);
-}
-
-#short-link-result:hover {
-    background: var(--color-background-alt);
-    border-color: var(--color-success);
-    transform: scale(1.005);
-}
-
-#copy-button {
-    background: var(--gradient-success);
-    color: white;
-    border: none;
-    padding: 0 var(--space-xl);
-    border-radius: var(--radius-lg);
+.result-card .card-title {
+    color: var(--color-primary-dark);
     font-weight: 700;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    white-space: nowrap;
-    box-shadow: var(--shadow-md);
+    font-size: 1.25rem;
 }
 
-#copy-button:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+/* QR Code & Details Layout */
+.result-details {
+    align-items: flex-start !important; /* Align content to the top */
 }
 
-#copy-button:active {
-    transform: scale(0.98);
+#qrcode-container img {
+    border: 5px solid white; 
+    box-shadow: 0 2px 8px var(--color-shadow);
 }
 
-/* QR Code Section */
-.qr-code-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-xl); 
-    background: var(--color-background); /* Dark background for QR section */
-    border-radius: var(--radius-xl); 
-    border: 1px solid var(--color-success-light);
-    box-shadow: var(--shadow-md);
+/* Short Link display */
+#short-link-href {
+    color: var(--color-primary-dark) !important;
+    font-size: 1.2rem !important;
+    text-decoration: none; /* Remove underline */
+    margin-right: 1rem !important;
+    transition: color 0.2s;
 }
-
-.qr-code-section img {
-    max-width: 200px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg); 
-    transition: transform var(--transition-bounce); 
-}
-
-.qr-code-section img:hover {
-    transform: scale(1.1); 
-}
-
-/* --- 10. LANGUAGE SWITCHER (Dark Mode Adjustments) --- */
-/* ... (Logic remains the same, colors are now dark-mode defaults) ... */
-
-.nav-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-}
-
-.lang-switcher {
-    position: relative;
-    display: inline-block;
-    z-index: 101; 
-}
-
-.lang-button {
-    background: var(--color-card); /* Use card background for button */
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
-    padding: var(--space-sm) var(--space-md); 
-    border-radius: var(--radius-lg);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    box-shadow: var(--shadow-sm);
-    font-size: 1.1rem; 
-}
-
-.lang-button::after {
-    content: '▼'; 
-    font-size: 0.6rem;
-    margin-left: var(--space-xs);
-    transition: transform var(--transition-base);
-}
-
-.lang-button:hover {
-    border-color: var(--color-primary);
-    background: var(--color-background-alt);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-.lang-switcher:hover .lang-button::after {
-    transform: rotate(180deg);
-}
-
-.lang-dropdown {
-    position: absolute;
-    top: calc(100% + var(--space-xs));
-    right: 0;
-    background: var(--color-card);
-    min-width: 180px; 
-    box-shadow: var(--shadow-xl);
-    z-index: 1000;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
-    overflow: hidden;
-    display: none;
-    opacity: 0;
-    transform: translateY(-8px); 
-    transition: opacity var(--transition-base), transform var(--transition-base);
-}
-
-.lang-switcher:hover .lang-dropdown {
-    display: block;
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.lang-dropdown a {
-    color: var(--color-text);
-    padding: var(--space-md) var(--space-lg);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    transition: all var(--transition-fast);
-    font-weight: 500;
-}
-
-.lang-dropdown a:hover {
-    background: var(--color-primary); 
-    color: white;
-}
-.lang-dropdown a.active {
-    background: var(--color-background-alt);
-    color: var(--color-primary-light);
-    font-weight: 600;
-}
-
-
-/* --- 11. FOOTER (Dark Mode Adjustments) --- */
-footer {
-    margin-top: auto;
-    padding: var(--space-2xl) 0; 
-    background: var(--color-background-alt); 
-    border-top: 1px solid var(--color-border);
-    text-align: center;
-    color: var(--color-text-muted);
-    box-shadow: var(--shadow-md); 
-}
-
-footer p {
-    font-size: 0.95rem;
-}
-
-footer a {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 600;
-    transition: color var(--transition-base);
-}
-
-footer a:hover {
-    color: var(--color-primary-light);
+#short-link-href:hover {
+    color: var(--color-primary) !important;
     text-decoration: underline;
 }
 
-/* --- 12. LOADING SPINNER (No Change) --- */
-.spinner-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-md);
-    padding: var(--space-lg);
+/* Copy button refinement */
+#copy-button {
+    background-color: transparent !important;
+    border: 1px solid var(--color-primary);
     color: var(--color-primary);
-    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+}
+#copy-button:hover {
+    background-color: var(--color-primary) !important;
+    color: white;
 }
 
-.loading-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--color-border);
-    border-top-color: var(--color-primary);
-    border-radius: var(--radius-full);
-    animation: spin 0.8s linear infinite;
+/* Utility Links (Stats/Delete) */
+.link-warning, .link-danger {
+    font-weight: 500;
 }
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Pulse effect for loading state */
-.loading-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; } 
-}
-
-/* --- 13. PREVIEW PAGE STYLES (Dark Mode Adjustments) --- */
-.preview-card {
-    background: var(--gradient-card);
-    border-radius: var(--radius-2xl);
-    padding: var(--space-3xl); 
-    box-shadow: var(--shadow-xl);
-    border: 1px solid var(--color-border);
-    margin-top: var(--space-2xl);
-}
-
-.preview-metadata {
-    display: flex;
-    gap: var(--space-xl); 
-    padding: var(--space-xl);
-    background: var(--color-background-alt);
-    border-radius: var(--radius-lg);
-    margin: var(--space-lg) 0;
-    box-shadow: var(--shadow-sm);
-}
-
-.preview-image {
-    max-width: 250px; 
-    height: auto;
-    object-fit: cover;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-    transition: transform var(--transition-base);
-}
-
-.preview-description {
-    flex: 1;
-    min-height: 80px;
-}
-
-.security-warning {
-    /* 🟢 Dark warning background */
-    background: linear-gradient(135deg, #78350f 0%, #a16207 100%); 
-    border: 2px solid var(--color-warning);
-    padding: var(--space-xl); 
-    border-radius: var(--radius-lg);
-    margin: var(--space-xl) 0;
-    display: flex;
-    align-items: start;
-    gap: var(--space-md);
-    box-shadow: var(--shadow-md);
-}
-
-.security-warning::before {
-    content: '🚨'; 
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
-/* --- 14. ANIMATIONS (No Change) --- */
-@keyframes fade-in-up {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes card-in {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95) rotateX(15deg); 
-        filter: blur(5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1) rotateX(0deg);
-        filter: blur(0);
-    }
-}
-
-.fade-in {
-    animation: fade-in-up 0.6s ease-out;
-}
-
-/* Microinteractions */
-.hover-lift {
-    transition: transform var(--transition-base), box-shadow var(--transition-base);
-}
-
-.hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-}
-
-/* --- 15. RESPONSIVE DESIGN (No Change) --- */
-@media (max-width: 900px) { 
-    .preview-metadata {
-        flex-direction: column;
-    }
-    .preview-image {
-        max-width: 100%;
-        margin-bottom: var(--space-md);
-    }
-}
-
-@media (max-width: 768px) {
-    :root {
-        --space-3xl: 2rem;
-    }
-
-    #create-link { padding: var(--space-xl); }
-    .form-actions { flex-direction: column; }
-    .btn-primary, .btn-secondary { width: 100%; }
-    
-    header .container { 
-        flex-direction: column; 
-        gap: var(--space-md); 
-        padding-top: var(--space-md);
-        padding-bottom: var(--space-md);
-    }
-    
-    .nav-links { 
-        flex-wrap: wrap; 
-        justify-content: center; 
-        gap: var(--space-sm); 
-    }
-    
-    header .container > :not(.logo) {
-        width: 100%; 
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .result-box { flex-direction: column; }
-    #copy-button { width: 100%; }
-    
-    .preview-metadata { flex-direction: column; }
-    .preview-image { max-width: 100%; }
-}
-
-/* Print styles */
-@media print {
-    header,
-    footer,
-    .nav-links,
-    .lang-switcher,
-    .form-actions {
-        display: none;
-    }
-
-    body { background: white; } 
-    #create-link, #result { 
-        box-shadow: none; 
-        border: 1px solid #ddd; 
-        padding: var(--space-lg);
-    } 
-}
-
-/* Accessibility enhancements */
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-*:focus-visible {
-    outline: 3px solid var(--color-primary); 
-    outline-offset: 3px;
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-      }

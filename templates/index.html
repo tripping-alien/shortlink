@@ -10,34 +10,20 @@
     
     <link rel="canonical" href="https://shortlinks.art/" />
     <meta name="robots" content="index, follow">
-    <meta name="google-site-verification" content="YOUR_GOOGLE_CODE_HERE" />
-    <meta name="msvalidate.01" content="YOUR_BING_CODE_HERE" />
-    <meta name="yandex-verification" content="YOUR_YANDEX_CODE_HERE" />
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://shortlinks.art/">
-    
-    <meta property="og:title" content="{{ _('app_title') }}">
-    <meta property="og:description" content="{{ _('meta_description_og') }}">
-    <meta property="og:image" content="https://shortlinks.art/assets/social-preview.jpg"> 
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://shortlinks.art/">
-    <meta property="twitter:title" content="{{ _('app_title') }}">
-    <meta property="twitter:description" content="{{ _('meta_description_og') }}">
-    
-    <meta property="twitter:image" content="https://shortlinks.art/assets/social-preview.jpg">
     
     {% for tag in hreflang_tags %}
     <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
     {% endfor %}
 
     {{ ADSENSE_SCRIPT|safe }} 
+    
+    {{ BOOTSTRAP_CDN|safe }}
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/4.1.7/css/flag-icons.min.css" integrity="sha512-GwXqu3iKRTNfR2gMDNYS0jYgWGAFfFzLNJYcE0ETGlwLdTwujSxjBOANRSPCvVSBCSFwwVbTR3MpdCweIZiRFA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
     
     <style>
+      /* Accessibility and Flag Styles (Retained) */
       .sr-only {
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
@@ -48,71 +34,202 @@
       }
       .lang-btn.active .lang-flag { border: 2px solid #fff; }
       .flag-icon { background-size: cover; display: inline-block; width: 24px !important; height: 18px !important; }
+
+      /* Custom Styles Adjustments for Bootstrap */
+      body {
+        /* Ensure dark background is applied outside the container */
+        background-color: #121212;
+      }
+      .card {
+        /* Use Bootstrap utilities for centering and max-width */
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        background-color: #2a2a2a;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        color: #fff;
+        text-align: center;
+      }
+      .header-link {
+        display: block;
+        text-align: right;
+        color: #007bff;
+        text-decoration: none;
+        margin-bottom: 20px;
+      }
+      h1 {
+        font-weight: 700;
+        margin-bottom: 5px;
+      }
+      .tagline {
+        margin-bottom: 30px;
+        color: #bbb;
+      }
+      #error-msg {
+        color: #ff4d4d;
+        font-weight: 500;
+        margin-top: 15px;
+        display: none;
+      }
+      /* Hide advanced options by default */
+      #advanced-options {
+        display: none;
+        margin-top: 15px;
+      }
+      #advanced-options.show {
+        display: block;
+      }
+      /* Loading Spinner for button */
+      .loading .spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.75s linear infinite;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+      .loading .btn-text {
+        display: none;
+      }
+      .loading #shortenBtn {
+        cursor: not-allowed;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      /* Results section styling */
+      #result {
+        border-top: 1px solid #444;
+        padding-top: 20px;
+        margin-top: 20px;
+        display: none;
+        text-align: left;
+      }
+      #result.show {
+        display: block;
+      }
+      .result-item {
+        margin-bottom: 15px;
+        padding: 5px;
+        background-color: #383838;
+        border-radius: 6px;
+      }
+      .result-item span {
+        font-weight: 500;
+        color: #888;
+        display: block;
+        font-size: 0.85rem;
+      }
+      #shortUrlLink, #statsUrlLink {
+        font-weight: 700;
+        color: #007bff;
+        word-break: break-all;
+        display: inline-block;
+        margin-right: 10px;
+      }
+      #qr-code-box img {
+        max-width: 150px;
+        height: auto;
+        border: 5px solid #fff;
+        display: block;
+        margin: 15px auto;
+      }
+      .language-switcher {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px 10px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #333;
+        width: 100%;
+      }
+      .language-switcher .lang-btn {
+        color: #888;
+        text-decoration: none;
+      }
+      .language-switcher .lang-btn:hover {
+        color: #eee;
+      }
     </style>
 </head>
 <body>
-    <main class="card">
-      <a href="{{ url_for('localized:dashboard', locale=locale) }}" class="header-link">
-        {{ _("my_links_button") }} 
-        <span aria-hidden="true">→</span>
-      </a>
-      <h1>Shortlinks<span>.art</span></h1>
-      <p class="tagline">{{ _("tagline") }}</p>
-      
-      <label for="longUrl" class="sr-only">{{ _('long_url_placeholder') }}</label>
-      <input type="url" id="longUrl" placeholder="{{ _('long_url_placeholder') }}">
-      
-      <label for="ttl" class="sr-only">{{ _("ttl_label") }}</label>
-      <select id="ttl">
-        <option value="1h">{{ _("ttl_1h") }}</option>
-        <option value="24h" selected>{{ _("ttl_24h") }}</option>
-        <option value="1w">{{ _("ttl_1w") }}</option>
-        <option value="never">{{ _("ttl_never") }}</option>
-      </select>
+    <div class="container">
+      <main class="card">
+        <a href="{{ url_for('localized:dashboard', locale=locale) }}" class="header-link">
+          {{ _("my_links_button") }} 
+          <span aria-hidden="true">→</span>
+        </a>
+        <h1>Shortlinks<span>.art</span></h1>
+        <p class="tagline">{{ _("tagline") }}</p>
+        
+        <div class="row g-2 mb-3">
+            <div class="col-md-9">
+                <label for="longUrl" class="sr-only">{{ _('long_url_placeholder') }}</label>
+                <input type="url" id="longUrl" class="form-control form-control-lg" placeholder="{{ _('long_url_placeholder') }}">
+            </div>
+            <div class="col-md-3">
+                <label for="ttl" class="sr-only">{{ _("ttl_label") }}</label>
+                <select id="ttl" class="form-select form-select-lg">
+                  <option value="1h">{{ _("ttl_1h") }}</option>
+                  <option value="24h" selected>{{ _("ttl_24h") }}</option>
+                  <option value="1w">{{ _("ttl_1w") }}</option>
+                  <option value="never">{{ _("ttl_never") }}</option>
+                </select>
+            </div>
+        </div>
 
-      <button class="advanced-options-toggle" id="advanced-toggle" aria-expanded="false" aria-controls="advanced-options">
-          {{ _("advanced_options_button") }} 
-          <span>+</span>
-      </button>
+        <button class="btn btn-sm btn-link advanced-options-toggle text-decoration-none" id="advanced-toggle" aria-expanded="false" aria-controls="advanced-options">
+            {{ _("advanced_options_button") }} 
+            <span>+</span>
+        </button>
 
-      <div id="advanced-options">
-          <label for="customCode" class="sr-only">{{ _('custom_code_label') }}</label>
-          <input type="text" id="customCode" placeholder="{{ _('custom_code_label') }}">
-          
-          <label for="utmTags" class="sr-only">{{ _('utm_tags_placeholder') }}</label>
-          <input type="text" id="utmTags" placeholder="{{ _('utm_tags_placeholder') }}">
-      </div>
-      
-      <div id="error-msg" role="alert"></div>
-      
-      <button id="shortenBtn">
-          <span class="btn-text">{{ _("create_button") }}</span>
-          <div class="spinner"></div>
-      </button>
-      
-      <div id="result" role="status" aria-live="polite">
-        <div class="result-item">
-          <span id="short-link-label">{{ _("result_short_link") }}</span>
-          <div>
-            <a href="#" id="shortUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="short-link-label"></a>
-            <button class="copy-btn" id="copyBtn">{{ _("copy_button") }}</button>
+        <div id="advanced-options">
+            <div class="mb-3">
+                <label for="customCode" class="sr-only">{{ _('custom_code_label') }}</label>
+                <input type="text" id="customCode" class="form-control" placeholder="{{ _('custom_code_label') }}">
+            </div>
+            <div class="mb-3">
+                <label for="utmTags" class="sr-only">{{ _('utm_tags_placeholder') }}</label>
+                <input type="text" id="utmTags" class="form-control" placeholder="{{ _('utm_tags_placeholder') }}">
+            </div>
+        </div>
+        
+        <div id="error-msg" role="alert"></div>
+        
+        <button id="shortenBtn" class="btn btn-primary btn-lg w-100 mt-3">
+            <span class="btn-text">{{ _("create_button") }}</span>
+            <div class="spinner"></div>
+        </button>
+        
+        <div id="result" role="status" aria-live="polite">
+          <div class="result-item">
+            <span id="short-link-label">{{ _("result_short_link") }}</span>
+            <div class="d-flex align-items-center justify-content-between">
+              <a href="#" id="shortUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="short-link-label" class="me-2"></a>
+              <button class="btn btn-outline-light btn-sm copy-btn" id="copyBtn">{{ _("copy_button") }}</button>
+            </div>
+          </div>
+          <div class="result-item">
+              <span id="stats-page-label">{{ _("result_stats_page") }}</span>
+              <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="stats-page-label" class="text-info">{{ _("result_view_clicks") }}</a>
+          </div>
+          <div id="qr-code-box" class="text-center py-2">
+              <img id="qrCode" src="" alt="QR Code for short link">
+          </div>
+          <div id="delete-link-box" class="mt-3 p-3 bg-dark rounded">
+              <p class="mb-1 text-warning"><strong>{{ _("result_save_link_strong") }}</strong></p>
+              <p class="text-muted" style="font-size: 0.9rem;">{{ _("result_save_link_text") }}</p>
+              <a href="#" id="deleteUrlLink" target="_blank" class="text-danger small"></a>
           </div>
         </div>
-        <div class="result-item">
-            <span id="stats-page-label">{{ _("result_stats_page") }}</span>
-            <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="stats-page-label">{{ _("result_view_clicks") }}</a>
-        </div>
-        <div id="qr-code-box">
-            <img id="qrCode" src="" alt="QR Code for short link">
-        </div>
-        <div id="delete-link-box">
-            <p><strong>{{ _("result_save_link_strong") }}</strong> {{ _("result_save_link_text") }}</p>
-            <a href="#" id="deleteUrlLink" target="_blank"></a>
-        </div>
-      </div>
-    </main>
-
-    <footer class="footer">
+      </main>
+    </div> <footer class="footer">
         <span>© {{ current_year }} Shortlinks.art</span>
         <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
         <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
@@ -133,8 +250,10 @@
         </nav>
     </footer>
 
+    {{ BOOTSTRAP_JS|safe }}
+    
     <script>
-    // JavaScript is unchanged and correct.
+    // Constants
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
     const errorDiv = document.getElementById("error-msg");
@@ -145,6 +264,8 @@
     const deleteUrlLink = document.getElementById("deleteUrlLink");
     const advancedToggle = document.getElementById("advanced-toggle");
     const advancedOptionsDiv = document.getElementById("advanced-options");
+
+    // Translated strings
     const TEXT_ENTER_URL = "{{ _('js_enter_url') }}";
     const TEXT_ERROR = "{{ _('js_error_creating') }}";
     const TEXT_ERROR_SERVER = "{{ _('js_error_server') }}";
@@ -152,6 +273,8 @@
     const TEXT_COPIED = "{{ _('js_copied') }}";
     const TEXT_COPY = "{{ _('copy_button') }}";
     const TEXT_FAILED = "{{ _('js_copy_failed') }}";
+
+    // Owner ID logic
     let ownerId = null;
     function getOrSetOwnerId() {
         const idKey = 'shortlinks_owner_id';
@@ -163,26 +286,42 @@
         return storedId;
     }
     ownerId = getOrSetOwnerId();
+
+    // Advanced options toggle
     advancedToggle.addEventListener("click", (e) => {
+        // Prevent default link behavior, although button type=button prevents submission
+        e.preventDefault(); 
+        
         const isShown = advancedOptionsDiv.classList.toggle("show");
+        
+        // Update ARIA attribute
         advancedToggle.setAttribute("aria-expanded", isShown); 
+        
+        // Update plus/minus sign
         advancedToggle.querySelector("span").textContent = isShown ? "−" : "+";
     });
+
+    // Shorten button logic
     shortenBtn.addEventListener("click", async () => {
         const longUrl = document.getElementById("longUrl").value.trim();
         const ttl = document.getElementById("ttl").value;
         const customCode = document.getElementById("customCode").value.trim() || undefined;
         const utmTags = document.getElementById("utmTags").value.trim() || undefined;
+        
         errorDiv.style.display = "none";
         errorDiv.textContent = "";
         resultDiv.classList.remove("show");
+        
         if (!longUrl) {
             errorDiv.textContent = TEXT_ENTER_URL;
             errorDiv.style.display = "block";
             return;
         }
+        
+        // Use Bootstrap loading state (add loading class)
         shortenBtn.disabled = true;
-        shortenBtn.classList.add("loading");
+        shortenBtn.classList.add("loading"); 
+        
         try {
             const res = await fetch("/api/v1/links", {
                 method:"POST",
@@ -196,15 +335,20 @@
                 })
             });
             const data = await res.json();
+            
             if (res.ok) {
+                // Set results
                 shortUrlLink.href = data.short_url; 
                 shortUrlLink.textContent = data.short_url.replace(/^https?:\/\//, '');
                 statsUrlLink.href = data.stats_url;
                 deleteUrlLink.href = data.delete_url;
                 deleteUrlLink.textContent = data.delete_url.replace(/^https?:\/\//, '');
                 qrCodeImg.src = data.qr_code_data;
+                
+                // Display results
                 resultDiv.classList.add("show");
             } else {
+                // Display error
                 errorDiv.textContent = data.detail || TEXT_ERROR;
                 errorDiv.style.display = "block";
             }
@@ -213,26 +357,41 @@
             errorDiv.textContent = TEXT_ERROR_SERVER;
             errorDiv.style.display = "block";
         } finally {
+            // Remove Bootstrap loading state
             shortenBtn.disabled = false;
             shortenBtn.classList.remove("loading");
         }
     });
+
+    // Copy button logic
     copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(shortUrlLink.href)
             .then(() => {
                 copyBtn.textContent = TEXT_COPIED;
                 copyBtn.disabled = true;
+                // Add success class momentarily
+                copyBtn.classList.add('btn-success'); 
+                copyBtn.classList.remove('btn-outline-light');
+                
                 setTimeout(() => {
                     copyBtn.textContent = TEXT_COPY;
                     copyBtn.disabled = false;
+                    copyBtn.classList.remove('btn-success');
+                    copyBtn.classList.add('btn-outline-light');
                 }, 2000);
             })
             .catch(() => {
                 copyBtn.textContent = TEXT_FAILED;
                 copyBtn.disabled = true;
+                // Add error class momentarily
+                copyBtn.classList.add('btn-danger'); 
+                copyBtn.classList.remove('btn-outline-light');
+                 
                  setTimeout(() => {
                     copyBtn.textContent = TEXT_COPY;
                     copyBtn.disabled = false;
+                    copyBtn.classList.remove('btn-danger');
+                    copyBtn.classList.add('btn-outline-light');
                 }, 2000);
             });
     });

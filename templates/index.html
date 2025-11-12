@@ -23,6 +23,12 @@
         border: 5px solid white;
         border-radius: 5px;
     }
+
+    /* NEW: Styling for the loading spinner */
+    .spinner {
+        display: none;
+        margin-right: 8px;
+    }
 </style>
 {% endblock %}
 
@@ -51,7 +57,9 @@
             </div>
 
             <button type="submit" class="btn btn-primary w-100" id="create-button">
-                {{ _('create_button') }} <span class="ms-2">🚀</span>
+                <span id="loading-spinner" class="spinner-border spinner-border-sm spinner" role="status" aria-hidden="true"></span>
+                <span id="button-text">{{ _('create_button') }}</span>
+                <span class="ms-2">🚀</span>
             </button>
         </form>
 
@@ -82,26 +90,62 @@
 {% block scripts %}
 <script>
     const form = document.getElementById('shorten-form');
+    const createButton = document.getElementById('create-button');
+    const buttonText = document.getElementById('button-text');
+    const loadingSpinner = document.getElementById('loading-spinner');
     const resultCard = document.getElementById('result-card');
     const shortLinkHref = document.getElementById('short-link-href');
     const qrCodeImage = document.getElementById('qr-code-image');
     const statsLink = document.getElementById('stats-link');
     const deleteLink = document.getElementById('delete-link');
     const longUrlInput = document.getElementById('long_url');
+    const ttlInput = document.getElementById('ttl'); // NEW: Get TTL input
+    const customCodeInput = document.getElementById('custom_code'); // NEW: Get custom code input
+    const utmTagsInput = document.getElementById('utm_tags'); // NEW: Get UTM tags input
     const copyButton = document.getElementById('copy-button');
+
+    // --- NEW FEEDBACK FUNCTIONS ---
+    function showLoading() {
+        createButton.disabled = true;
+        buttonText.textContent = '{{ _('processing_request') }}';
+        loadingSpinner.style.display = 'inline-block';
+        resultCard.classList.add('d-none'); // Hide previous result
+    }
+
+    function hideLoading() {
+        createButton.disabled = false;
+        buttonText.textContent = '{{ _('create_button') }}';
+        loadingSpinner.style.display = 'none';
+    }
+    // --------------------------------
 
     // Function to handle the actual AJAX submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // **(In a previous version, this is where showLoading() would be called)**
+        showLoading(); // Show loading indicator
 
         try {
-            const longUrl = longUrlInput.value;
+            const payload = {
+                long_url: longUrlInput.value,
+                ttl: ttlInput.value,
+                custom_code: customCodeInput.value || null,
+                utm_tags: utmTagsInput.value || null,
+                // owner_id is generally added on the server side via cookies/session if used
+            };
+            
+            // Clean payload from null/empty strings
+            Object.keys(payload).forEach(key => {
+                if (payload[key] === null || payload[key] === '') {
+                    delete payload[key];
+                }
+            });
+
+
             const response = await fetch('/api/v1/links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ long_url: longUrl, ttl: '24h' }) // Simplified payload for example
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
@@ -117,17 +161,22 @@
                 deleteLink.href = data.delete_url;
                 
                 resultCard.classList.remove('d-none'); // Make panel visible
-
+                
+                // Clear the long URL input after success
+                longUrlInput.value = ''; 
+                
             } else {
-                // FAILURE LOGIC: Display localized error
-                alert(`Error: ${data.detail || '{{ _('generic_error_message') }}'}`);
+                // FAILURE LOGIC: Display localized error from API response
+                const errorMessage = data.detail || '{{ _('generic_error_message') }}';
+                alert(`Error: ${errorMessage}`);
             }
 
         } catch (error) {
             console.error('Network or Parse Error:', error);
             alert('{{ _('network_error_message') }}');
-        } 
-        // **(In a previous version, this is where hideLoading() would be called)**
+        } finally {
+            hideLoading(); // Hide loading indicator regardless of outcome
+        }
     });
 
     // Copy Button Functionality

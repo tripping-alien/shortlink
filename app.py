@@ -536,7 +536,7 @@ async def get_my_links(owner_id: str, _ : Callable = Depends(get_api_translator)
         data["short_code"] = short_code
         data["short_url_preview"] = f"{BASE_URL}/preview/{short_code}" 
         data["stats_url"] = f"{BASE_URL}/stats/{short_code}"
-        data["delete_url": f"{BASE_URL}/delete/{short_code}?token={data['deletion_token']}"
+        data["delete_url"] = f"{BASE_URL}/delete/{short_code}?token={data['deletion_token']}"
         data["created_at"] = data["created_at"].isoformat()
         if "expires_at" in data and data["expires_at"]:
             data["expires_at"] = data["expires_at"].isoformat()

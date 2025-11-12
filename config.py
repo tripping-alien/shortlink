@@ -5,10 +5,9 @@ import os
 # Locales
 SUPPORTED_LOCALES = ["en", "es", "fr", "de"]
 DEFAULT_LOCALE = "en"
-RTL_LOCALES = [] # Add locales like "ar", "he" if needed
+RTL_LOCALES = [] 
 
 # Flags: Mapped locale code to the ISO 3166-1 alpha-2 code for the flag emoji
-# 'en' is mapped to 'US' as requested.
 LOCALE_TO_FLAG_CODE = {
     "en": "US",  # United States Flag
     "es": "ES",  # Spain Flag
@@ -48,10 +47,10 @@ HTTP_TIMEOUT = 10.0
 HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
 SUMMARIZATION_MODEL = "facebook/bart-large-cnn"
 SUMMARY_TIMEOUT = 30.0
-SUMMARY_MAX_LENGTH = 1024 * 5 # 5KB of text for summarization
+SUMMARY_MAX_LENGTH = 1024 * 5 
 
 # Frontend (AdSense Script)
-ADSENSE_SCRIPT = "" # Placeholder for actual AdSense script
+ADSENSE_SCRIPT = "" 
 
 # --- Validation ---
 def validate():

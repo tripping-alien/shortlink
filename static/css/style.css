@@ -329,4 +329,44 @@ footer {
     .lang-switcher {
         margin-top: 0.5rem;
     }
+
+    /* ======================================================================
+   AI Loading Spinner Styles
+   ====================================================================== */
+
+/* Container for the spinner and text */
+.spinner-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 0;
+    color: #fff;
+    font-weight: 500;
+}
+
+/* The spinning element itself */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3; /* Light grey base */
+    border-top: 3px solid #007bff; /* Blue top (primary color) */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Keyframes for the animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* You may need to adjust the .preview-description to align correctly */
+.preview-description {
+    /* ... existing styles ... */
+    min-height: 30px; /* Ensure enough room for the spinner */
+    /* ... */
+}
+
 }

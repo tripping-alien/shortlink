@@ -407,7 +407,7 @@ class URLValidator:
         
         except socket.gaierror as e:
             raise ValidationException(f"Could not resolve hostname: {hostname}")
-    
+
     @staticmethod
     def validate_url_structure(url: str) -> str:
         """Validate URL structure and format, adding https:// if scheme is missing."""
@@ -419,10 +419,16 @@ class URLValidator:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
         # --- CRITICAL FIX START: Handle naked domains (e.g., google.com) ---
-        parsed = urlparse(url)
-        if not parsed.scheme or parsed.scheme not in config.ALLOWED_SCHEMES:
+        
+        # 1. Check if the scheme is missing based on initial parsing
+        initial_parsed = urlparse(url)
+        if not initial_parsed.scheme:
+             # Prepend 'https://' if no scheme is found
              url = "https://" + url
-             parsed = urlparse(url) # Re-parse with the added scheme
+             
+        # 2. Re-parse the corrected URL once for final validation
+        parsed = urlparse(url)
+        
         # --- CRITICAL FIX END ---
         
         try:
@@ -431,6 +437,7 @@ class URLValidator:
                 raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
             
             if not parsed.netloc:
+                # This should no longer trigger for google.com because the scheme was prepended.
                 raise ValidationException("URL must include a domain")
             
             hostname = parsed.netloc.split(':')[0].lower()
@@ -447,7 +454,8 @@ class URLValidator:
         
         except ValueError as e:
             raise ValidationException(f"Invalid URL format: {e}")
-    
+
+
     @staticmethod
     def validate_url_public(url: str) -> bool:
         """Validate URL points to public resource"""

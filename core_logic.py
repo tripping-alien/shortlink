@@ -239,6 +239,7 @@ class URLValidator:
         
         except socket.gaierror as e:
             raise ValidationException(f"Could not resolve hostname: {hostname}")
+
     
     @staticmethod
     def validate_url_structure(url: str) -> str:
@@ -246,26 +247,42 @@ class URLValidator:
              raise ValidationException("URL cannot be empty") 
         url = url.strip()
         
+        # NOTE: config.MAX_URL_LENGTH is imported from the config module's constants
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
+        # 1. Check if scheme is missing (handles 'domain.com')
         parsed_test = urlparse(url)
         if not parsed_test.scheme:
-            url = "https://" + url
+            url = "https://" + url # Prepend HTTPS as the default secure scheme
         
         try:
+            # 2. Parse the potentially modified URL
             parsed = urlparse(url)
             
+            # 3. Canonicalize/Upgrade explicit HTTP to HTTPS if HTTPS is allowed
+            # This is key for consistency and security, ensuring all user inputs default to HTTPS if possible.
+            # NOTE: config.ALLOWED_SCHEMES is imported from the config module's constants
+            if parsed.scheme == "http" and "https" in config.ALLOWED_SCHEMES:
+                # Replace the first occurrence of "http://" with "https://"
+                url = url.replace("http://", "https://", 1)
+                parsed = urlparse(url) # Re-parse the corrected URL for subsequent checks
+
+            # 4. Final Scheme Validation
             if parsed.scheme not in config.ALLOWED_SCHEMES:
                 raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
             
+            # 5. Check netloc (domain)
             if not parsed.netloc:
                 raise ValidationException("URL must include a domain")
             
+            # 6. Check for blocked domains
+            # NOTE: config.BLOCKED_DOMAINS is imported from the config module's constants
             hostname = parsed.netloc.split(':')[0].lower()
             if hostname in config.BLOCKED_DOMAINS:
                 raise SecurityException(f"Domain is blocked: {hostname}")
             
+            # 7. Basic TLD/IP check
             if '.' not in hostname:
                 try:
                     ipaddress.ip_address(hostname)
@@ -276,7 +293,7 @@ class URLValidator:
         
         except ValueError as e:
             raise ValidationException(f"Invalid URL format: {e}")
-    
+
     @staticmethod
     def validate_url_public(url: str) -> bool:
         return validators.url(url, public=True)

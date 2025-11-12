@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field, validator, constr
 
 # Import core modules
 import config
-# CRITICAL FIX: Import global MAX_URL_LENGTH, RATE_LIMIT_CREATE/STATS directly into this module's scope
+# CRITICAL FIX: Import global constants directly into this module's scope
 from config import MAX_URL_LENGTH, RATE_LIMIT_CREATE, RATE_LIMIT_STATS
 from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection, get_collection_ref
 from core_logic import (
@@ -114,7 +114,7 @@ app.add_exception_handler(errors.RateLimitExceeded, _rate_limit_exceeded_handler
 api_router = APIRouter(prefix="/api/v1", tags=["API"])
 
 @api_router.post("/links", response_model=LinkResponse)
-@limiter.limit(RATE_LIMIT_CREATE) # <-- FIX 1: Access global constant
+@limiter.limit(RATE_LIMIT_CREATE) 
 async def api_create_link(
     request: Request,
     payload: LinkCreatePayload,
@@ -163,7 +163,7 @@ async def api_create_link(
         )
 
 @api_router.get("/my-links")
-@limiter.limit(RATE_LIMIT_STATS) # <-- FIX 2: Access global constant
+@limiter.limit(RATE_LIMIT_STATS)
 async def api_get_my_links(
     request: Request,
     owner_id: str,
@@ -231,7 +231,7 @@ async def sitemap():
     """Generate sitemap for SEO"""
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     urls = []
-    for locale in config.SUPPORTED_LOCALES:
+    for locale in config.config.SUPPORTED_LOCALES:
         for page in ["", "/about", "/dashboard"]:
             urls.append(f"""  <url>\n    <loc>{config.BASE_URL}/{locale}{page}</loc>\n    <lastmod>{last_mod}</lastmod>\n    <priority>{1.0 if not page else 0.8}</priority>\n  </url>""")
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{chr(10).join(urls)}\n</urlset>"""
@@ -317,8 +317,14 @@ async def continue_to_link(short_code: str, translator: Callable = Depends(get_t
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("redirect_error"))
 
 @i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
-@limiter.limit(RATE_LIMIT_STATS) # <-- FIX 3: Access global constant
-async def stats(common_context: Dict = Depends(get_common_context), short_code: str = Path(...)):
+@limiter.limit(RATE_LIMIT_STATS)
+async def stats(
+    # --- FIX: ADD REQUEST HERE FOR SLOWAPI ---
+    request: Request,
+    # ----------------------------------------
+    common_context: Dict = Depends(get_common_context), 
+    short_code: str = Path(...)
+):
     """Statistics page"""
     translator = common_context["_"]
     try:
@@ -366,7 +372,7 @@ def is_localized_route(path: str) -> bool:
     if not path.startswith('/'): return False
     segments = path.split('/')
     if len(segments) < 2: return False
-    return segments[1] in config.config.SUPPORTED_LOCALES # Use config.config here for consistency
+    return segments[1] in config.config.SUPPORTED_LOCALES 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):

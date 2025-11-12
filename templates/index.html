@@ -2,55 +2,18 @@
 
 {% block title %}{{ _('nav_home') }}{% endblock %}
 
-{% block head %}
-<style>
-    /* Custom style for the main form container */
-    .form-card {
-        max-width: 550px; /* Constrain width for better look on large screens */
-        margin: 0 auto; /* Center the card */
-        padding: 30px;
-        background-color: var(--bs-light); /* Use theme variable */
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Result Card Styling (Updated to use Bootstrap classes where possible) */
-    .result-card {
-        border-color: var(--bs-success); /* Use success color for border */
-    }
-    .result-details {
-        display: flex;
-        align-items: center;
-        margin-bottom: 0;
-    }
-    #qrcode-container img {
-        width: 100px;
-        height: 100px;
-        border: 5px solid white;
-        border-radius: 5px;
-        flex-shrink: 0; /* Prevents image from shrinking */
-    }
-
-    /* Styling for the loading spinner */
-    .spinner {
-        display: none;
-        margin-right: 8px;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
     <div class="container py-5">
-        <div class="text-center mb-5">
+        <div class="text-center mb-5 hero-text-area">
             <h1 class="display-4 fw-bold">Shortlinks.art</h1>
             <p class="lead text-muted">{{ _('tagline') }}</p>
         </div>
 
-        <div class="form-card bg-light">
+        <div class="form-card">
             <form id="shorten-form">
 
-                <div class="input-group mb-4">
-                    <input type="url" id="long_url" class="form-control form-control-lg" 
+                <div class="input-group input-group-lg mb-4 shadow-sm">
+                    <input type="url" id="long_url" class="form-control" 
                            placeholder="{{ _('long_url_placeholder') }}" required 
                            aria-label="{{ _('long_url_placeholder') }}">
                     
@@ -66,7 +29,7 @@
                         data-bs-toggle="collapse" data-bs-target="#advanced-options" 
                         aria-expanded="false" aria-controls="advanced-options">
                     {{ _('advanced_options_button') }}
-                    <span class="ms-2">⚙️</span>
+                    <span class="ms-2"><i class="bi bi-gear"></i></span>
                 </button>
                 
                 <div class="collapse" id="advanced-options">
@@ -82,17 +45,17 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-100" id="create-button">
+                <button type="submit" class="btn btn-primary btn-lg w-100 shadow" id="create-button">
                     <span id="loading-spinner" class="spinner-border spinner-border-sm spinner" role="status" aria-hidden="true"></span>
                     <span id="button-text">{{ _('create_button') }}</span>
-                    <span class="ms-2">🚀</span>
+                    <span class="ms-2"><i class="bi bi-rocket-takeoff"></i></span>
                 </button>
 
             </form>
         </div>
-        <div id="result-card" class="card result-card bg-success-subtle mt-5 d-none form-card">
+        <div id="result-card" class="card result-card mt-5 d-none form-card">
             <div class="card-body p-4">
-                <h4 class="card-title text-success mb-3">{{ _('shorten_success_title') }}</h4>
+                <h4 class="card-title mb-3">{{ _('shorten_success_title') }}</h4>
                 
                 <div class="result-details">
                     <div id="qrcode-container">
@@ -102,26 +65,30 @@
                     <div class="ms-4 flex-grow-1">
                         <label class="text-muted small d-block mb-1">{{ _('short_url_label') }}:</label>
                         <div class="d-flex align-items-center mb-3">
-                            <a href="#" target="_blank" id="short-link-href" class="text-info fw-bold me-2 text-break" style="font-size: 1.1rem;"></a>
-                            <button class="btn btn-sm btn-info ms-auto" id="copy-button">
+                            <a href="#" target="_blank" id="short-link-href" class="text-break" style="font-size: 1.1rem;"></a>
+                            <button class="btn btn-sm" id="copy-button">
                                 <i class="bi bi-clipboard"></i> {{ _('copy_button') }}
                             </button>
                         </div>
                         
                         <small class="d-block mt-3 border-top pt-2">
-                            <a href="#" id="stats-link" class="link-warning text-decoration-none me-3">📊 {{ _('stats_link') }}</a>
-                            <a href="#" id="delete-link" class="link-danger text-decoration-none">🗑️ {{ _('delete_link') }}</a>
+                            <a href="#" id="stats-link" class="me-3">📊 {{ _('stats_link') }}</a>
+                            <a href="#" id="delete-link">🗑️ {{ _('delete_link') }}</a>
                         </small>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="text-center mt-5">
+            <div class="ad-placeholder bg-white p-4 border rounded shadow-sm d-inline-block">
+                {{ _('ad_placeholder_text') }} (AdSense Banner)
+            </div>
         </div>
+    </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // ... (Your existing JavaScript remains the same, it is clean and functional)
     const form = document.getElementById('shorten-form');
     const createButton = document.getElementById('create-button');
     const buttonText = document.getElementById('button-text');
@@ -144,6 +111,10 @@
         buttonText.textContent = '{{ _('processing_request') }}';
         loadingSpinner.style.display = 'inline-block';
         resultCard.classList.add('d-none'); 
+        // Hide advanced options if they were open after successful creation
+        if (advancedOptions.classList.contains('show')) {
+            bootstrap.Collapse.getInstance(advancedOptions).hide();
+        }
     }
 
     function hideLoading() {
@@ -182,7 +153,7 @@
             const data = await response.json();
 
             if (response.ok) {
-                // SUCCESS LOGIC: Fill the panel with data
+                // SUCCESS LOGIC
                 shortLinkHref.href = data.short_url;
                 shortLinkHref.textContent = data.short_url;
                 
@@ -193,8 +164,10 @@
                 
                 resultCard.classList.remove('d-none'); 
                 
-                // Clear the long URL input after success
+                // Clear inputs for next link
                 longUrlInput.value = ''; 
+                customCodeInput.value = '';
+                utmTagsInput.value = '';
                 
             } else {
                 // FAILURE LOGIC
@@ -211,10 +184,12 @@
         }
     });
 
-    // Copy Button Functionality
+    // Copy Button Functionality (Uses standard 'bootstrap' global if JS is correctly loaded)
     copyButton.addEventListener('click', function() {
         const link = shortLinkHref.textContent;
         navigator.clipboard.writeText(link).then(() => {
+            // Use Bootstrap Toast/Alert for a professional copy notification instead of JS alert()
+            // Since we don't have a toast component defined in base.html, we'll use a simple alert for now.
             alert('{{ _('copy_success') }}');
         });
     });

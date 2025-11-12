@@ -1,30 +1,144 @@
-<main class="card preview-container">
-  <h1>{{ _("result_short_link") }} Preview</h1>
-  
-  {% if meta_image_url and has_image %}
-      <img src="{{ meta_image_url }}" alt="Preview image for {{ meta_title }}" class="preview-image">
-  {% endif %}
+<!DOCTYPE html>
+<html lang="{{ locale }}" dir="{{ 'rtl' if locale in RTL_LOCALES else 'ltr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>{{ meta_title | default(_("app_title")) }}</title>
+    <meta name="description" content="{{ meta_description | default(_('meta_description_main')) }}">
+    
+    <meta name="robots" content="noindex, nofollow"> 
+    
+    <meta property="og:title" content="{{ meta_title | default(_('app_title')) }}">
+    <meta property="og:description" content="{{ meta_description | default(_('meta_description_og')) }}">
+    <meta property="og:image" content="{{ meta_image_url }}">
 
-  <div class="preview-title">{{ meta_title | default("Loading Title...") }}</div>
-  
-  <div class="preview-description">
-      {% if meta_description == _("preview_summary_pending") %}
-          <div class="spinner-container">
-             <div class="loading-spinner"></div> 
-             {{ meta_description }}
-          </div>
-      {% else %}
-          {{ meta_description }}
+    {% for tag in hreflang_tags %}
+    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
+    {% endfor %}
+    
+    {{ ADSENSE_SCRIPT|safe }} 
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/4.1.7/css/flag-icons.min.css" integrity="sha512-GwXqu3iKRTNfR2gMDNYS0jYgWGAFfFzLNJYcE0ETGlwLdTwujSxjBOANRSPCvVSBCSFwwVbTR3MpdCweIZiRFA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    
+    <style>
+      .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+      }
+      /* Flag Styles */
+      .lang-flag {
+        width: 24px; height: 18px; border-radius: 3px; vertical-align: middle;
+        border: 1px solid rgba(255, 255, 255, 0.1); background-size: cover; display: inline-block;
+      }
+      .lang-btn.active .lang-flag { border: 2px solid #fff; }
+      .flag-icon { background-size: cover; display: inline-block; width: 24px !important; height: 18px !important; }
+
+      /* Preview Container Styles */
+      .preview-container {
+        padding: 30px; max-width: 600px; text-align: center;
+        background-color: #2a2a2a; border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      .preview-image {
+        max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;
+      }
+      .preview-title {
+        font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; color: #fff;
+      }
+      .preview-description {
+        font-size: 1rem; color: #bbb; margin-bottom: 20px; min-height: 30px; padding: 0 10px;
+      }
+      .preview-url {
+        font-size: 0.9rem; color: #888; word-break: break-all; margin-bottom: 30px;
+      }
+      .redirect-btn {
+        display: inline-block; padding: 12px 30px; background-color: #007bff;
+        color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500;
+        transition: background-color 0.2s;
+        animation: pulse 1.5s infinite;
+      }
+      .redirect-btn:hover {
+        background-color: #0056b3;
+      }
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+      }
+
+      /* AI Loading Spinner Styles */
+      .spinner-container {
+          display: flex; align-items: center; justify-content: center;
+          gap: 10px; padding: 10px 0; color: #fff; font-weight: 500;
+      }
+      .loading-spinner {
+          display: inline-block; width: 20px; height: 20px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #007bff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+      }
+    </style>
+</head>
+<body>
+    <main class="card preview-container">
+      <h1>{{ _("result_short_link") }} Preview</h1>
+      
+      {% if meta_image_url and has_image %}
+          <img src="{{ meta_image_url }}" alt="Preview image for {{ meta_title }}" class="preview-image">
       {% endif %}
-  </div>
-  
-  <div class="preview-url">Destination: {{ escaped_long_url_display }}</div>
 
-  <a href="{{ url_for('redirect_link', short_code=short_code) }}" class="redirect-btn">
-    Continue to Destination
-  </a>
+      <div class="preview-title">{{ meta_title | default("Loading Title...") }}</div>
+      
+      <div class="preview-description">
+          {% if meta_description == _("preview_summary_pending") %}
+              <div class="spinner-container">
+                 <div class="loading-spinner"></div> 
+                 {{ meta_description }}
+              </div>
+          {% else %}
+              {{ meta_description }}
+          {% endif %}
+      </div>
+      
+      <div class="preview-url">Destination: {{ escaped_long_url_display }}</div>
 
-  <p style="margin-top: 20px; font-size: 0.8rem; color: #666;">
-    You are being redirected to an external site.
-  </p>
-</main>
+      <a href="{{ url_for('localized:continue_to_link', locale=locale, short_code=short_code) }}" class="redirect-btn">
+        Continue to Destination
+      </a>
+
+      <p style="margin-top: 20px; font-size: 0.8rem; color: #666;">
+        You are being redirected to an external site.
+      </p>
+    </main>
+
+    <footer class="footer">
+        <span>© {{ current_year }} Shortlinks.art</span>
+        <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
+        <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
+
+        <nav class="language-switcher" aria-label="{{ _('language_switcher_label') }}">
+            {% for tag in hreflang_tags %}
+              {% if tag.hreflang != 'x-default' %}
+                <a href="{{ tag.href }}" 
+                   class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
+                   data-lang="{{ tag.hreflang }}"
+                   title="{{ _('lang_name_' + tag.hreflang) }}">
+                   <span class="flag-icon flag-icon-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
+                       <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
+                   </span>
+                </a>
+              {% endif %}
+            {% endfor %}
+        </nav>
+    </footer>
+</body>
+</html>

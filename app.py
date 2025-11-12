@@ -48,8 +48,11 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
 # NEW: Import config and constants from the new config.py file
+# app.py (Line 38) - Change this to import the module 'config' itself
+import config
 from config import (
-    config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
+    TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
+    # Don't try to import 'config' as a name, just use the module name.
 )
 
 # ============================================================================

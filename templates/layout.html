@@ -1,26 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ locale }}" {% if locale in RTL_LOCALES %}dir="rtl"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>{{ title | default("Shortlinks.art - Fast & Simple URL Shortener") }}</title>
 
-    <meta name="description" content="{{ meta_description | default('Create free short links with previews. Shortlinks.art is a fast, simple URL shortener.') }}">
-    
+    <title>{% block title %}{{ _("app_title") }}{% endblock %}</title>
+
+    {% block meta %}
+    <meta name="description" content="{{ _('meta_description_main') }}">
+    <meta name="keywords" content="{{ _('meta_keywords_main') }}">
+    <meta property="og:title" content="{{ _('app_title') }}">
+    <meta property="og:description" content="{{ _('meta_description_og') }}">
+    <meta property="og:type" content="website">
+    {% endblock %}
+
     <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
     
-    </head>
+    {% for tag in hreflang_tags %}
+    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
+    {% endfor %}
+
+    {{ ADSENSE_SCRIPT | safe }}
+</head>
 <body>
+
     <header>
         <nav class="container">
-            <a href="{{ url_for('home_page') }}" class="logo">🚀 Shortlinks.art</a>
-            <ul>
-                <li><a href="{{ url_for('home_page') }}">🏠 Home</a></li>
-                <li><a href="{{ url_for('about_page') }}">ℹ️ About</a></li>
-                <li><a href="{{ url_for('dashboard_page') }}">🗂️ My Links</a></li>
-            </ul>
-            </nav>
+            <a href="{{ url_for('home_page', locale=locale) }}" class="logo">🚀 {{ _("app_title").split(" - ")[0] }}</a>
+            
+            <div class="nav-links">
+                <a href="{{ url_for('home_page', locale=locale) }}">🏠 {{ _("nav_home") }}</a>
+                <a href="{{ url_for('about_page', locale=locale) }}">ℹ️ {{ _("nav_about") }}</a>
+                <a href="{{ url_for('dashboard_page', locale=locale) }}">🗂️ {{ _("my_links_button") }}</a>
+            </div>
+
+            <div class="lang-switcher">
+                <button class="lang-button">
+                    {{ LOCALE_TO_EMOJI.get(locale, "🌍") }} {{ _(f"lang_name_{locale}") }}
+                </button>
+                <div class="lang-dropdown">
+                    {% for lang in SUPPORTED_LOCALES %}
+                    <a href="/{{ lang }}{{ request.url.path.replace('/' + locale, '', 1) | default('/') }}">
+                        {{ LOCALE_TO_EMOJI.get(lang, "🌍") }} {{ _(f"lang_name_{lang}") }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </nav>
     </header>
     
     <main class="container">
@@ -29,7 +55,7 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 Shortlinks.art. All rights reserved.</p>
+            <p>&copy; {{ current_year }} Shortlinks.art. {{ _("js_copied") }} </p>
         </div>
     </footer>
 

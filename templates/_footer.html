@@ -2,8 +2,10 @@
     <div class="container text-center">
         <p class="mb-3">
             © {{ current_year }} Shortlinks.art 
+            
             <a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('nav_home') }}</a>
             <a href="{{ url_for('localized', locale=locale, path='about') }}">{{ _('nav_about') }}</a>
+            <a href="{{ url_for('localized', locale=locale, path='dashboard') }}">{{ _('nav_dashboard') }}</a>
         </p>
         
         <div class="language-switcher">

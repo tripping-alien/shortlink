@@ -21,8 +21,8 @@ class Config:
     BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
     
     # Rate limiting
-    RATE_LIMIT_CREATE: str = os.getenv("RATE_LIMIT_CREATE", "10/minute")
-    RATE_LIMIT_STATS: str = os.getenv("RATE_LIMIT_STATS", "30/minute")
+    RATE_LIMIT_CREATE: str = os.getenv("RATE_LIMIT_CREATE", "10/minute") # Defined in class
+    RATE_LIMIT_STATS: str = os.getenv("RATE_LIMIT_STATS", "30/minute") # Defined in class
     
     # Database/Cleanup
     CLEANUP_INTERVAL_SECONDS: int = 1800  # 30 minutes
@@ -67,6 +67,8 @@ config = Config()
 SHORT_CODE_LENGTH = config.SHORT_CODE_LENGTH
 MAX_ID_RETRIES = config.MAX_ID_RETRIES 
 MAX_URL_LENGTH = config.MAX_URL_LENGTH 
+RATE_LIMIT_CREATE = config.RATE_LIMIT_CREATE # <-- FIX 1
+RATE_LIMIT_STATS = config.RATE_LIMIT_STATS   # <-- FIX 2
 
 # Time-To-Live Mapping (timedelta objects)
 TTL_MAP: Dict[str, Optional[timedelta]] = {

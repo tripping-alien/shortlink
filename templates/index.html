@@ -2,6 +2,30 @@
 
 {% block title %}{{ _('nav_home') }}{% endblock %}
 
+{% block head %}
+<style>
+    /* Add basic styling for the result card/QR code for QA purposes */
+    .result-card {
+        background-color: #3b3b64;
+        border: 1px solid #5a5a8a;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    .result-details {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    #qrcode-container img {
+        width: 100px;
+        height: 100px;
+        border: 5px solid white;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
     <div class="container hero-container">
         <h1 class="text-center">Shortlinks.art</h1>
@@ -26,18 +50,93 @@
                 <input type="text" id="utm_tags" class="form-control" placeholder="{{ _('utm_tags_placeholder') }}">
             </div>
 
-            <button type="submit" class="btn btn-primary w-100">
+            <button type="submit" class="btn btn-primary w-100" id="create-button">
                 {{ _('create_button') }} <span class="ms-2">🚀</span>
             </button>
         </form>
 
-        <div id="result-card" class="card mt-4 p-3 d-none">
+        <div id="result-card" class="result-card mt-4 d-none">
+            <h4 class="text-success mb-3">{{ _('shorten_success_title') }}</h4>
+            
+            <div class="result-details">
+                <div id="qrcode-container">
+                    <img id="qr-code-image" src="" alt="QR Code" class="img-fluid">
+                </div>
+
+                <div class="ms-4 flex-grow-1">
+                    <label class="text-muted small">{{ _('short_url_label') }}:</label>
+                    <p class="mb-2">
+                        <a href="#" target="_blank" id="short-link-href" class="text-info fw-bold me-2"></a>
+                        <button class="btn btn-sm btn-outline-info" id="copy-button">{{ _('copy_button') }}</button>
+                    </p>
+                    <small class="d-block mt-3">
+                        <a href="#" id="stats-link" class="text-warning me-3">{{ _('stats_link') }}</a>
+                        <a href="#" id="delete-link" class="text-danger">{{ _('delete_link') }}</a>
+                    </small>
+                </div>
             </div>
-    </div>
+        </div>
+        </div>
 {% endblock %}
 
 {% block scripts %}
-    <script>
-        // Form submission and AJAX logic for the index page here
-    </script>
+<script>
+    const form = document.getElementById('shorten-form');
+    const resultCard = document.getElementById('result-card');
+    const shortLinkHref = document.getElementById('short-link-href');
+    const qrCodeImage = document.getElementById('qr-code-image');
+    const statsLink = document.getElementById('stats-link');
+    const deleteLink = document.getElementById('delete-link');
+    const longUrlInput = document.getElementById('long_url');
+    const copyButton = document.getElementById('copy-button');
+
+    // Function to handle the actual AJAX submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // **(In a previous version, this is where showLoading() would be called)**
+
+        try {
+            const longUrl = longUrlInput.value;
+            const response = await fetch('/api/v1/links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ long_url: longUrl, ttl: '24h' }) // Simplified payload for example
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // SUCCESS LOGIC: Fill the panel with data
+                shortLinkHref.href = data.short_url;
+                shortLinkHref.textContent = data.short_url;
+                
+                qrCodeImage.src = data.qr_code_data;
+                
+                statsLink.href = data.stats_url;
+                deleteLink.href = data.delete_url;
+                
+                resultCard.classList.remove('d-none'); // Make panel visible
+
+            } else {
+                // FAILURE LOGIC: Display localized error
+                alert(`Error: ${data.detail || '{{ _('generic_error_message') }}'}`);
+            }
+
+        } catch (error) {
+            console.error('Network or Parse Error:', error);
+            alert('{{ _('network_error_message') }}');
+        } 
+        // **(In a previous version, this is where hideLoading() would be called)**
+    });
+
+    // Copy Button Functionality
+    copyButton.addEventListener('click', function() {
+        const link = shortLinkHref.textContent;
+        navigator.clipboard.writeText(link).then(() => {
+            alert('{{ _('copy_success') }}');
+        });
+    });
+
+</script>
 {% endblock %}

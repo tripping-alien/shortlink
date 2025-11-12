@@ -18,21 +18,22 @@ from pydantic import BaseModel, Field, validator, constr
 
 # Import core modules
 import config
+# CRITICAL FIX: Import global MAX_URL_LENGTH directly into this module's scope
+from config import MAX_URL_LENGTH, RATE_LIMIT_CREATE, RATE_LIMIT_STATS
 from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection, get_collection_ref
 from core_logic import (
     logger, load_translations_from_json, get_translation,
     get_browser_locale, get_common_context, get_translator, get_api_translator,
     CleanupWorker, URLValidator, SecurityException, ValidationException,
     ResourceNotFoundException, ResourceExpiredException, 
-    BOOTSTRAP_CDN, BOOTSTRAP_JS, # Context assets
-    AISummarizer, MetadataFetcher, generate_qr_code_data_uri # Utilities
+    BOOTSTRAP_CDN, BOOTSTRAP_JS,
+    AISummarizer, MetadataFetcher, generate_qr_code_data_uri 
 )
 
 # --- GLOBAL INSTANCES ---
 worker_instance: CleanupWorker = None
 limiter = Limiter(key_func=get_remote_address)
 templates = Jinja2Templates(directory="templates")
-# NOTE: Instantiate utilities here, as they are not singletons in core_logic
 summarizer = AISummarizer()
 metadata_fetcher = MetadataFetcher()
 
@@ -44,7 +45,9 @@ class LinkResponse(BaseModel):
     qr_code_data: str
 
 class LinkCreatePayload(BaseModel):
-    long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH) 
+    """Request model for creating links"""
+    # CRITICAL FIX: Use the global constant directly
+    long_url: str = Field(..., min_length=1, max_length=MAX_URL_LENGTH) 
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
     custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
     utm_tags: Optional[str] = Field(None, max_length=500)
@@ -111,7 +114,7 @@ app.add_exception_handler(errors.RateLimitExceeded, _rate_limit_exceeded_handler
 api_router = APIRouter(prefix="/api/v1", tags=["API"])
 
 @api_router.post("/links", response_model=LinkResponse)
-@limiter.limit(config.MAX_URL_LENGTH) # Use the correct rate limit constant
+@limiter.limit(RATE_LIMIT_CREATE)
 async def api_create_link(
     request: Request,
     payload: LinkCreatePayload,
@@ -160,7 +163,7 @@ async def api_create_link(
         )
 
 @api_router.get("/my-links")
-@limiter.limit(config.RATE_LIMIT_STATS)
+@limiter.limit(RATE_LIMIT_STATS)
 async def api_get_my_links(
     request: Request,
     owner_id: str,
@@ -391,5 +394,4 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 if __name__ == "__main__":
     import uvicorn
-    # NOTE: The import path changes to app:app since the file is app.py
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

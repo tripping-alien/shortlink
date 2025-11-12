@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="{{ locale }}"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Preview - {{ short_code }}</title>
@@ -10,8 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 </head>
-<body>
-    <div class="card">
+<body dir="{{ 'rtl' if locale in RTL_LOCALES else 'ltr' }}"> <div class="card">
         <h1>Link Preview</h1>
         {% if has_image %}
             <img src="{{ meta_image_url }}" alt="Preview Image" class="preview-image">
@@ -20,21 +18,35 @@
             {% if has_favicon %}
                 <img src="{{ meta_favicon_url }}" class="favicon" alt="">
             {% endif %}
-            <h2 class="meta-title">{{ meta_title }}</h2>
+            <h2 class="meta-title" dir="auto">{{ meta_title }}</h2>
         </div>
+        
         {% if has_description %}
-            <p class="description">{{ meta_description }}</p>
+            <p class="description" dir="auto">{{ meta_description }}</p>
+        {% endif %}
+
+        {% if has_summary %}
+        <div class="summary-container" dir="auto">
+            <strong>🤖 AI Summary:</strong>
+            <p class="meta-summary">{{ summary }}</p>
+        </div>
+        {% elif not summary_fetched %} 
+        <div class="summary-container-loading" dir="auto">
+            <p>🤖 <i>AI summary is being generated. Refresh in a few moments.</i></p>
+        </div>
         {% endif %}
         <hr>
         <p class="info">You are being redirected to:</p>
-        <p class="url">{{ escaped_long_url_display }}</p>
-        <a class="button" href="{{ url_for('redirect_link', short_code=short_code) }}" target="_blank" rel="noopener noreferrer">Proceed to Link</a>
+        <p class="url" dir="auto">{{ escaped_long_url_display }}</p>
+        
+        <a class="button" href="{{ url_for('redirect_link', short_code=short_code) }}" rel="noopener noreferrer">Proceed to Link</a>
     </div>
 
     <footer class="footer">
-        <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
-        <a href="{{ url_for('index') }}">Home</a>
-        <a href="{{ url_for('about') }}">About</a>
+        <span>© {{ current_year }} Shortlinks.art</span>
+
+        <a href="{{ url_for('localized:index', locale=locale) }}">Home</a>
+        <a href="{{ url_for('localized:about', locale=locale) }}">About</a>
     </footer>
 
 </body>

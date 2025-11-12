@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles # 🌟 ADDED: Import for serving static files
 
 from slowapi import Limiter, _rate_limit_exceeded_handler, errors
 from slowapi.util import get_remote_address
@@ -74,7 +75,8 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     global worker_instance
     try:
-        config.config.validate() # Use the Config instance's method
+        # NOTE: Assumes 'config' instance is already available and fixed
+        config.config.validate() 
         load_translations_from_json()
         init_db()
         
@@ -109,6 +111,11 @@ app.state.limiter = limiter
 app.add_exception_handler(errors.RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
+# --- STATIC FILES SETUP ---
+# 🎯 FIX FOR Starlette.routing.NoMatchFound: Mount the static directory and name the route "static"
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 # --- ROUTERS DEFINITION (API) ---
 
 api_router = APIRouter(prefix="/api/v1", tags=["API"])
@@ -141,13 +148,13 @@ async def api_create_link(
         )
         
         locale = get_browser_locale(request)
-        localized_preview_url = f"{config.BASE_URL}/{locale}/preview/{short_code}"
+        localized_preview_url = f"{config.config.BASE_URL}/{locale}/preview/{short_code}"
         qr_code_data = generate_qr_code_data_uri(localized_preview_url)
         
         return LinkResponse(
-            short_url=f"{config.BASE_URL}/r/{short_code}",
-            stats_url=f"{config.BASE_URL}/{locale}/stats/{short_code}",
-            delete_url=f"{config.BASE_URL}/{locale}/delete/{short_code}?token={deletion_token}",
+            short_url=f"{config.config.BASE_URL}/r/{short_code}",
+            stats_url=f"{config.config.BASE_URL}/{locale}/stats/{short_code}",
+            delete_url=f"{config.config.BASE_URL}/{locale}/delete/{short_code}?token={deletion_token}",
             qr_code_data=qr_code_data
         )
     
@@ -209,8 +216,8 @@ async def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         
-        # Use a generic error message if specific one is not found
-        error_detail = translator("db_connection_error") if 'db_connection_error' in config.config.TRANSLATIONS[config.config.DEFAULT_LOCALE] else str(e)
+        # NOTE: Assuming TRANSLATIONS structure is correct on config object
+        error_detail = translator("db_connection_error") if 'db_connection_error' in getattr(config.config, 'TRANSLATIONS', {}).get(config.config.DEFAULT_LOCALE, {}) else str(e)
         
         return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"status": "unhealthy", "database": "error", "error": error_detail})
@@ -224,7 +231,7 @@ async def redirect_short_code(short_code: str, request: Request, translator: Cal
         
         locale = get_browser_locale(request) 
         preview_url = f"/{locale}/preview/{short_code}"
-        full_redirect_url = f"{config.BASE_URL}{preview_url}"
+        full_redirect_url = f"{config.config.BASE_URL}{preview_url}"
         
         return RedirectResponse(url=full_redirect_url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
     except ValidationException as e:
@@ -236,7 +243,7 @@ async def redirect_short_code(short_code: str, request: Request, translator: Cal
 @web_router.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
     """Robots.txt for SEO"""
-    return f"""User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /r/\nDisallow: /health\nDisallow: /*/delete/\nSitemap: {config.BASE_URL}/sitemap.xml\n"""
+    return f"""User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /r/\nDisallow: /health\nDisallow: /*/delete/\nSitemap: {config.config.BASE_URL}/sitemap.xml\n"""
 
 @web_router.get("/sitemap.xml", response_class=Response)
 async def sitemap():
@@ -245,9 +252,61 @@ async def sitemap():
     urls = []
     for locale in config.config.SUPPORTED_LOCALES:
         for page in ["", "/about", "/dashboard"]:
-            urls.append(f"""  <url>\n    <loc>{config.BASE_URL}/{locale}{page}</loc>\n    <lastmod>{last_mod}</lastmod>\n    <priority>{1.0 if not page else 0.8}</priority>\n  </url>""")
+            urls.append(f"""  <url>\n    <loc>{config.config.BASE_URL}/{locale}{page}</loc>\n    <lastmod>{last_mod}</lastmod>\n    <priority>{1.0 if not page else 0.8}</priority>\n  </url>""")
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{chr(10).join(urls)}\n</urlset>"""
     return Response(content=xml, media_type="application/xml")
+
+# --- TEMPLATE CONTEXT DEPENDENCY (FIXED) ---
+
+BOOTSTRAP_CDN = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
+BOOTSTRAP_JS = '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'
+
+def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale)) -> List[Dict]:
+    """Generate hreflang tags for SEO"""
+    tags = []
+    current_path = request.url.path
+    
+    base_path = current_path.replace(f"/{locale}", "", 1) or "/"
+    
+    for lang in config.config.SUPPORTED_LOCALES:
+        lang_path = f"/{lang}{base_path}".replace("//", "/")
+        tags.append({
+            "rel": "alternate",
+            "hreflang": lang,
+            "href": str(request.url.replace(path=lang_path))
+        })
+    
+    default_path = f"/{config.config.DEFAULT_LOCALE}{base_path}".replace("//", "/")
+    tags.append({
+        "rel": "alternate",
+        "hreflang": "x-default",
+        "href": str(request.url.replace(path=default_path))
+    })
+    
+    return tags
+
+async def get_common_context(
+    request: Request,
+    translator: Callable = Depends(get_translator),
+    locale: str = Depends(get_current_locale),
+    hreflang_tags: List = Depends(get_hreflang_tags)
+) -> Dict:
+    """Get common template context"""
+    return {
+        "request": request,
+        # NOTE: config.ADSENSE_SCRIPT access is valid due to previous fix (setattr)
+        "ADSENSE_SCRIPT": config.config.ADSENSE_SCRIPT, 
+        "_": translator,
+        "locale": locale,
+        "hreflang_tags": hreflang_tags,
+        "current_year": datetime.now(timezone.utc).year,
+        "RTL_LOCALES": config.config.RTL_LOCALES,
+        "LOCALE_TO_FLAG_CODE": config.config.LOCALE_TO_FLAG_CODE,
+        "FLAG_EMOJIS": config.config.LOCALE_TO_EMOJI,
+        "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
+        "BOOTSTRAP_JS": BOOTSTRAP_JS,
+        "config": config.config, # 🎯 FIX FOR AttributeError: 'Config' object has no attribute 'config'
+    }
 
 # --- LOCALIZED ROUTES (i18n_router) ---
 

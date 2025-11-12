@@ -192,16 +192,28 @@ async def root_redirect(request: Request):
 @web_router.get("/health")
 async def health_check():
     """Health check endpoint"""
+    translator = lambda key: get_translation(config.config.DEFAULT_LOCALE, key)
+
     try:
         db_client = get_db_connection()
         test_doc = db_client.collection("_health").document("test")
-        await test_doc.set({"timestamp": datetime.now(timezone.utc)})
+        
+        # FIX: Wrap the synchronous .set() call in asyncio.to_thread
+        await asyncio.to_thread(
+            test_doc.set, 
+            {"timestamp": datetime.now(timezone.utc)}
+        )
         
         return {"status": "healthy", "database": "connected", "timestamp": datetime.now(timezone.utc).isoformat()}
+    
     except Exception as e:
         logger.error(f"Health check failed: {e}")
+        
+        # Use a generic error message if specific one is not found
+        error_detail = translator("db_connection_error") if 'db_connection_error' in config.config.TRANSLATIONS[config.config.DEFAULT_LOCALE] else str(e)
+        
         return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"status": "unhealthy", "database": "error", "error": str(e)})
+            content={"status": "unhealthy", "database": "error", "error": error_detail})
 
 @web_router.get("/r/{short_code}")
 async def redirect_short_code(short_code: str, request: Request, translator: Callable = Depends(get_translator)):
@@ -347,12 +359,15 @@ async def delete_link(short_code: str, token: Optional[str] = None, common_conte
         context = {"success": False, "message": translator("token_missing"), **common_context}
         return templates.TemplateResponse("delete_status.html", context)
     try:
+        # The db_delete_link function now raises exceptions on failure, 
+        # so we don't need to check its return value.
         await db_delete_link(short_code, token)
         context = {"success": True, "message": translator("delete_success"), **common_context}
     except ResourceNotFoundException:
         context = {"success": False, "message": translator("link_not_found"), **common_context}
     except ValueError:
-        context = {"success": False, "message": translator("token_missing"), **common_context} 
+        # Raised by db_delete_link on invalid token
+        context = {"success": False, "message": translator("token_invalid"), **common_context} 
     except Exception as e:
         logger.error(f"Error deleting {short_code}: {e}")
         context = {"success": False, "message": translator("delete_error"), **common_context}

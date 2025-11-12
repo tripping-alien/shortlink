@@ -16,7 +16,7 @@ class Config:
     MAX_ID_RETRIES: int = 10
     
     # Security
-    MAX_URL_LENGTH: int = 2048
+    MAX_URL_LENGTH: int = 2048 
     ALLOWED_SCHEMES: Tuple[str, ...] = ("http", "https")
     BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
     
@@ -57,15 +57,16 @@ class Config:
             raise ValueError("SHORT_CODE_LENGTH must be between 4 and 20")
 
 # ============================================================================
-# MODULE LEVEL CONSTANTS (Exported for imports like db_manager)
+# MODULE LEVEL CONSTANTS (Exported for imports)
 # ============================================================================
 
 # Initialize the config instance
 config = Config()
 
-# --- FIX: Expose class attributes as module constants ---
+# --- CRITICAL FIX: Expose class attributes as module constants ---
 SHORT_CODE_LENGTH = config.SHORT_CODE_LENGTH
 MAX_ID_RETRIES = config.MAX_ID_RETRIES 
+MAX_URL_LENGTH = config.MAX_URL_LENGTH 
 
 # Time-To-Live Mapping (timedelta objects)
 TTL_MAP: Dict[str, Optional[timedelta]] = {

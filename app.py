@@ -13,9 +13,9 @@ import io
 import base64
 import tempfile
 import logging
-import json  # <-- NEW: For loading translations
-import threading  # <-- NEW: For the cleanup thread
-import time  # <-- NEW: For the cleanup thread
+import json      # For loading translations
+import threading # For the cleanup thread
+import time      # For the cleanup thread
 
 import validators
 from pydantic import BaseModel, constr
@@ -29,10 +29,10 @@ from starlette.staticfiles import StaticFiles
 
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin  # <-- Added urljoin
+from urllib.parse import urlparse, urljoin
 from fastapi.templating import Jinja2Templates
 
-from fastapi import FastAPI, HTTPException, Request, Depends, Path
+from fastapi import FastAPI, HTTPException, Request, Depends, Path, BackgroundTasks # Added BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -61,18 +61,9 @@ SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
 RTL_LOCALES = ["ar", "he"]
 
-# NEW: Mapping for language codes to flag-icon-css country codes
 LOCALE_TO_FLAG_CODE = {
-    "en": "gb", # English -> Great Britain flag
-    "es": "es", # Spanish
-    "zh": "cn", # Chinese
-    "hi": "in", # Hindi
-    "pt": "br", # Portuguese -> Brazil flag (more users)
-    "fr": "fr", # French
-    "de": "de", # German
-    "ar": "sa", # Arabic -> Saudi Arabia flag (common representation)
-    "ru": "ru", # Russian
-    "he": "il", # Hebrew
+    "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br", 
+    "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
 }
 
 #
@@ -201,19 +192,13 @@ async def get_common_context(
         "hreflang_tags": hreflang_tags,
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": RTL_LOCALES,
-        "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE # NEW: Pass the flag map
+        "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE
     }
 
 # ---------------- FIREBASE ----------------
 db: firestore.Client = None
 APP_INSTANCE = None
 
-#
-# =====================================================================
-# UPDATED/FIXED init_firebase function
-# This is much more robust and fixes the "Unable to add links" bug.
-# =====================================================================
-#
 def init_firebase():
     global db, APP_INSTANCE
     if db:
@@ -306,6 +291,7 @@ def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None
         "created_at": datetime.now(timezone.utc),
         "click_count": 0,
         "clicks_by_day": {},
+        "clicks_by_country": {}, # <-- NEW: For country stats
         "meta_fetched": False,
         "meta_title": None,
         "meta_description": None,
@@ -393,6 +379,46 @@ async def fetch_metadata(url: str) -> dict:
         print(f"Error parsing or validating URL for {url}: {e}")
     return meta
 
+#
+# =====================================================================
+# NEW: Background task for updating country statistics
+# =====================================================================
+#
+async def update_country_stats(short_code: str, ip_address: str):
+    """
+    Asynchronously looks up the country for an IP and increments the count
+    in Firestore. Runs as a background task.
+    """
+    if not is_public_ip(ip_address):
+        logger.debug(f"Skipping country lookup for non-public IP: {ip_address}")
+        return
+        
+    try:
+        # Use an async client to call the geolocation API
+        async with httpx.AsyncClient() as client:
+            # We use ipinfo.io, a free geolocation service
+            response = await client.get(f"https://ipinfo.io/{ip_address}/json", timeout=2.0)
+            response.raise_for_status() # Raise on 4xx/5xx errors
+            
+            data = response.json()
+            country_code = data.get("country") # e.g., "US", "ES", "DE"
+            
+            if country_code:
+                # Get a fresh DB instance for this background task
+                db_client = init_firebase() 
+                doc_ref = db_client.collection("links").document(short_code)
+                
+                # Create the key to increment
+                country_key = f"clicks_by_country.{country_code}"
+                
+                # Update Firestore
+                doc_ref.update({country_key: firestore.Increment(1)})
+                logger.debug(f"Logged click from {country_code} for {short_code}")
+                
+    except Exception as e:
+        # Log errors but don't crash
+        logger.warning(f"Failed to get/update country stats for {short_code} (IP: {ip_address}): {e}")
+
 # ---------------- APP ----------------
 app = FastAPI(title="Shortlinks.art URL Shortener")
 i18n_router = FastAPI()
@@ -443,12 +469,6 @@ async def health():
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
-#
-# =====================================================================
-# UPDATED/FIXED api_create_link
-# This logic is now robust and fixes the "Invalid URL" bug.
-# =====================================================================
-#
 @app.post("/api/v1/links")
 @limiter.limit("10/minute")
 async def api_create_link(
@@ -467,26 +487,19 @@ async def api_create_link(
     # Robust validation
     try:
         parsed = urlparse(long_url)
-        # A valid URL must have a scheme and a domain (netloc)
         if not parsed.scheme or not parsed.netloc:
             raise ValueError("Missing scheme or domain")
         
-        # Check for common user error: "https://google" (no .com)
-        # We allow IPs, but reject domains without a dot.
         if '.' not in parsed.netloc:
             try:
-                # If it's not a dot, check if it's a valid IP address
                 ipaddress.ip_address(parsed.netloc)
-                # If it is, it's valid (e.g., https://1.1.1.1)
             except ValueError:
-                # It's not a dot and not an IP, so it's invalid (e.g., https://google)
                 raise ValueError("Invalid domain, no TLD")
                 
     except ValueError as e:
         logger.warning(f"Invalid URL format submitted: {long_url} ({e})")
         raise HTTPException(status_code=400, detail=_("invalid_url"))
 
-    # Finally, run the 'validators' check for public IPs (prevents SSRF)
     if not validators.url(long_url, public=True):
         logger.warning(f"Blocked non-public or invalid URL: {long_url}")
         raise HTTPException(status_code=400, detail=_("invalid_url"))
@@ -613,9 +626,16 @@ def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> st
     
     return link["long_url"]
 
+#
+# =====================================================================
+# UPDATED: redirect_link (to add country tracking)
+# =====================================================================
+#
 @app.get("/r/{short_code}")
 async def redirect_link(
-    short_code: str,
+    short_code: str, 
+    request: Request,               # <-- ADDED
+    background_tasks: BackgroundTasks, # <-- ADDED
     _ : Callable = Depends(get_api_translator)
 ):
     db = init_firebase()
@@ -670,6 +690,16 @@ async def redirect_link(
 
     if not long_url:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
+
+    # --- ADD THIS BLOCK FOR COUNTRY STATS ---
+    try:
+        # Get the user's IP address (respecting proxies, just like the limiter)
+        ip_address = get_remote_address(request)
+        # Add the country lookup as a background task
+        background_tasks.add_task(update_country_stats, short_code, ip_address)
+    except Exception as e:
+        logger.warning(f"Failed to schedule country stats task for {short_code}: {e}")
+    # --- END OF BLOCK ---
 
     if not long_url.startswith(("http://", "https")):
         absolute_url = "https://" + long_url
@@ -769,7 +799,7 @@ async def stats(
     context = { **common_context, "link": link }
     return templates.TemplateResponse("stats.html", context)
 
-@i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
+@iTelefone.org.brn_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete(
     short_code: str,
     token: Optional[str] = None,
@@ -784,29 +814,94 @@ async def delete(
     
     doc = doc_ref.get()
     if not doc.exists:
-        raise HTTPException(status_code=4f"Error in cleanup thread: {e}")
-            # Wait a bit before retrying to avoid spamming errors
-            time.sleep(60) 
+        raise HTTPException(status_code=404, detail=_("link_not_found"))
+    
+    link = doc.to_dict()
+    
+    if link.get("deletion_token") == token:
+        doc_ref.delete()
+        context = {
+            **common_context, 
+            "success": True, 
+            "message": _("delete_success")
+        }
+    else:
+        context = {
+            **common_context,
+            "success": False,
+            "message": _("delete_invalid_token")
+        }
+        
+    return templates.TemplateResponse("delete_status.html", context)
+
+
+class SecurityException(Exception):
+    pass
+
+# --- Mount the localized router ---
+app.mount("/{locale}", i18n_router, name="localized")
+
+#
+# =====================================================================
+#  FIX: Definition for the Old Links Cleanup Loop
+# =====================================================================
+#
+def _cleanup_loop():
+    """
+    The actual infinite loop that runs in the background to find
+    and delete expired links from Firestore.
+    """
+    logger.info("🧹 Cleanup thread started. Will check for expired links every 10 minutes.")
+    
+    # Wait a few seconds on startup to let the main app initialize
+    time.sleep(30) 
+    
+    while True:
+        try:
+            db = init_firebase() 
+            if not db:
+                logger.error("Cleanup thread: DB not initialized. Retrying in 60s.")
+                time.sleep(60)
+                continue
+
+            now = datetime.now(timezone.utc)
+            
+            # Query for links where 'expires_at' is in the past
+            links_ref = db.collection("links")
+            query = links_ref.where(
+                filter=FieldFilter("expires_at", "<", now)
+            ).limit(50) # Process in batches of 50
+
+            docs = query.stream()
+            
+            count = 0
+            for doc in docs:
+                logger.info(f"Cleanup: Deleting expired link {doc.id}...")
+                doc.reference.delete()
+                count += 1
+            
+            if count > 0:
+                logger.info(f"Cleanup: Successfully deleted {count} expired links.")
+            else:
+                logger.debug("Cleanup: No expired links found this cycle.")
+
+            # Wait for 10 minutes (600 seconds) before the next cycle
+            time.sleep(600) 
+
+        except Exception as e:
+            logger.error(f"Error in cleanup thread: {e}")
+            time.sleep(60) # Wait a bit before retrying
 
 def start_cleanup_thread():
     """
     Creates and starts the background cleanup thread.
-    This is the function that was missing, causing the NameError.
     """
     logger.info("Starting background cleanup thread...")
-    
-    # Create a new thread object
-    # target=_cleanup_loop: This is the function the thread will run.
     cleanup_thread = threading.Thread(target=_cleanup_loop)
-    
-    # Set as a 'daemon' thread. This means the thread will automatically
-    # exit when the main program stops.
     cleanup_thread.daemon = True 
-    
-    # Start the thread's activity
     cleanup_thread.start()
     logger.info("Cleanup thread is now running in the background.")
 
 
 # --- Start background tasks ---
-start_cleanup_thread() # This line will now work correctly
+start_cleanup_thread()

@@ -42,26 +42,12 @@
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
       }
-      /* UPDATED: Styles for the new flag icons (targeting both CSS classes) */
       .lang-flag {
-        width: 24px;
-        height: 18px; /* 4x3 Aspect Ratio */
-        border-radius: 3px;
-        vertical-align: middle;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background-size: cover;
-        display: inline-block;
+        width: 24px; height: 18px; border-radius: 3px; vertical-align: middle;
+        border: 1px solid rgba(255, 255, 255, 0.1); background-size: cover; display: inline-block;
       }
-      .lang-btn.active .lang-flag {
-        border: 2px solid #fff;
-      }
-      .flag-icon { /* Style used by the CSS library */
-        background-size: cover;
-        display: inline-block;
-        /* Ensure the class names are not overriding the size */
-        width: 24px !important;
-        height: 18px !important;
-      }
+      .lang-btn.active .lang-flag { border: 2px solid #fff; }
+      .flag-icon { background-size: cover; display: inline-block; width: 24px !important; height: 18px !important; }
     </style>
 </head>
 <body>
@@ -138,8 +124,7 @@
                    class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
                    data-lang="{{ tag.hreflang }}"
                    title="{{ _('lang_name_' + tag.hreflang) }}">
-                   
-                   <span class="flag-icon flag-icon-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
+                   <span class="fi fi-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
                        <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
                    </span>
                 </a>
@@ -149,6 +134,7 @@
     </footer>
 
     <script>
+    // JavaScript is unchanged and correct.
     const shortenBtn = document.getElementById("shortenBtn");
     const resultDiv = document.getElementById("result");
     const errorDiv = document.getElementById("error-msg");

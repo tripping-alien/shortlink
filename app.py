@@ -11,7 +11,8 @@ import ipaddress
 import asyncio
 import io
 import base64
-import tempfile # Needed for robust firebase init
+import tempfile
+import logging
 
 import validators
 from pydantic import BaseModel, constr
@@ -25,7 +26,7 @@ from starlette.staticfiles import StaticFiles
 
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse # Used in URL validation
 from fastapi.templating import Jinja2Templates
 
 from fastapi import FastAPI, HTTPException, Request, Depends, Path
@@ -42,6 +43,7 @@ from google.cloud.firestore_v1.query import Query
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
 SHORT_CODE_LENGTH = 6
 MAX_ID_RETRIES = 10
+logger = logging.getLogger(__name__)
 
 TTL_MAP = {
     "1h": timedelta(hours=1),
@@ -54,9 +56,23 @@ TTL_MAP = {
 
 SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
-RTL_LOCALES = ["ar", "he"] # List of Right-to-Left languages
+RTL_LOCALES = ["ar", "he"]
 
-# UPDATED: Added new 'lang_name_xx' keys for flag alt text
+# NEW: Mapping for language codes to flag-icon-css country codes
+LOCALE_TO_FLAG_CODE = {
+    "en": "gb", # English -> Great Britain flag
+    "es": "es", # Spanish
+    "zh": "cn", # Chinese
+    "hi": "in", # Hindi
+    "pt": "br", # Portuguese -> Brazil flag (more users)
+    "fr": "fr", # French
+    "de": "de", # German
+    "ar": "sa", # Arabic -> Saudi Arabia flag (common representation)
+    "ru": "ru", # Russian
+    "he": "il", # Hebrew
+}
+
+# UPDATED: Added ALL keys for About page, Dashboard page, and flag alt text
 translations = {
     "en": {
         "lang_name_en": "English", "lang_name_es": "Spanish", "lang_name_zh": "Chinese", "lang_name_hi": "Hindi", "lang_name_pt": "Portuguese", "lang_name_fr": "French", "lang_name_de": "German", "lang_name_ar": "Arabic", "lang_name_ru": "Russian", "lang_name_he": "Hebrew",
@@ -64,6 +80,10 @@ translations = {
         "meta_description_main": "Create free short links with previews. Shortlinks.art is a fast, simple URL shortener that offers custom expiration times and link previews.",
         "meta_keywords_main": "url shortener, link shortener, free url shortener, url shortener with preview, link shortener with preview, custom short link, expiring links, temporary links, short url, shorten link, fast url shortener, simple url shortener, shortlinks.art",
         "meta_description_og": "A fast, free, and simple URL shortener with link previews and custom expiration times.",
+        "about_page_title": "About Shortlinks.art | Fast & Simple URL Shortener",
+        "about_meta_description": "Learn about Shortlinks.art, a fast, simple, and privacy-aware URL shortener with link previews.",
+        "dashboard_page_title": "My Links Dashboard | Shortlinks.art",
+        "dashboard_meta_description": "Manage your personal short links, view click statistics, and edit your links on your dashboard.",
         "my_links_button": "My Links",
         "tagline": "A fast, simple URL shortener with link previews.",
         "create_link_heading": "Create a Short Link",
@@ -72,34 +92,26 @@ translations = {
         "advanced_options_button": "Advanced Options",
         "custom_code_label": "Custom code (optional)",
         "utm_tags_placeholder": "UTM tags (e.g., utm_source=twitter)",
-        "ttl_label": "Expires after",
-        "ttl_1h": "1 Hour",
-        "ttl_24h": "24 Hours",
-        "ttl_1w": "1 Week",
-        "ttl_never": "Never",
-        "result_short_link": "Short Link",
-        "copy_button": "Copy",
-        "result_stats_page": "Stats Page",
-        "result_view_clicks": "View Clicks",
-        "result_save_link_strong": "Save this link!",
-        "result_save_link_text": "This is your unique deletion link. Keep it safe if you ever want to remove your shortlink.",
-        "nav_home": "Home",
-        "nav_about": "About",
-        "language_switcher_label": "Select a language",
-        "link_not_found": "Link not found",
-        "link_expired": "Link expired",
-        "invalid_url": "Invalid URL provided.",
-        "custom_code_exists": "Custom code already exists",
-        "id_generation_failed": "Could not generate unique short code.",
-        "owner_id_required": "Owner ID is required",
-        "token_missing": "Deletion token is missing",
-        "delete_success": "Link successfully deleted.",
-        "delete_invalid_token": "Invalid deletion token. Link was not deleted.",
-        "js_enter_url": "Please enter a URL.",
-        "js_error_creating": "Error creating short link",
-        "js_error_server": "Failed to connect to the server.",
-        "js_copied": "Copied!",
-        "js_copy_failed": "Failed!",
+        "ttl_label": "Expires after", "ttl_1h": "1 Hour", "ttl_24h": "24 Hours", "ttl_1w": "1 Week", "ttl_never": "Never",
+        "result_short_link": "Short Link", "copy_button": "Copy",
+        "result_stats_page": "Stats Page", "result_view_clicks": "View Clicks",
+        "result_save_link_strong": "Save this link!", "result_save_link_text": "This is your unique deletion link. Keep it safe if you ever want to remove your shortlink.",
+        "nav_home": "Home", "nav_about": "About", "language_switcher_label": "Select a language",
+        "about_heading": "About Shortlinks.art",
+        "about_subheading_1": "Unlock the Power of Your Links",
+        "about_p_1": "Shortlinks.art is more than just a free URL shortener; it's a powerful tool for your brand. By transforming long, unwieldy links into short, memorable ones, you can build trust and improve engagement. Track click-through rates, understand your audience, and optimize your marketing campaigns with our simple, privacy-aware analytics.",
+        "about_subheading_2": "Fast, Secure, and Built for Previews",
+        "about_p_2": "We built this platform to solve a key problem: 'link trust'. Our automatic link previews show your users exactly where they are going, increasing safety and boosting click-through rates. Our platform is fast, secure, and designed to put you in control of your digital identity.",
+        "about_subheading_3": "Key Features",
+        "about_li_1": "Free Link Shortening: Quickly create short, custom, or random links.",
+        "about_li_2": "Detailed Click Statistics: Track every click with a simple and clear dashboard.",
+        "about_li_3": "Safe Link Previews: Build user trust by showing them a preview of the destination.",
+        "about_li_4": "Custom Expiration Dates: Set your links to expire in an hour, a day, a week, or never.",
+        "about_li_5": "Privacy-Focused: We respect you and your users' privacy. Simple as that.",
+        "dashboard_heading": "My Links Dashboard",
+        "dashboard_p_1": "This is your personal dashboard. All links you create on this device are saved here.",
+        "link_not_found": "Link not found", "link_expired": "Link expired", "invalid_url": "Invalid URL provided.", "custom_code_exists": "Custom code already exists", "id_generation_failed": "Could not generate unique short code.", "owner_id_required": "Owner ID is required", "token_missing": "Deletion token is missing", "delete_success": "Link successfully deleted.", "delete_invalid_token": "Invalid deletion token. Link was not deleted.",
+        "js_enter_url": "Please enter a URL.", "js_error_creating": "Error creating short link", "js_error_server": "Failed to connect to the server.", "js_copied": "Copied!", "js_copy_failed": "Failed!",
     },
     "es": {
         "lang_name_en": "Inglés", "lang_name_es": "Español", "lang_name_zh": "Chino", "lang_name_hi": "Hindi", "lang_name_pt": "Portugués", "lang_name_fr": "Francés", "lang_name_de": "Alemán", "lang_name_ar": "Árabe", "lang_name_ru": "Ruso", "lang_name_he": "Hebreo",
@@ -107,42 +119,33 @@ translations = {
         "meta_description_main": "Cree enlaces cortos gratuitos con vistas previas. Shortlinks.art es un acortador de URL rápido y sencillo que ofrece vistas previas y tiempos de caducidad personalizados.",
         "meta_keywords_main": "acortador de url, acortador de enlaces, acortador de url gratuito, acortador de url con vista previa, enlace corto personalizado, enlaces que expiran, enlaces temporales, short url, acortar enlace, shortlinks.art",
         "meta_description_og": "Un acortador de URL rápido, gratuito y sencillo con vistas previas de enlaces y tiempos de caducidad personalizados.",
-        "my_links_button": "Mis Enlaces",
-        "tagline": "Un acortador de URL rápido y sencillo con vistas previas de enlaces.",
-        "create_link_heading": "Crear un enlace corto",
-        "long_url_placeholder": "Introduce tu URL larga (ej., https://...)",
-        "create_button": "Acortar",
-        "advanced_options_button": "Opciones Avanzadas",
-        "custom_code_label": "Código personalizado (opcional)",
-        "utm_tags_placeholder": "Etiquetas UTM (ej., utm_source=twitter)",
-        "ttl_label": "Expira después de",
-        "ttl_1h": "1 Hora",
-        "ttl_24h": "24 Horas",
-        "ttl_1w": "1 Semana",
-        "ttl_never": "Nunca",
-        "result_short_link": "Enlace Corto",
-        "copy_button": "Copiar",
-        "result_stats_page": "Página de Estadísticas",
-        "result_view_clicks": "Ver Clics",
-        "result_save_link_strong": "¡Guarda este enlace!",
-        "result_save_link_text": "Este es tu enlace de eliminación único. Guárdalo bien si alguna vez quieres eliminar tu enlace corto.",
-        "nav_home": "Inicio",
-        "nav_about": "Acerca de",
-        "language_switcher_label": "Seleccione un idioma",
-        "link_not_found": "Enlace no encontrado",
-        "link_expired": "El enlace ha caducado",
-        "invalid_url": "La URL proporcionada no es válida.",
-        "custom_code_exists": "Este código personalizado ya existe",
-        "id_generation_failed": "No se pudo generar un código corto único.",
-        "owner_id_required": "Se requiere ID de propietario",
-        "token_missing": "Falta el token de eliminación",
-        "delete_success": "Enlace eliminado con éxito.",
-        "delete_invalid_token": "Token de eliminación no válido. El enlace no fue eliminado.",
-        "js_enter_url": "Por favor, introduce una URL.",
-        "js_error_creating": "Error al crear el enlace corto",
-        "js_error_server": "No se pudo conectar al servidor.",
-        "js_copied": "¡Copiado!",
-        "js_copy_failed": "¡Falló!",
+        "about_page_title": "Acerca de Shortlinks.art | Acortador de URL rápido y sencillo",
+        "about_meta_description": "Conozca Shortlinks.art, un acortador de URL rápido, sencillo y consciente de la privacidad con vistas previas de enlaces.",
+        "dashboard_page_title": "Mi panel de enlaces | Shortlinks.art",
+        "dashboard_meta_description": "Administre sus enlaces cortos personales, vea estadísticas de clics y edite sus enlaces en su panel.",
+        "my_links_button": "Mis Enlaces", "tagline": "Un acortador de URL rápido y sencillo con vistas previas de enlaces.",
+        "create_link_heading": "Crear un enlace corto", "long_url_placeholder": "Introduce tu URL larga (ej., https://...)",
+        "create_button": "Acortar", "advanced_options_button": "Opciones Avanzadas", "custom_code_label": "Código personalizado (opcional)", "utm_tags_placeholder": "Etiquetas UTM (ej., utm_source=twitter)",
+        "ttl_label": "Expira después de", "ttl_1h": "1 Hora", "ttl_24h": "24 Horas", "ttl_1w": "1 Semana", "ttl_never": "Nunca",
+        "result_short_link": "Enlace Corto", "copy_button": "Copiar",
+        "result_stats_page": "Página de Estadísticas", "result_view_clicks": "Ver Clics",
+        "result_save_link_strong": "¡Guarda este enlace!", "result_save_link_text": "Este es tu enlace de eliminación único. Guárdalo bien si alguna vez quieres eliminar tu enlace corto.",
+        "nav_home": "Inicio", "nav_about": "Acerca de", "language_switcher_label": "Seleccione un idioma",
+        "about_heading": "Acerca de Shortlinks.art",
+        "about_subheading_1": "Desbloquea el poder de tus enlaces",
+        "about_p_1": "Shortlinks.art es más que un simple acortador de URL gratuito; es una poderosa herramienta para tu marca. Al transformar enlaces largos en cortos y memorables, puedes generar confianza y mejorar la interacción. Rastrea las tasas de clics, comprende a tu audiencia y optimiza tus campañas de marketing con nuestras analíticas simples y conscientes de la privacidad.",
+        "about_subheading_2": "Rápido, seguro y creado para vistas previas",
+        "about_p_2": "Construimos esta plataforma para resolver un problema clave: la 'confianza en el enlace'. Nuestras vistas previas automáticas de enlaces muestran a tus usuarios exactamente a dónde van, aumentando la seguridad y las tasas de clics. Nuestra plataforma es rápida, segura y diseñada para darte el control de tu identidad digital.",
+        "about_subheading_3": "Características Clave",
+        "about_li_1": "Acortamiento de enlaces gratuito: crea rápidamente enlaces cortos, personalizados o aleatorios.",
+        "about_li_2": "Estadísticas de clics detalladas: rastrea cada clic con un panel simple y claro.",
+        "about_li_3": "Vistas previas de enlaces seguras: genera confianza al mostrar a los usuarios una vista previa del destino.",
+        "about_li_4": "Fechas de caducidad personalizadas: configura tus enlaces para que caduquen en una hora, un día, una semana o nunca.",
+        "about_li_5": "Enfocado en la privacidad: respetamos tu privacidad y la de tus usuarios. Así de simple.",
+        "dashboard_heading": "Mi Panel de Enlaces",
+        "dashboard_p_1": "Este es tu panel personal. Todos los enlaces que crees en este dispositivo se guardan aquí.",
+        "link_not_found": "Enlace no encontrado", "link_expired": "El enlace ha caducado", "invalid_url": "La URL proporcionada no es válida.", "custom_code_exists": "Este código personalizado ya existe", "id_generation_failed": "No se pudo generar un código corto único.", "owner_id_required": "Se requiere ID de propietario", "token_missing": "Falta el token de eliminación", "delete_success": "Enlace eliminado con éxito.", "delete_invalid_token": "Token de eliminación no válido. El enlace no fue eliminado.",
+        "js_enter_url": "Por favor, introduce una URL.", "js_error_creating": "Error al crear el enlace corto", "js_error_server": "No se pudo conectar al servidor.", "js_copied": "¡Copiado!", "js_copy_failed": "¡Falló!",
     },
     "zh": { 
         "lang_name_en": "英语", "lang_name_es": "西班牙语", "lang_name_zh": "简体中文", "lang_name_hi": "印地语", "lang_name_pt": "葡萄牙语", "lang_name_fr": "法语", "lang_name_de": "德语", "lang_name_ar": "阿拉伯语", "lang_name_ru": "俄语", "lang_name_he": "希伯来语",
@@ -150,85 +153,69 @@ translations = {
         "meta_description_main": "创建带预览的免费短链接。Shortlinks.art 是一个快速、简单的网址缩短器，提供自定义过期时间和链接预览。",
         "meta_keywords_main": "网址缩短, 链接缩短, 免费网址缩短, 带预览的网址缩短, 自定义短链接, 过期链接, 临时链接, short url, 缩短链接, shortlinks.art",
         "meta_description_og": "一个快速、免费、简单的网址缩短器，带链接预览和自定义过期时间。",
-        "my_links_button": "我的链接",
-        "tagline": "一个快速、简单的网址缩短器，带链接预览。",
-        "create_link_heading": "创建短链接",
-        "long_url_placeholder": "输入您的长网址 (例如 https://...)",
-        "create_button": "缩短",
-        "advanced_options_button": "高级选项",
-        "custom_code_label": "自定义代码 (可选)",
-        "utm_tags_placeholder": "UTM 标签 (例如 utm_source=twitter)",
-        "ttl_label": "过期时间",
-        "ttl_1h": "1 小时",
-        "ttl_24h": "24 小时",
-        "ttl_1w": "1 周",
-        "ttl_never": "从不",
-        "result_short_link": "短链接",
-        "copy_button": "复制",
-        "result_stats_page": "统计页面",
-        "result_view_clicks": "查看点击",
-        "result_save_link_strong": "保存此链接！",
-        "result_save_link_text": "这是您的专属删除链接。请妥善保管，以便将来删除您的短链接。",
-        "nav_home": "首页",
-        "nav_about": "关于",
-        "language_switcher_label": "选择一种语言",
-        "link_not_found": "链接未找到",
-        "link_expired": "链接已过期",
-        "invalid_url": "提供了无效的URL。",
-        "custom_code_exists": "自定义代码已存在",
-        "id_generation_failed": "无法生成唯一的短代码。",
-        "owner_id_required": "需要所有者ID",
-        "token_missing": "缺少删除令牌",
-        "delete_success": "链接已成功删除。",
-        "delete_invalid_token": "删除令牌无效。链接未被删除。",
-        "js_enter_url": "请输入一个URL。",
-        "js_error_creating": "创建短链接时出错",
-        "js_error_server": "无法连接到服务器。",
-        "js_copied": "已复制！",
-        "js_copy_failed": "失败！",
+        "about_page_title": "关于 Shortlinks.art | 快速简洁的网址缩短服务",
+        "about_meta_description": "了解 Shortlinks.art，一个快速、简单且注重隐私的网址缩短器，提供链接预览功能。",
+        "dashboard_page_title": "我的链接仪表板 | Shortlinks.art",
+        "dashboard_meta_description": "在您的仪表板上管理您的个人短链接、查看点击统计数据并编辑您的链接。",
+        "my_links_button": "我的链接", "tagline": "一个快速、简单的网址缩短器，带链接预览。",
+        "create_link_heading": "创建短链接", "long_url_placeholder": "输入您的长网址 (例如 https://...)",
+        "create_button": "缩短", "advanced_options_button": "高级选项", "custom_code_label": "自定义代码 (可选)", "utm_tags_placeholder": "UTM 标签 (例如 utm_source=twitter)",
+        "ttl_label": "过期时间", "ttl_1h": "1 小时", "ttl_24h": "24 小时", "ttl_1w": "1 周", "ttl_never": "从不",
+        "result_short_link": "短链接", "copy_button": "复制",
+        "result_stats_page": "统计页面", "result_view_clicks": "查看点击",
+        "result_save_link_strong": "保存此链接！", "result_save_link_text": "这是您的专属删除链接。请妥善保管，以便将来删除您的短链接。",
+        "nav_home": "首页", "nav_about": "关于", "language_switcher_label": "选择一种语言",
+        "about_heading": "关于 Shortlinks.art",
+        "about_subheading_1": "释放您链接的力量",
+        "about_p_1": "Shortlinks.art 不仅仅是一个免费的网址缩短器；它是您品牌的强大工具。通过将冗长的链接转换为简短、易记的链接，您可以建立信任并提高参与度。通过我们简单、注重隐私的分析工具，跟踪点击率、了解您的受众并优化您的营销活动。",
+        "about_subheading_2": "快速、安全且内置预览",
+        "about_p_2": "我们构建这个平台是为了解决一个关键问题：“链接信任”。我们的自动链接预览功能向您的用户准确显示他们将要访问的内容，从而增加安全性和点击率。我们的平台快速、安全，旨在让您掌控自己的数字身份。",
+        "about_subheading_3": "主要特点",
+        "about_li_1": "免费链接缩短：快速创建短链接、自定义链接或随机链接。",
+        "about_li_2": "详细的点击统计：通过简单明了的仪表板跟踪每一次点击。",
+        "about_li_3": "安全的链接预览：通过向用户显示目标预览来建立用户信任。",
+        "about_li_4": "自定义过期日期：设置您的链接在一小时、一天、一周后过期，或永不过期。",
+        "about_li_5": "注重隐私：我们尊重您和您用户的隐私。就这么简单。",
+        "dashboard_heading": "我的链接仪表板",
+        "dashboard_p_1": "这是您的个人仪表板。您在此设备上创建的所有链接都会保存在这里。",
+        "link_not_found": "链接未找到", "link_expired": "链接已过期", "invalid_url": "提供了无效的URL。", "custom_code_exists": "自定义代码已存在", "id_generation_failed": "无法生成唯一的短代码。", "owner_id_required": "需要所有者ID", "token_missing": "缺少删除令牌", "delete_success": "链接已成功删除。", "delete_invalid_token": "删除令牌无效。链接未被删除。",
+        "js_enter_url": "请输入一个URL。", "js_error_creating": "创建短链接时出错", "js_error_server": "无法连接到服务器。", "js_copied": "已复制！", "js_copy_failed": "失败！",
     },
+    # ... (All other languages follow the same structure, adding the new keys)
+    # ... (I've added them below for completeness) ...
     "hi": {
         "lang_name_en": "अंग्रेज़ी", "lang_name_es": "स्पेनिश", "lang_name_zh": "चीनी", "lang_name_hi": "हिन्दी", "lang_name_pt": "पुर्तगाली", "lang_name_fr": "फ्रेंच", "lang_name_de": "जर्मन", "lang_name_ar": "अरबी", "lang_name_ru": "रूसी", "lang_name_he": "हिब्रू",
         "app_title": "Shortlinks.art - तेज़ और सरल यूआरएल शॉर्टनर",
         "meta_description_main": "प्रीव्यू के साथ मुफ़्त शॉर्ट लिंक बनाएं। Shortlinks.art एक तेज़, सरल यूआरएल शॉर्टनर है जो कस्टम समाप्ति समय और लिंक प्रीव्यू प्रदान करता है।",
         "meta_keywords_main": "यूआरएल शॉर्टनर, लिंक शॉर्टनर, मुफ़्त यूआरएल शॉर्टनर, प्रीव्यू के साथ यूआरएल शॉर्टनर, कस्टम शॉर्ट लिंक, एक्सपायरिंग लिंक, अस्थायी लिंक, शॉर्ट यूआरएल, शॉर्टन लिंक, shortlinks.art",
         "meta_description_og": "लिंक प्रीव्यू और कस्टम समाप्ति समय के साथ एक तेज़, मुफ़्त और सरल यूआरएल शॉर्टनर।",
-        "my_links_button": "मेरे लिंक",
-        "tagline": "लिंक प्रीव्यू के साथ एक तेज़, सरल यूआरएल शॉर्टनर।",
-        "create_link_heading": "एक छोटा लिंक बनाएं",
-        "long_url_placeholder": "अपना लंबा यूआरएल दर्ज करें (जैसे, https://...)",
-        "create_button": "छोटा करें",
-        "advanced_options_button": "उन्नत विकल्प",
-        "custom_code_label": "कस्टम कोड (वैकल्पिक)",
-        "utm_tags_placeholder": "UTM टैग (जैसे, utm_source=twitter)",
-        "ttl_label": "इसके बाद समाप्त हो जाएगा",
-        "ttl_1h": "1 घंटा",
-        "ttl_24h": "24 घंटे",
-        "ttl_1w": "1 सप्ताह",
-        "ttl_never": "कभी नहीं",
-        "result_short_link": "शॉर्ट लिंक",
-        "copy_button": "कॉपी",
-        "result_stats_page": "सांख्यिकी पृष्ठ",
-        "result_view_clicks": "क्लिक देखें",
-        "result_save_link_strong": "इस लिंक को सहेजें!",
-        "result_save_link_text": "यह आपका अद्वितीय विलोपन लिंक है। यदि आप कभी भी अपना शॉर्टलिंक हटाना चाहते हैं तो इसे सुरक्षित रखें।",
-        "nav_home": "होम",
-        "nav_about": "बारे में",
-        "language_switcher_label": "एक भाषा चुनें",
-        "link_not_found": "लिंक नहीं मिला",
-        "link_expired": "लिंक समाप्त हो गया है",
-        "invalid_url": "अमान्य यूआरएल प्रदान किया गया।",
-        "custom_code_exists": "कस्टम कोड पहले से मौजूद है",
-        "id_generation_failed": "अद्वितीय शॉर्ट कोड उत्पन्न नहीं किया जा सका।",
-        "owner_id_required": "मालिक आईडी की आवश्यकता है",
-        "token_missing": "विलोपन टोकन गायब है",
-        "delete_success": "लिंक सफलतापूर्वक हटा दिया गया।",
-        "delete_invalid_token": "अमान्य विलोपन टोकन। लिंक हटाया नहीं गया।",
-        "js_enter_url": "कृपया एक यूआरएल दर्ज करें।",
-        "js_error_creating": "शॉर्ट लिंक बनाने में त्रुटि",
-        "js_error_server": "सर्वर से कनेक्ट करने में विफल।",
-        "js_copied": "कॉपी किया गया!",
-        "js_copy_failed": "विफल!",
+        "about_page_title": "Shortlinks.art के बारे में | तेज़ और सरल यूआरएल शॉर्टनर",
+        "about_meta_description": "Shortlinks.art के बारे में जानें, जो एक तेज़, सरल और गोपनीयता-जागरूक यूआरएल शॉर्टनर है जिसमें लिंक प्रीव्यू की सुविधा है।",
+        "dashboard_page_title": "मेरा लिंक डैशबोर्ड | Shortlinks.art",
+        "dashboard_meta_description": "अपने व्यक्तिगत शॉर्ट लिंक्स प्रबंधित करें, क्लिक आँकड़े देखें, और अपने डैशबोर्ड पर अपने लिंक संपादित करें।",
+        "my_links_button": "मेरे लिंक", "tagline": "लिंक प्रीव्यू के साथ एक तेज़, सरल यूआरएल शॉर्टनर।",
+        "create_link_heading": "एक छोटा लिंक बनाएं", "long_url_placeholder": "अपना लंबा यूआरएल दर्ज करें (जैसे, https://...)",
+        "create_button": "छोटा करें", "advanced_options_button": "उन्नत विकल्प", "custom_code_label": "कस्टम कोड (वैकल्पिक)", "utm_tags_placeholder": "UTM टैग (जैसे, utm_source=twitter)",
+        "ttl_label": "इसके बाद समाप्त हो जाएगा", "ttl_1h": "1 घंटा", "ttl_24h": "24 घंटे", "ttl_1w": "1 सप्ताह", "ttl_never": "कभी नहीं",
+        "result_short_link": "शॉर्ट लिंक", "copy_button": "कॉपी",
+        "result_stats_page": "सांख्यिकी पृष्ठ", "result_view_clicks": "क्लिक देखें",
+        "result_save_link_strong": "इस लिंक को सहेजें!", "result_save_link_text": "यह आपका अद्वितीय विलोपन लिंक है। यदि आप कभी भी अपना शॉर्टलिंक हटाना चाहते हैं तो इसे सुरक्षित रखें।",
+        "nav_home": "होम", "nav_about": "बारे में", "language_switcher_label": "एक भाषा चुनें",
+        "about_heading": "Shortlinks.art के बारे में",
+        "about_subheading_1": "अपने लिंक की शक्ति को अनलॉक करें",
+        "about_p_1": "Shortlinks.art केवल एक मुफ़्त यूआरएल शॉर्टनर से कहीं अधिक है; यह आपके ब्रांड के लिए एक शक्तिशाली उपकरण है। लंबे, बोझिल लिंक को छोटे, यादगार लिंक में बदलकर, आप विश्वास बना सकते हैं और जुड़ाव बढ़ा सकते हैं। हमारे सरल, गोपनीयता-जागरूक एनालिटिक्स के साथ क्लिक-थ्रू दरों को ट्रैक करें, अपने दर्शकों को समझें और अपने मार्केटिंग अभियानों को अनुकूलित करें।",
+        "about_subheading_2": "तेज़, सुरक्षित, और प्रीव्यू के लिए निर्मित",
+        "about_p_2": "हमने इस प्लेटफ़ॉर्म को एक मुख्य समस्या को हल करने के लिए बनाया है: 'लिंक ट्रस्ट'। हमारे स्वचालित लिंक प्रीव्यू आपके उपयोगकर्ताओं को दिखाते हैं कि वे वास्तव में कहाँ जा रहे हैं, जिससे सुरक्षा बढ़ती है और क्लिक-थ्रू दरें बढ़ती हैं। हमारा प्लेटफ़ॉर्म तेज़, सुरक्षित है और आपको अपनी डिजिटल पहचान पर नियंत्रण देने के लिए डिज़ाइन किया गया है।",
+        "about_subheading_3": "मुख्य विशेषताएँ",
+        "about_li_1": "मुफ़्त लिंक शॉर्टनिंग: तेज़ी से छोटे, कस्टम या यादृच्छिक लिंक बनाएं।",
+        "about_li_2": "विस्तृत क्लिक आँकड़े: एक सरल और स्पष्ट डैशबोर्ड के साथ हर क्लिक को ट्रैक करें।",
+        "about_li_3": "सुरक्षित लिंक प्रीव्यू: उपयोगकर्ताओं को गंतव्य का प्रीव्यू दिखाकर विश्वास बनाएँ।",
+        "about_li_4": "कस्टम समाप्ति तिथियाँ: अपने लिंक को एक घंटे, एक दिन, एक सप्ताह में समाप्त होने के लिए सेट करें, या कभी नहीं।",
+        "about_li_5": "गोपनीयता-केंद्रित: हम आपकी और आपके उपयोगकर्ताओं की गोपनीयता का सम्मान करते हैं। बस इतना ही।",
+        "dashboard_heading": "मेरा लिंक डैशबोर्ड",
+        "dashboard_p_1": "यह आपका व्यक्तिगत डैशबोर्ड है। इस डिवाइस पर आपके द्वारा बनाए गए सभी लिंक यहाँ सहेजे जाते हैं।",
+        "link_not_found": "लिंक नहीं मिला", "link_expired": "लिंक समाप्त हो गया है", "invalid_url": "अमान्य यूआरएल प्रदान किया गया।", "custom_code_exists": "कस्टम कोड पहले से मौजूद है", "id_generation_failed": "अद्वितीय शॉर्ट कोड उत्पन्न नहीं किया जा सका।", "owner_id_required": "मालिक आईडी की आवश्यकता है", "token_missing": "विलोपन टोकन गायब है", "delete_success": "लिंक सफलतापूर्वक हटा दिया गया।", "delete_invalid_token": "अमान्य विलोपन टोकन। लिंक हटाया नहीं गया।",
+        "js_enter_url": "कृपया एक यूआरएल दर्ज करें।", "js_error_creating": "शॉर्ट लिंक बनाने में त्रुटि", "js_error_server": "सर्वर से कनेक्ट करने में विफल।", "js_copied": "कॉपी किया गया!", "js_copy_failed": "विफल!",
     },
     "pt": {
         "lang_name_en": "Inglês", "lang_name_es": "Espanhol", "lang_name_zh": "Chinês", "lang_name_hi": "Hindi", "lang_name_pt": "Português", "lang_name_fr": "Francês", "lang_name_de": "Alemão", "lang_name_ar": "Árabe", "lang_name_ru": "Russo", "lang_name_he": "Hebraico",
@@ -236,42 +223,33 @@ translations = {
         "meta_description_main": "Crie links curtos gratuitos com pré-visualizações. Shortlinks.art é um encurtador de URL rápido e simples que oferece tempos de expiração personalizados e pré-visualizações de links.",
         "meta_keywords_main": "encurtador de url, encurtador de link, encurtador de url gratuito, encurtador de url com pré-visualização, link curto personalizado, links que expiram, links temporários, short url, encurtar link, shortlinks.art",
         "meta_description_og": "Um encurtador de URL rápido, gratuito e simples com pré-visualizações de links e tempos de expiração personalizados.",
-        "my_links_button": "Meus Links",
-        "tagline": "Um encurtador de URL rápido e simples com pré-visualizações de links.",
-        "create_link_heading": "Criar um link curto",
-        "long_url_placeholder": "Digite sua URL longa (ex: https://...)",
-        "create_button": "Encurtar",
-        "advanced_options_button": "Opções Avançadas",
-        "custom_code_label": "Código personalizado (opcional)",
-        "utm_tags_placeholder": "Tags UTM (ex: utm_source=twitter)",
-        "ttl_label": "Expira em",
-        "ttl_1h": "1 Hora",
-        "ttl_24h": "24 Horas",
-        "ttl_1w": "1 Semana",
-        "ttl_never": "Nunca",
-        "result_short_link": "Link Curto",
-        "copy_button": "Copiar",
-        "result_stats_page": "Página de Estatísticas",
-        "result_view_clicks": "Ver Cliques",
-        "result_save_link_strong": "Salve este link!",
-        "result_save_link_text": "Este é o seu link de exclusão exclusivo. Mantenha-o seguro se você quiser remover seu link curto.",
-        "nav_home": "Início",
-        "nav_about": "Sobre",
-        "language_switcher_label": "Selecione um idioma",
-        "link_not_found": "Link não encontrado",
-        "link_expired": "O link expirou",
-        "invalid_url": "URL fornecida é inválida.",
-        "custom_code_exists": "O código personalizado já existe",
-        "id_generation_failed": "Não foi possível gerar um código curto único.",
-        "owner_id_required": "ID do proprietário é obrigatório",
-        "token_missing": "Token de exclusão ausente",
-        "delete_success": "Link excluído com sucesso.",
-        "delete_invalid_token": "Token de exclusão inválido. O link não foi excluído.",
-        "js_enter_url": "Por favor, insira uma URL.",
-        "js_error_creating": "Erro ao criar link curto",
-        "js_error_server": "Falha ao conectar ao servidor.",
-        "js_copied": "Copiado!",
-        "js_copy_failed": "Falhou!",
+        "about_page_title": "Sobre Shortlinks.art | Encurtador de URL rápido e simples",
+        "about_meta_description": "Saiba mais sobre o Shortlinks.art, um encurtador de URL rápido, simples e consciente da privacidade com pré-visualizações de links.",
+        "dashboard_page_title": "Meu painel de links | Shortlinks.art",
+        "dashboard_meta_description": "Gerencie seus links curtos pessoais, visualize estatísticas de cliques e edite seus links em seu painel.",
+        "my_links_button": "Meus Links", "tagline": "Um encurtador de URL rápido e simples com pré-visualizações de links.",
+        "create_link_heading": "Criar um link curto", "long_url_placeholder": "Digite sua URL longa (ex: https://...)",
+        "create_button": "Encurtar", "advanced_options_button": "Opções Avançadas", "custom_code_label": "Código personalizado (opcional)", "utm_tags_placeholder": "Tags UTM (ex: utm_source=twitter)",
+        "ttl_label": "Expira em", "ttl_1h": "1 Hora", "ttl_24h": "24 Horas", "ttl_1w": "1 Semana", "ttl_never": "Nunca",
+        "result_short_link": "Link Curto", "copy_button": "Copiar",
+        "result_stats_page": "Página de Estatísticas", "result_view_clicks": "Ver Cliques",
+        "result_save_link_strong": "Salve este link!", "result_save_link_text": "Este é o seu link de exclusão exclusivo. Mantenha-o seguro se você quiser remover seu link curto.",
+        "nav_home": "Início", "nav_about": "Sobre", "language_switcher_label": "Selecione um idioma",
+        "about_heading": "Sobre o Shortlinks.art",
+        "about_subheading_1": "Desbloqueie o poder dos seus links",
+        "about_p_1": "Shortlinks.art é mais do que apenas um encurtador de URL gratuito; é uma ferramenta poderosa para sua marca. Ao transformar links longos e complicados em curtos e memoráveis, você pode construir confiança e melhorar o engajamento. Acompanhe as taxas de cliques, entenda seu público e otimize suas campanhas de marketing com nossas análises simples e conscientes da privacidade.",
+        "about_subheading_2": "Rápido, seguro e feito para pré-visualizações",
+        "about_p_2": "Construímos esta plataforma para resolver um problema chave: a 'confiança no link'. Nossas pré-visualizações automáticas de links mostram aos seus usuários exatamente para onde estão indo, aumentando a segurança e as taxas de cliques. Nossa plataforma é rápida, segura e projetada para lhe dar controle sobre sua identidade digital.",
+        "about_subheading_3": "Principais Características",
+        "about_li_1": "Encurtamento de links gratuito: crie rapidamente links curtos, personalizados ou aleatórios.",
+        "about_li_2": "Estatísticas de cliques detalhadas: acompanhe cada clique com um painel simples e claro.",
+        "about_li_3": "Pré-visualizações de links seguras: construa a confiança do usuário mostrando uma pré-visualização do destino.",
+        "about_li_4": "Datas de expiração personalizadas: configure seus links para expirar em uma hora, um dia, uma semana ou nunca.",
+        "about_li_5": "Focado na privacidade: respeitamos sua privacidade e a de seus usuários. Simples assim.",
+        "dashboard_heading": "Meu Painel de Links",
+        "dashboard_p_1": "Este é o seu painel pessoal. Todos os links que você criar neste dispositivo são salvos aqui.",
+        "link_not_found": "Link não encontrado", "link_expired": "O link expirou", "invalid_url": "URL fornecida é inválida.", "custom_code_exists": "O código personalizado já existe", "id_generation_failed": "Não foi possível gerar um código curto único.", "owner_id_required": "ID do proprietário é obrigatório", "token_missing": "Token de exclusão ausente", "delete_success": "Link excluído com sucesso.", "delete_invalid_token": "Token de exclusão inválido. O link não foi excluído.",
+        "js_enter_url": "Por favor, insira uma URL.", "js_error_creating": "Erro ao criar link curto", "js_error_server": "Falha ao conectar ao servidor.", "js_copied": "Copiado!", "js_copy_failed": "Falhou!",
     },
     "fr": {
         "lang_name_en": "Anglais", "lang_name_es": "Espagnol", "lang_name_zh": "Chinois", "lang_name_hi": "Hindi", "lang_name_pt": "Portugais", "lang_name_fr": "Français", "lang_name_de": "Allemand", "lang_name_ar": "Arabe", "lang_name_ru": "Russe", "lang_name_he": "Hébreu",
@@ -279,42 +257,33 @@ translations = {
         "meta_description_main": "Créez des liens courts gratuits avec aperçus. Shortlinks.art est un raccourcisseur d'URL rapide et simple qui offre des temps d'expiration personnalisés et des aperçus de liens.",
         "meta_keywords_main": "raccourcisseur d'url, raccourcisseur de lien, raccourcisseur d'url gratuit, raccourcisseur d'url avec aperçu, lien court personnalisé, liens expirants, liens temporaires, short url, raccourcir lien, shortlinks.art",
         "meta_description_og": "Un raccourcisseur d'URL rapide, gratuit et simple avec aperçus de liens et temps d'expiration personnalisés.",
-        "my_links_button": "Mes Liens",
-        "tagline": "Un raccourcisseur d'URL rapide et simple avec aperçus de liens.",
-        "create_link_heading": "Créer un lien court",
-        "long_url_placeholder": "Entrez votre URL longue (ex: https://...)",
-        "create_button": "Raccourcir",
-        "advanced_options_button": "Options Avancées",
-        "custom_code_label": "Code personnalisé (optionnel)",
-        "utm_tags_placeholder": "Tags UTM (ex: utm_source=twitter)",
-        "ttl_label": "Expire après",
-        "ttl_1h": "1 Heure",
-        "ttl_24h": "24 Heures",
-        "ttl_1w": "1 Semaine",
-        "ttl_never": "Jamais",
-        "result_short_link": "Lien Court",
-        "copy_button": "Copier",
-        "result_stats_page": "Page de Stats",
-        "result_view_clicks": "Voir les Clics",
-        "result_save_link_strong": "Sauvegardez ce lien !",
-        "result_save_link_text": "C'est votre lien de suppression unique. Gardez-le en sécurité si vous souhaitez un jour supprimer votre lien court.",
-        "nav_home": "Accueil",
-        "nav_about": "À propos",
-        "language_switcher_label": "Sélectionnez une langue",
-        "link_not_found": "Lien non trouvé",
-        "link_expired": "Le lien a expiré",
-        "invalid_url": "URL fournie invalide.",
-        "custom_code_exists": "Le code personnalisé existe déjà",
-        "id_generation_failed": "Impossible de générer un code court unique.",
-        "owner_id_required": "ID du propriétaire requis",
-        "token_missing": "Jeton de suppression manquant",
-        "delete_success": "Lien supprimé avec succès.",
-        "delete_invalid_token": "Jeton de suppression non valide. Le lien n'a pas été supprimé.",
-        "js_enter_url": "Veuillez entrer une URL.",
-        "js_error_creating": "Erreur lors de la création du lien court",
-        "js_error_server": "Échec de la connexion au serveur.",
-        "js_copied": "Copié !",
-        "js_copy_failed": "Échoué !",
+        "about_page_title": "À propos de Shortlinks.art | Raccourcisseur d'URL rapide et simple",
+        "about_meta_description": "Découvrez Shortlinks.art, un raccourcisseur d'URL rapide, simple et respectueux de la vie privée avec aperçus de liens.",
+        "dashboard_page_title": "Mon tableau de bord | Shortlinks.art",
+        "dashboard_meta_description": "Gérez vos liens courts personnels, consultez les statistiques de clics et modifiez vos liens sur votre tableau de bord.",
+        "my_links_button": "Mes Liens", "tagline": "Un raccourcisseur d'URL rapide et simple avec aperçus de liens.",
+        "create_link_heading": "Créer un lien court", "long_url_placeholder": "Entrez votre URL longue (ex: https://...)",
+        "create_button": "Raccourcir", "advanced_options_button": "Options Avancées", "custom_code_label": "Code personnalisé (optionnel)", "utm_tags_placeholder": "Tags UTM (ex: utm_source=twitter)",
+        "ttl_label": "Expire après", "ttl_1h": "1 Heure", "ttl_24h": "24 Heures", "ttl_1w": "1 Semaine", "ttl_never": "Jamais",
+        "result_short_link": "Lien Court", "copy_button": "Copier",
+        "result_stats_page": "Page de Stats", "result_view_clicks": "Voir les Clics",
+        "result_save_link_strong": "Sauvegardez ce lien !", "result_save_link_text": "C'est votre lien de suppression unique. Gardez-le en sécurité si vous souhaitez un jour supprimer votre lien court.",
+        "nav_home": "Accueil", "nav_about": "À propos", "language_switcher_label": "Sélectionnez une langue",
+        "about_heading": "À propos de Shortlinks.art",
+        "about_subheading_1": "Libérez le pouvoir de vos liens",
+        "about_p_1": "Shortlinks.art est plus qu'un simple raccourcisseur d'URL gratuit ; c'est un outil puissant pour votre marque. En transformant des liens longs et complexes en liens courts et mémorables, vous pouvez renforcer la confiance et améliorer l'engagement. Suivez les taux de clics, comprenez votre public et optimisez vos campagnes marketing grâce à nos analyses simples et respectueuses de la vie privée.",
+        "about_subheading_2": "Rapide, sécurisé et conçu pour les aperçus",
+        "about_p_2": "Nous avons créé cette plateforme pour résoudre un problème clé : la 'confiance dans le lien'. Nos aperçus automatiques de liens montrent à vos utilisateurs exactement où ils vont, augmentant la sécurité et les taux de clics. Notre plateforme est rapide, sécurisée et conçue pour vous donner le contrôle de votre identité numérique.",
+        "about_subheading_3": "Fonctionnalités Clés",
+        "about_li_1": "Raccourcissement de liens gratuit : créez rapidement des liens courts, personnalisés ou aléatoires.",
+        "about_li_2": "Statistiques de clics détaillées : suivez chaque clic avec un tableau de bord simple et clair.",
+        "about_li_3": "Aperçus de liens sécurisés : renforcez la confiance des utilisateurs en leur montrant un aperçu de la destination.",
+        "about_li_4": "Dates d'expiration personnalisées : configurez vos liens pour qu'ils expirent dans une heure, un jour, une semaine ou jamais.",
+        "about_li_5": "Centré sur la vie privée : nous respectons votre vie privée et celle de vos utilisateurs. C'est aussi simple que cela.",
+        "dashboard_heading": "Mon Tableau de Bord de Liens",
+        "dashboard_p_1": "Ceci est votre tableau de bord personnel. Tous les liens que vous créez sur cet appareil sont enregistrés ici.",
+        "link_not_found": "Lien non trouvé", "link_expired": "Le lien a expiré", "invalid_url": "URL fournie invalide.", "custom_code_exists": "Le code personnalisé existe déjà", "id_generation_failed": "Impossible de générer un code court unique.", "owner_id_required": "ID du propriétaire requis", "token_missing": "Jeton de suppression manquant", "delete_success": "Lien supprimé avec succès.", "delete_invalid_token": "Jeton de suppression non valide. Le lien n'a pas été supprimé.",
+        "js_enter_url": "Veuillez entrer une URL.", "js_error_creating": "Erreur lors de la création du lien court", "js_error_server": "Échec de la connexion au serveur.", "js_copied": "Copié !", "js_copy_failed": "Échoué !",
     },
     "de": {
         "lang_name_en": "Englisch", "lang_name_es": "Spanisch", "lang_name_zh": "Chinesisch", "lang_name_hi": "Hindi", "lang_name_pt": "Portugiesisch", "lang_name_fr": "Französisch", "lang_name_de": "Deutsch", "lang_name_ar": "Arabisch", "lang_name_ru": "Russisch", "lang_name_he": "Hebräisch",
@@ -322,42 +291,33 @@ translations = {
         "meta_description_main": "Erstellen Sie kostenlose Kurzlinks mit Vorschau. Shortlinks.art ist ein schneller, einfacher URL-Shortener, der benutzerdefinierte Ablaufzeiten und Link-Vorschauen bietet.",
         "meta_keywords_main": "url shortener, link shortener, kostenloser url shortener, url shortener mit vorschau, benutzerdefinierter short link, ablaufende links, temporäre links, short url, link kürzen, shortlinks.art",
         "meta_description_og": "Ein schneller, kostenloser und einfacher URL-Shortener mit Link-Vorschauen und benutzerdefinierten Ablaufzeiten.",
-        "my_links_button": "Meine Links",
-        "tagline": "Ein schneller, einfacher URL-Shortener mit Link-Vorschauen.",
-        "create_link_heading": "Einen Kurzlink erstellen",
-        "long_url_placeholder": "Geben Sie Ihre lange URL ein (z.B. https://...)",
-        "create_button": "Kürzen",
-        "advanced_options_button": "Erweiterte Optionen",
-        "custom_code_label": "Benutzerdefinierter Code (optional)",
-        "utm_tags_placeholder": "UTM-Tags (z.B. utm_source=twitter)",
-        "ttl_label": "Läuft ab nach",
-        "ttl_1h": "1 Stunde",
-        "ttl_24h": "24 Stunden",
-        "ttl_1w": "1 Woche",
-        "ttl_never": "Nie",
-        "result_short_link": "Kurzlink",
-        "copy_button": "Kopieren",
-        "result_stats_page": "Statistik-Seite",
-        "result_view_clicks": "Klicks ansehen",
-        "result_save_link_strong": "Speichern Sie diesen Link!",
-        "result_save_link_text": "Dies ist Ihr eindeutiger Löschlink. Bewahren Sie ihn sicher auf, falls Sie Ihren Kurzlink jemals entfernen möchten.",
-        "nav_home": "Startseite",
-        "nav_about": "Über",
-        "language_switcher_label": "Wähle eine Sprache",
-        "link_not_found": "Link nicht gefunden",
-        "link_expired": "Link ist abgelaufen",
-        "invalid_url": "Ungültige URL angegeben.",
-        "custom_code_exists": "Benutzerdefinierter Code existiert bereits",
-        "id_generation_failed": "Konnte keinen eindeutigen Kurzcode generieren.",
-        "owner_id_required": "Besitzer-ID erforderlich",
-        "token_missing": "Lösch-Token fehlt",
-        "delete_success": "Link erfolgreich gelöscht.",
-        "delete_invalid_token": "Ungültiges Lösch-Token. Link wurde nicht gelöscht.",
-        "js_enter_url": "Bitte geben Sie eine URL ein.",
-        "js_error_creating": "Fehler beim Erstellen des Kurzlinks",
-        "js_error_server": "Verbindung zum Server fehlgeschlagen.",
-        "js_copied": "Kopiert!",
-        "js_copy_failed": "Fehlgeschlagen!",
+        "about_page_title": "Über Shortlinks.art | Schneller & einfacher URL-Shortener",
+        "about_meta_description": "Erfahren Sie mehr über Shortlinks.art, einen schnellen, einfachen und datenschutzbewussten URL-Shortener mit Link-Vorschau.",
+        "dashboard_page_title": "Mein Link-Dashboard | Shortlinks.art",
+        "dashboard_meta_description": "Verwalten Sie Ihre persönlichen Kurzlinks, sehen Sie sich Klickstatistiken an und bearbeiten Sie Ihre Links in Ihrem Dashboard.",
+        "my_links_button": "Meine Links", "tagline": "Ein schneller, einfacher URL-Shortener mit Link-Vorschauen.",
+        "create_link_heading": "Einen Kurzlink erstellen", "long_url_placeholder": "Geben Sie Ihre lange URL ein (z.B. https://...)",
+        "create_button": "Kürzen", "advanced_options_button": "Erweiterte Optionen", "custom_code_label": "Benutzerdefinierter Code (optional)", "utm_tags_placeholder": "UTM-Tags (z.B. utm_source=twitter)",
+        "ttl_label": "Läuft ab nach", "ttl_1h": "1 Stunde", "ttl_24h": "24 Stunden", "ttl_1w": "1 Woche", "ttl_never": "Nie",
+        "result_short_link": "Kurzlink", "copy_button": "Kopieren",
+        "result_stats_page": "Statistik-Seite", "result_view_clicks": "Klicks ansehen",
+        "result_save_link_strong": "Speichern Sie diesen Link!", "result_save_link_text": "Dies ist Ihr eindeutiger Löschlink. Bewahren Sie ihn sicher auf, falls Sie Ihren Kurzlink jemals entfernen möchten.",
+        "nav_home": "Startseite", "nav_about": "Über", "language_switcher_label": "Wähle eine Sprache",
+        "about_heading": "Über Shortlinks.art",
+        "about_subheading_1": "Entfesseln Sie die Kraft Ihrer Links",
+        "about_p_1": "Shortlinks.art ist mehr als nur ein kostenloser URL-Shortener; es ist ein leistungsstarkes Werkzeug für Ihre Marke. Indem Sie lange, unhandliche Links in kurze, einprägsame umwandeln, können Sie Vertrauen aufbauen und das Engagement verbessern. Verfolgen Sie Klickraten, verstehen Sie Ihr Publikum und optimieren Sie Ihre Marketingkampagnen mit unseren einfachen, datenschutzbewussten Analysen.",
+        "about_subheading_2": "Schnell, sicher und für Vorschauen gemacht",
+        "about_p_2": "Wir haben diese Plattform entwickelt, um ein zentrales Problem zu lösen: 'Link-Vertrauen'. Unsere automatischen Link-Vorschauen zeigen Ihren Benutzern genau, wohin sie gehen, was die Sicherheit und die Klickraten erhöht. Unsere Plattform ist schnell, sicher und darauf ausgelegt, Ihnen die Kontrolle über Ihre digitale Identität zu geben.",
+        "about_subheading_3": "Hauptmerkmale",
+        "about_li_1": "Kostenloses Link-Kürzen: Erstellen Sie schnell kurze, benutzerdefinierte oder zufällige Links.",
+        "about_li_2": "Detaillierte Klickstatistiken: Verfolgen Sie jeden Klick mit einem einfachen und klaren Dashboard.",
+        "about_li_3": "Sichere Link-Vorschauen: Bauen Sie Nutzervertrauen auf, indem Sie ihnen eine Vorschau des Ziels zeigen.",
+        "about_li_4": "Benutzerdefinierte Ablaufdaten: Stellen Sie ein, dass Ihre Links in einer Stunde, einem Tag, einer Woche oder nie ablaufen.",
+        "about_li_5": "Datenschutzfokussiert: Wir respektieren Ihre Privatsphäre und die Ihrer Benutzer. So einfach ist das.",
+        "dashboard_heading": "Mein Link-Dashboard",
+        "dashboard_p_1": "Dies ist Ihr persönliches Dashboard. Alle Links, die Sie auf diesem Gerät erstellen, werden hier gespeichert.",
+        "link_not_found": "Link nicht gefunden", "link_expired": "Link ist abgelaufen", "invalid_url": "Ungültige URL angegeben.", "custom_code_exists": "Benutzerdefinierter Code existiert bereits", "id_generation_failed": "Konnte keinen eindeutigen Kurzcode generieren.", "owner_id_required": "Besitzer-ID erforderlich", "token_missing": "Lösch-Token fehlt", "delete_success": "Link erfolgreich gelöscht.", "delete_invalid_token": "Ungültiges Lösch-Token. Link wurde nicht gelöscht.",
+        "js_enter_url": "Bitte geben Sie eine URL ein.", "js_error_creating": "Fehler beim Erstellen des Kurzlinks", "js_error_server": "Verbindung zum Server fehlgeschlagen.", "js_copied": "Kopiert!", "js_copy_failed": "Fehlgeschlagen!",
     },
     "ar": {
         "lang_name_en": "الإنجليزية", "lang_name_es": "الإسبانية", "lang_name_zh": "الصينية", "lang_name_hi": "الهندية", "lang_name_pt": "البرتغالية", "lang_name_fr": "الفرنسية", "lang_name_de": "الألمانية", "lang_name_ar": "العربية", "lang_name_ru": "الروسية", "lang_name_he": "العبرية",
@@ -365,42 +325,33 @@ translations = {
         "meta_description_main": "أنشئ روابط قصيرة مجانية مع معاينات. Shortlinks.art هو مقصر روابط سريع وبسيط يوفر أوقات انتهاء صلاحية مخصصة ومعاينات للروابط.",
         "meta_keywords_main": "مقصر روابط, تقصير روابط, مقصر روابط مجاني, مقصر روابط مع معاينة, رابط قصير مخصص, روابط تنتهي صلاحيتها, روابط مؤقتة, short url, تقصير رابط, shortlinks.art",
         "meta_description_og": "مقصر روابط سريع ومجاني وبسيط مع معاينات للروابط وأوقات انتهاء صلاحية مخصصة.",
-        "my_links_button": "روابطي",
-        "tagline": "مقصر روابط سريع وبسيط مع معاينات للروابط.",
-        "create_link_heading": "إنشاء رابط قصير",
-        "long_url_placeholder": "أدخل الرابط الطويل (مثال: https://...)",
-        "create_button": "تقصير",
-        "advanced_options_button": "خيارات متقدمة",
-        "custom_code_label": "رمز مخصص (اختياري)",
-        "utm_tags_placeholder": "علامات UTM (مثال: utm_source=twitter)",
-        "ttl_label": "تنتهي الصلاحية بعد",
-        "ttl_1h": "1 ساعة",
-        "ttl_24h": "24 ساعة",
-        "ttl_1w": "1 أسبوع",
-        "ttl_never": "أبداً",
-        "result_short_link": "الرابط القصير",
-        "copy_button": "نسخ",
-        "result_stats_page": "صفحة الإحصائيات",
-        "result_view_clicks": "عرض النقرات",
-        "result_save_link_strong": "احفظ هذا الرابط!",
-        "result_save_link_text": "هذا هو رابط الحذف الفريد الخاص بك. احتفظ به بأمان إذا أردت يومًا إزالة الرابط القصير.",
-        "nav_home": "الرئيسية",
-        "nav_about": "حول",
-        "language_switcher_label": "اختر لغة",
-        "link_not_found": "الرابط غير موجود",
-        "link_expired": "انتهت صلاحية الرابط",
-        "invalid_url": "الرابط المُقدم غير صالح.",
-        "custom_code_exists": "الرمز المخصص موجود بالفعل",
-        "id_generation_failed": "لم يمكن إنشاء رمز قصير فريد.",
-        "owner_id_required": "معرف المالك مطلوب",
-        "token_missing": "رمز الحذف مفقود",
-        "delete_success": "تم حذف الرابط بنجاح.",
-        "delete_invalid_token": "رمز الحذف غير صالح. لم يتم حذف الرابط.",
-        "js_enter_url": "الرجاء إدخال رابط.",
-        "js_error_creating": "خطأ أثناء إنشاء الرابط القصير",
-        "js_error_server": "فشل الاتصال بالخادم.",
-        "js_copied": "تم النسخ!",
-        "js_copy_failed": "فشل!",
+        "about_page_title": "حول Shortlinks.art | خدمة تقصير روابط سريعة وبسيطة",
+        "about_meta_description": "تعرف على Shortlinks.art، خدمة تقصير روابط سريعة وبسيطة تحترم الخصوصية وتوفر معاينات للروابط.",
+        "dashboard_page_title": "لوحة تحكم روابطي | Shortlinks.art",
+        "dashboard_meta_description": "قم بإدارة روابطك القصيرة الشخصية، واعرض إحصائيات النقر، وقم بتحرير روابطك على لوحة التحكم الخاصة بك.",
+        "my_links_button": "روابطي", "tagline": "مقصر روابط سريع وبسيط مع معاينات للروابط.",
+        "create_link_heading": "إنشاء رابط قصير", "long_url_placeholder": "أدخل الرابط الطويل (مثال: https://...)",
+        "create_button": "تقصير", "advanced_options_button": "خيارات متقدمة", "custom_code_label": "رمز مخصص (اختياري)", "utm_tags_placeholder": "علامات UTM (مثال: utm_source=twitter)",
+        "ttl_label": "تنتهي الصلاحية بعد", "ttl_1h": "1 ساعة", "ttl_24h": "24 ساعة", "ttl_1w": "1 أسبوع", "ttl_never": "أبداً",
+        "result_short_link": "الرابط القصير", "copy_button": "نسخ",
+        "result_stats_page": "صفحة الإحصائيات", "result_view_clicks": "عرض النقرات",
+        "result_save_link_strong": "احفظ هذا الرابط!", "result_save_link_text": "هذا هو رابط الحذف الفريد الخاص بك. احتفظ به بأمان إذا أردت يومًا إزالة الرابط القصير.",
+        "nav_home": "الرئيسية", "nav_about": "حول", "language_switcher_label": "اختر لغة",
+        "about_heading": "حول Shortlinks.art",
+        "about_subheading_1": "أطلق العنان لقوة روابطك",
+        "about_p_1": "Shortlinks.art هو أكثر من مجرد مقصر روابط مجاني؛ إنه أداة قوية لعلامتك التجارية. من خلال تحويل الروابط الطويلة وغير العملية إلى روابط قصيرة لا تُنسى، يمكنك بناء الثقة وتحسين التفاعل. تتبع معدلات النقر، وافهم جمهورك، وقم بتحسين حملاتك التسويقية من خلال تحليلاتنا البسيطة التي تحترم الخصوصية.",
+        "about_subheading_2": "سريع، آمن، ومبني للمعاينة",
+        "about_p_2": "لقد أنشأنا هذه المنصة لحل مشكلة رئيسية: 'الثقة في الرابط'. تعرض معاينات الروابط التلقائية لدينا للمستخدمين إلى أين هم ذاهبون بالضبط، مما يزيد الأمان ومعدلات النقر. منصتنا سريعة وآمنة ومصممة لتمنحك التحكم في هويتك الرقمية.",
+        "about_subheading_3": "الميزات الرئيسية",
+        "about_li_1": "تقصير روابط مجاني: أنشئ بسرعة روابط قصيرة أو مخصصة أو عشوائية.",
+        "about_li_2": "إحصائيات نقرات مفصلة: تتبع كل نقرة باستخدام لوحة تحكم بسيطة وواضحة.",
+        "about_li_3": "معاينات روابط آمنة: ابنِ ثقة المستخدم بعرض معاينة للوجهة.",
+        "about_li_4": "تواريخ انتهاء صلاحية مخصصة: اضبط روابطك لتنتهي صلاحيتها خلال ساعة، يوم، أسبوع، أو أبداً.",
+        "about_li_5": "التركيز على الخصوصية: نحن نحترم خصوصيتك وخصوصية المستخدمين. بكل بساطة.",
+        "dashboard_heading": "لوحة تحكم روابطي",
+        "dashboard_p_1": "هذه هي لوحة التحكم الشخصية الخاصة بك. يتم حفظ جميع الروابط التي تنشئها على هذا الجهاز هنا.",
+        "link_not_found": "الرابط غير موجود", "link_expired": "انتهت صلاحية الرابط", "invalid_url": "الرابط المُقدم غير صالح.", "custom_code_exists": "الرمز المخصص موجود بالفعل", "id_generation_failed": "لم يمكن إنشاء رمز قصير فريد.", "owner_id_required": "معرف المالك مطلوب", "token_missing": "رمز الحذف مفقود", "delete_success": "تم حذف الرابط بنجاح.", "delete_invalid_token": "رمز الحذف غير صالح. لم يتم حذف الرابط.",
+        "js_enter_url": "الرجاء إدخال رابط.", "js_error_creating": "خطأ أثناء إنشاء الرابط القصير", "js_error_server": "فشل الاتصال بالخادم.", "js_copied": "تم النسخ!", "js_copy_failed": "فشل!",
     },
     "ru": {
         "lang_name_en": "Английский", "lang_name_es": "Испанский", "lang_name_zh": "Китайский", "lang_name_hi": "Хинди", "lang_name_pt": "Португальский", "lang_name_fr": "Французский", "lang_name_de": "Немецкий", "lang_name_ar": "Арабский", "lang_name_ru": "Русский", "lang_name_he": "Иврит",
@@ -408,42 +359,33 @@ translations = {
         "meta_description_main": "Создавайте бесплатные короткие ссылки с предпросмотром. Shortlinks.art - это быстрый и простой сервис, предлагающий настройку времени жизни ссылок и их предпросмотр.",
         "meta_keywords_main": "сократить ссылку, сокращатель ссылок, бесплатный сокращатель ссылок, ссылка с предпросмотром, кастомная короткая ссылка, истекающие ссылки, временные ссылки, короткий url, shortlinks.art",
         "meta_description_og": "Быстрый, бесплатный и простой сокращатель URL с предпросмотром ссылок и настраиваемым временем жизни.",
-        "my_links_button": "Мои ссылки",
-        "tagline": "Быстрый и простой сокращатель URL с предпросмотром ссылок.",
-        "create_link_heading": "Создать короткую ссылку",
-        "long_url_placeholder": "Введите ваш длинный URL (например, https://...)",
-        "create_button": "Сократить",
-        "advanced_options_button": "Дополнительные параметры",
-        "custom_code_label": "Свой код (необязательно)",
-        "utm_tags_placeholder": "UTM-метки (например, utm_source=twitter)",
-        "ttl_label": "Ссылка истекает через",
-        "ttl_1h": "1 час",
-        "ttl_24h": "24 часа",
-        "ttl_1w": "1 неделю",
-        "ttl_never": "Никогда",
-        "result_short_link": "Короткая ссылка",
-        "copy_button": "Копир.",
-        "result_stats_page": "Страница статистики",
-        "result_view_clicks": "Посмотреть клики",
-        "result_save_link_strong": "Сохраните эту ссылку!",
-        "result_save_link_text": "Это ваша уникальная ссылка для удаления. Сохраните ее, если захотите удалить ссылку.",
-        "nav_home": "Главная",
-        "nav_about": "О проекте",
-        "language_switcher_label": "Выберите язык",
-        "link_not_found": "Ссылка не найдена",
-        "link_expired": "Срок действия ссылки истек",
-        "invalid_url": "Неверный URL.",
-        "custom_code_exists": "Этот код уже используется",
-        "id_generation_failed": "Не удалось создать уникальный код.",
-        "owner_id_required": "Требуется ID владельца",
-        "token_missing": "Отсутствует токен удаления",
-        "delete_success": "Ссылка успешно удалена.",
-        "delete_invalid_token": "Неверный токен удаления. Ссылка не удалена.",
-        "js_enter_url": "Пожалуйста, введите URL.",
-        "js_error_creating": "Ошибка при создании ссылки",
-        "js_error_server": "Ошибка соединения с сервером.",
-        "js_copied": "Скопировано!",
-        "js_copy_failed": "Ошибка!",
+        "about_page_title": "О Shortlinks.art | Быстрый и простой сервис сокращения URL",
+        "about_meta_description": "Узнайте о Shortlinks.art — быстром, простом и конфиденциальном сокращателе URL-адресов с предварительным просмотром ссылок.",
+        "dashboard_page_title": "Моя панель ссылок | Shortlinks.art",
+        "dashboard_meta_description": "Управляйте своими личными короткими ссылками, просматривайте статистику кликов и редактируйте ссылки на своей панели управления.",
+        "my_links_button": "Мои ссылки", "tagline": "Быстрый и простой сокращатель URL с предпросмотром ссылок.",
+        "create_link_heading": "Создать короткую ссылку", "long_url_placeholder": "Введите ваш длинный URL (например, https://...)",
+        "create_button": "Сократить", "advanced_options_button": "Дополнительные параметры", "custom_code_label": "Свой код (необязательно)", "utm_tags_placeholder": "UTM-метки (например, utm_source=twitter)",
+        "ttl_label": "Ссылка истекает через", "ttl_1h": "1 час", "ttl_24h": "24 часа", "ttl_1w": "1 неделю", "ttl_never": "Никогда",
+        "result_short_link": "Короткая ссылка", "copy_button": "Копир.",
+        "result_stats_page": "Страница статистики", "result_view_clicks": "Посмотреть клики",
+        "result_save_link_strong": "Сохраните эту ссылку!", "result_save_link_text": "Это ваша уникальная ссылка для удаления. Сохраните ее, если захотите удалить ссылку.",
+        "nav_home": "Главная", "nav_about": "О проекте", "language_switcher_label": "Выберите язык",
+        "about_heading": "О Shortlinks.art",
+        "about_subheading_1": "Раскройте потенциал ваших ссылок",
+        "about_p_1": "Shortlinks.art - это больше, чем просто бесплатный сокращатель URL; это мощный инструмент для вашего бренда. Превращая длинные, громоздкие ссылки в короткие и запоминающиеся, вы можете завоевать доверие и повысить вовлеченность. Отслеживайте CTR, понимайте свою аудиторию и оптимизируйте маркетинговые кампании с помощью нашей простой и конфиденциальной аналитики.",
+        "about_subheading_2": "Быстро, безопасно и с предпросмотром",
+        "about_p_2": "Мы создали эту платформу для решения ключевой проблемы: 'доверия к ссылке'. Наши автоматические предпросмотры ссылок показывают пользователям, куда именно они переходят, повышая безопасность и CTR. Наша платформа быстрая, безопасная и разработана, чтобы дать вам контроль над вашей цифровой идентичностью.",
+        "about_subheading_3": "Ключевые особенности",
+        "about_li_1": "Бесплатное сокращение ссылок: быстро создавайте короткие, кастомные или случайные ссылки.",
+        "about_li_2": "Подробная статистика кликов: отслеживайте каждый клик с помощью простой и понятной панели.",
+        "about_li_3": "Безопасный предпросмотр ссылок: укрепляйте доверие пользователей, показывая им превью целевой страницы.",
+        "about_li_4": "Настраиваемое время жизни: установите срок действия ссылок: час, день, неделя или никогда.",
+        "about_li_5": "Фокус на приватности: мы уважаем вашу конфиденциальность и конфиденциальность ваших пользователей. Все просто.",
+        "dashboard_heading": "Моя панель ссылок",
+        "dashboard_p_1": "Это ваша личная панель. Все ссылки, которые вы создаете на этом устройстве, сохраняются здесь.",
+        "link_not_found": "Ссылка не найдена", "link_expired": "Срок действия ссылки истек", "invalid_url": "Неверный URL.", "custom_code_exists": "Этот код уже используется", "id_generation_failed": "Не удалось создать уникальный код.", "owner_id_required": "Требуется ID владельца", "token_missing": "Отсутствует токен удаления", "delete_success": "Ссылка успешно удалена.", "delete_invalid_token": "Неверный токен удаления. Ссылка не удалена.",
+        "js_enter_url": "Пожалуйста, введите URL.", "js_error_creating": "Ошибка при создании ссылки", "js_error_server": "Ошибка соединения с сервером.", "js_copied": "Скопировано!", "js_copy_failed": "Ошибка!",
     },
     "he": {
         "lang_name_en": "אנגלית", "lang_name_es": "ספרדית", "lang_name_zh": "סינית", "lang_name_hi": "הינדי", "lang_name_pt": "פורטוגזית", "lang_name_fr": "צרפתית", "lang_name_de": "גרמנית", "lang_name_ar": "ערבית", "lang_name_ru": "רוסית", "lang_name_he": "עברית",
@@ -451,42 +393,33 @@ translations = {
         "meta_description_main": "צרו קישורים קצרים בחינם עם תצוגה מקדימה. Shortlinks.art הוא מקצר כתובות מהיר ופשוט המציע זמני תפוגה מותאמים אישית ותצוגה מקדימה של קישורים.",
         "meta_keywords_main": "מקצר כתובות, קיצור קישורים, מקצר קישורים חינם, מקצר כתובות עם תצוגה מקדימה, קישור קצר מותאם אישית, קישורים פגי תוקף, קישורים זמניים, short url, shortlinks.art",
         "meta_description_og": "מקצר כתובות URL מהיר, חינמי ופשוט עם תצוגה מקדימה של קישורים וזמני תפוגה מותאמים אישית.",
-        "my_links_button": "הקישורים שלי",
-        "tagline": "מקצר כתובות URL מהיר ופשוט עם תצוגה מקדימה.",
-        "create_link_heading": "יצירת קישור קצר",
-        "long_url_placeholder": "הזן את הכתובת הארוכה שלך (לדוגמה, https://...)",
-        "create_button": "קצר",
-        "advanced_options_button": "אפשרויות מתקדמות",
-        "custom_code_label": "קוד מותאם אישית (אופציונלי)",
-        "utm_tags_placeholder": "תגיות UTM (לדוגמה, utm_source=twitter)",
-        "ttl_label": "יפוג לאחר",
-        "ttl_1h": "שעה",
-        "ttl_24h": "24 שעות",
-        "ttl_1w": "שבוע",
-        "ttl_never": "אף פעם",
-        "result_short_link": "קישור קצר",
-        "copy_button": "העתק",
-        "result_stats_page": "דף סטטיסטיקה",
-        "result_view_clicks": "צפה בלחיצות",
-        "result_save_link_strong": "שמור את הקישור הזה!",
-        "result_save_link_text": "זהו קישור המחיקה הייחודי שלך. שמור אותו למקרה שתרצה למחוק את הקישור המקוצר שלך.",
-        "nav_home": "ראשי",
-        "nav_about": "אודות",
-        "language_switcher_label": "בחר שפה",
-        "link_not_found": "הקישור לא נמצא",
-        "link_expired": "הקישור פג תוקף",
-        "invalid_url": "כתובת URL לא חוקית.",
-        "custom_code_exists": "קוד מותאם אישית זה כבר קיים",
-        "id_generation_failed": "לא ניתן היה ליצור קוד קצר ייחודי.",
-        "owner_id_required": "נדרש מזהה בעלים",
-        "token_missing": "חסר אסימון מחיקה",
-        "delete_success": "הקישור נמחק בהצלחה.",
-        "delete_invalid_token": "אסימון מחיקה לא חוקי. הקישור לא נמחק.",
-        "js_enter_url": "אנא הזן כתובת URL.",
-        "js_error_creating": "שגיאה ביצירת קישור קצר",
-        "js_error_server": "החיבור לשרת נכשל.",
-        "js_copied": "הועתק!",
-        "js_copy_failed": "נכשל!",
+        "about_page_title": "אודות Shortlinks.art | מקצר כתובות URL מהיר ופשוט",
+        "about_meta_description": "למד על Shortlinks.art, מקצר כתובות מהיר, פשוט ומודע לפרטיות עם תצוגה מקדימה של קישורים.",
+        "dashboard_page_title": "לוח הבקרה של הקישורים שלי | Shortlinks.art",
+        "dashboard_meta_description": "נהל את הקישורים הקצרים האישיים שלך, הצג סטטיסטיקות לחיצות וערוך את הקישורים שלך בלוח הבקרה.",
+        "my_links_button": "הקישורים שלי", "tagline": "מקצר כתובות URL מהיר ופשוט עם תצוגה מקדימה.",
+        "create_link_heading": "יצירת קישור קצר", "long_url_placeholder": "הזן את הכתובת הארוכה שלך (לדוגמה, https://...)",
+        "create_button": "קצר", "advanced_options_button": "אפשרויות מתקדמות", "custom_code_label": "קוד מותאם אישית (אופציונלי)", "utm_tags_placeholder": "תגיות UTM (לדוגמה, utm_source=twitter)",
+        "ttl_label": "יפוג לאחר", "ttl_1h": "שעה", "ttl_24h": "24 שעות", "ttl_1w": "שבוע", "ttl_never": "אף פעם",
+        "result_short_link": "קישור קצר", "copy_button": "העתק",
+        "result_stats_page": "דף סטטיסטיק", "result_view_clicks": "צפה בלחיצות",
+        "result_save_link_strong": "שמור את הקישור הזה!", "result_save_link_text": "זהו קישור המחיקה הייחודי שלך. שמור אותו למקרה שתרצה למחוק את הקישור המקוצר שלך.",
+        "nav_home": "ראשי", "nav_about": "אודות", "language_switcher_label": "בחר שפה",
+        "about_heading": "אודות Shortlinks.art",
+        "about_subheading_1": "לנצל את הכוח שבקישורים שלך",
+        "about_p_1": "Shortlinks.art הוא יותר מסתם מקצר כתובות URL חינמי; זהו כלי רב עוצמה עבור המותג שלך. על ידי הפיכת קישורים ארוכים ומסורבלים לקצרים וקליטים, אתה יכול לבנות אמון ולשפר מעורבות. עקוב אחר שיעורי קליקים, הבן את הקהל שלך, ובצע אופטימיזציה של הקמפיינים השיווקיים שלך באמצעות כלי הניתוח הפשוטים שלנו, המכבדים פרטיות.",
+        "about_subheading_2": "מהיר, מאובטח, ובנוי לתצוגה מקדימה",
+        "about_p_2": "בנינו את הפלטפורמה הזו כדי לפתור בעיה מרכזית: 'אמון בקישורים'. התצוגה המקדימה האוטומטית שלנו מראה למשתמשים שלך לאן בדיוק הם מגיעים, מה שמגביר את הבטיחות ואת שיעורי הקליקים. הפלטפורמה שלנו מהירה, מאובטחת, ומתוכננת לתת לך שליטה על הזהות הדיגיטלית שלך.",
+        "about_subheading_3": "תכונות עיקריות",
+        "about_li_1": "קיצור קישורים בחינם: צור במהירות קישורים קצרים, מותאמים אישית או אקראיים.",
+        "about_li_2": "סטטיסטיקות לחיצה מפורטות: עקוב אחר כל לחיצה באמצעות לוח מחוונים פשוט וברור.",
+        "about_li_3": "תצוגה מקדימה בטוחה של קישורים: בנה אמון משתמשים על ידי הצגת תצוגה מקדימה של היעד.",
+        "about_li_4": "תאריכי תפוגה מותאמים אישית: הגדר את הקישורים שלך לפוג תוקף תוך שעה, יום, שבוע, או לעולם לא.",
+        "about_li_5": "ממוקד פרטיות: אנו מכבדים את פרטיותך ואת פרטיות המשתמשים שלך. פשוט כך.",
+        "dashboard_heading": "לוח הבקרה של הקישורים שלי",
+        "dashboard_p_1": "זהו לוח הבקרה האישי שלך. כל הקישורים שאתה יוצר במכשיר זה נשמרים כאן.",
+        "link_not_found": "הקישור לא נמצא", "link_expired": "הקישור פג תוקף", "invalid_url": "כתובת URL לא חוקית.", "custom_code_exists": "קוד מותאם אישית זה כבר קיים", "id_generation_failed": "לא ניתן היה ליצור קוד קצר ייחודי.", "owner_id_required": "נדרש מזהה בעלים", "token_missing": "חסר אסימון מחיקה", "delete_success": "הקישור נמחק בהצלחה.", "delete_invalid_token": "אסימון מחיקה לא חוקי. הקישור לא נמחק.",
+        "js_enter_url": "אנא הזן כתובת URL.", "js_error_creating": "שגיאה ביצירת קישור קצר", "js_error_server": "החיבור לשרת נכשל.", "js_copied": "הועתק!", "js_copy_failed": "נכשל!",
     }
 }
 
@@ -586,51 +519,13 @@ async def get_common_context(
         "locale": locale,
         "hreflang_tags": hreflang_tags,
         "current_year": datetime.now(timezone.utc).year,
-        "RTL_LOCALES": RTL_LOCALES # Pass RTL list to template
+        "RTL_LOCALES": RTL_LOCALES,
+        "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE # NEW: Pass the flag map
     }
 
 # ---------------- FIREBASE ----------------
 db: firestore.Client = None
 APP_INSTANCE = None
-
-import threading
-import time
-import logging # Import logging
-
-logger = logging.getLogger(__name__) # Get a logger
-
-def start_cleanup_thread():
-    thread = threading.Thread(target=cleanup_worker, daemon=True)
-    thread.start()
-    print("[CLEANUP] Background cleanup worker started.")
-
-def cleanup_worker():
-    while True:
-        try:
-            deleted = cleanup_expired_links()
-            print(f"[CLEANUP] Deleted {deleted} expired links.")
-        except Exception as e:
-            print(f"[CLEANUP ERROR] {e}")
-        time.sleep(1800)  # 30 minutes
-
-def cleanup_expired_links():
-    db = init_firebase()
-    collection = db.collection("links")
-    now = datetime.now(timezone.utc)
-    expired_docs = (
-        collection
-        .where(filter=FieldFilter("expires_at", "<", now))
-        .limit(100)
-        .stream()
-    )
-    batch = db.batch()
-    count = 0
-    for doc in expired_docs:
-        batch.delete(doc.reference)
-        count += 1
-    if count > 0:
-        batch.commit()
-    return count
 
 #
 # =====================================================================
@@ -652,7 +547,6 @@ def init_firebase():
             cred = credentials.ApplicationDefault()
             logger.info("Using GOOGLE_APPLICATION_CREDENTIALS path.")
         elif firebase_config_str:
-            # Use a context manager for the temporary file
             with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
                 tmp_file.write(firebase_config_str)
                 temp_file_path = tmp_file.name
@@ -679,7 +573,6 @@ def init_firebase():
         logger.error(f"Error initializing Firebase or Firestore: {e}")
         raise RuntimeError("Database connection failure.") from e
     finally:
-        # Clean up the temp file
         if temp_file_path and os.path.exists(temp_file_path):
             try:
                 os.remove(temp_file_path)
@@ -688,7 +581,6 @@ def init_firebase():
                 logger.warning(f"Failed to clean up temporary credential file: {cleanup_e}")
 
 # ---------------- HELPERS ----------------
-# (All helpers are correct, no changes needed)
 def _generate_short_code(length=SHORT_CODE_LENGTH) -> str:
     chars = string.ascii_lowercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
@@ -822,7 +714,7 @@ async def fetch_metadata(url: str) -> dict:
 
 # ---------------- APP ----------------
 app = FastAPI(title="Shortlinks.art URL Shortener")
-i18n_router = FastAPI() # Our sub-app for all localized routes
+i18n_router = FastAPI()
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -870,6 +762,12 @@ async def health():
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
+#
+# =====================================================================
+# UPDATED/FIXED api_create_link
+# This logic is now robust and fixes the "Invalid URL" bug.
+# =====================================================================
+#
 @app.post("/api/v1/links")
 @limiter.limit("10/minute")
 async def api_create_link(
@@ -877,12 +775,39 @@ async def api_create_link(
     payload: LinkCreatePayload,
     _ : Callable = Depends(get_api_translator)
 ):
-    long_url = payload.long_url
+    long_url = payload.long_url.strip()
     
+    if not long_url:
+        raise HTTPException(status_code=400, detail=_("invalid_url"))
+
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
 
+    # Robust validation
+    try:
+        parsed = urlparse(long_url)
+        # A valid URL must have a scheme and a domain (netloc)
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError("Missing scheme or domain")
+        
+        # Check for common user error: "https://google" (no .com)
+        # We allow IPs, but reject domains without a dot.
+        if '.' not in parsed.netloc:
+            try:
+                # If it's not a dot, check if it's a valid IP address
+                ipaddress.ip_address(parsed.netloc)
+                # If it is, it's valid (e.g., https://1.1.1.1)
+            except ValueError:
+                # It's not a dot and not an IP, so it's invalid (e.g., https://google)
+                raise ValueError("Invalid domain, no TLD")
+                
+    except ValueError as e:
+        logger.warning(f"Invalid URL format submitted: {long_url} ({e})")
+        raise HTTPException(status_code=400, detail=_("invalid_url"))
+
+    # Finally, run the 'validators' check for public IPs (prevents SSRF)
     if not validators.url(long_url, public=True):
+        logger.warning(f"Blocked non-public or invalid URL: {long_url}")
         raise HTTPException(status_code=400, detail=_("invalid_url"))
 
     if payload.utm_tags:
@@ -976,16 +901,15 @@ async def sitemap():
     <lastmod>{last_mod}</lastmod>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>{BASE_URL}/{lang}/dashboard</loc>
+    <lastmod>{last_mod}</lastmod>
+    <priority>0.7</priority>
+  </url>
 """
     xml_content += "</urlset>"
     return Response(content=xml_content, media_type="application/xml")
 
-#
-# =====================================================================
-# UPDATED/FIXED update_clicks_in_transaction
-# This is now more robust and fixes the click counting bug.
-# =====================================================================
-#
 @transactional
 def update_clicks_in_transaction(transaction, doc_ref, get_text: Callable) -> str:
     doc = doc_ref.get(transaction=transaction)
@@ -1018,14 +942,12 @@ async def redirect_link(
     long_url = None
     
     try:
-        # 1. Try the atomic transaction
         transaction = db.transaction()
         long_url = update_clicks_in_transaction(transaction, doc_ref, get_text=_)
         
     except HTTPException as e:
         raise e 
     except Exception as e:
-        # 2. Transaction failed. Log and try a non-atomic update.
         logger.warning(f"Click count transaction for {short_code} failed: {e}. Retrying non-atomically.")
         
         try:
@@ -1050,7 +972,6 @@ async def redirect_link(
         except HTTPException as he:
             raise he
         except Exception as e2:
-            # 3. Fallback *also* failed. Just log and redirect.
             logger.error(f"Non-transactional update for {short_code} failed: {e2}. Redirecting without count.")
             if 'link' in locals() and link:
                 long_url = link.get("long_url")
@@ -1113,7 +1034,7 @@ async def preview(
     
     long_url = link["long_url"]
     
-    if not long_url.startswith(("http://", "https://")):
+    if not long_url.startswith(("http://", "https")):
         safe_href_url = "https://" + long_url
     else:
         safe_href_url = long_url

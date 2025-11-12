@@ -694,27 +694,11 @@ async def stats(
 
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete(
-    short_code: str, token: Optional[str] = None,
+    short_code: str,
+    token: Optional[str] = None,
     common_context: dict = Depends(get_common_context)
 ):
-    _ = common_context["_"]
-    if not token:
-        raise HTTPException(status_code=400, detail=_("token_missing"))
-    collection_ref = init_firebase().collection("links")
-    doc_ref = collection_ref.document(short_code)
-    doc = doc_ref.get()
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail=_("link_not_found"))
-    link = doc.to_dict()
-    if link.get("deletion_token") == token:
-        doc_ref.delete()
-        context = {**common_context, "success": True, "message": _("delete_success")}
-    else:
-        context = {**common_context, "success": False, "message": _("delete_invalid_token")}
-    return templates.TemplateResponse("delete_status.html", context)
 
-class SecurityException(Exception):
-    pass
 
 # --- Mount the localized router ---
 app.mount("/{locale}", i18n_router, name="localized")

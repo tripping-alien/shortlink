@@ -29,7 +29,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.staticfiles import StaticFiles
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint # NEW IMPORT for custom middleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint 
 
 import httpx
 from bs4 import BeautifulSoup
@@ -49,7 +49,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
 # NEW: Import config module and necessary constants
-import config  # <--- CORRECTED: Import the module itself
+import config  
 from config import (
     TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
 )
@@ -168,11 +168,8 @@ def load_translations_from_json() -> None:
             return
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            # Check for the requested structure:
             data = json.load(f)
             
-            # --- BEGIN: Flag Logic for Translations Structure ---
-            # If the JSON uses the new normalized structure, adapt the loading logic
             locales_data = data.get('locales', [])
             loaded_translations = {}
             for locale_entry in locales_data:
@@ -181,8 +178,6 @@ def load_translations_from_json() -> None:
                     loaded_translations[locale_code] = locale_entry.get('translations', {})
             
             translations = loaded_translations
-            # --- END: Flag Logic for Translations Structure ---
-            
         
         missing_locales = set(config.SUPPORTED_LOCALES) - set(translations.keys())
         if missing_locales:
@@ -203,20 +198,16 @@ def load_translations_from_json() -> None:
 def get_flag_emoji(country_code: str) -> str:
     """Converts a two-letter country code (e.g., 'US') into its flag emoji (e.g., '🇺🇸')."""
     if not country_code or len(country_code) != 2:
-        return "" # Return empty string for invalid codes
+        return "" 
     
     # Regional Indicator Symbol A is U+1F1E6.
-    # We add the position of the character in the alphabet (A=0, B=1, etc.) 
-    # to the base Unicode value.
     base_unicode = 0x1F1E6
     
     def to_ris(char: str) -> str:
-        # Check if the character is an uppercase letter before conversion
         if 'A' <= char.upper() <= 'Z':
             return chr(base_unicode + (ord(char.upper()) - ord('A')))
         return ""
 
-    # Ensure both characters can be converted before combining
     ris1 = to_ris(country_code[0])
     ris2 = to_ris(country_code[1])
 
@@ -420,24 +411,19 @@ class URLValidator:
         
         # --- CRITICAL FIX START: Handle naked domains (e.g., google.com) ---
         
-        # 1. Check if the scheme is missing based on initial parsing
         initial_parsed = urlparse(url)
         if not initial_parsed.scheme:
-             # Prepend 'https://' if no scheme is found
              url = "https://" + url
              
-        # 2. Re-parse the corrected URL once for final validation
         parsed = urlparse(url)
         
         # --- CRITICAL FIX END ---
         
         try:
-            # Check scheme again, in case the user input a blocked scheme like 'ftp://'
             if parsed.scheme not in config.ALLOWED_SCHEMES:
                 raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
             
             if not parsed.netloc:
-                # This should no longer trigger for google.com because the scheme was prepended.
                 raise ValidationException("URL must include a domain")
             
             hostname = parsed.netloc.split(':')[0].lower()
@@ -459,7 +445,6 @@ class URLValidator:
     @staticmethod
     def validate_url_public(url: str) -> bool:
         """Validate URL points to public resource"""
-        # Note: validators.url relies on scheme being present, which is fixed above.
         return validators.url(url, public=True)
     
     @classmethod
@@ -474,6 +459,7 @@ class URLValidator:
         hostname = parsed.netloc.split(':')[0]
         await cls.resolve_hostname(hostname)
         
+        # --- CRITICAL FIX: Ensure the validated URL is returned ---
         return url
 
 # ============================================================================
@@ -709,10 +695,14 @@ class LinkManager:
     ) -> Dict[str, Any]:
         """Create new shortened link"""
         if custom_code:
-            doc = await asyncio.to_thread(self.collection.document(custom_code).get)
-            if doc.exists:
-                raise ValidationException("Custom code already exists")
-            code = custom_code
+            try:
+                doc = await asyncio.to_thread(self.collection.document(custom_code).get)
+                if doc.exists:
+                    raise ValidationException("Custom code already exists")
+                code = custom_code
+            except Exception as e:
+                logger.error(f"Database read error during custom code check: {e}")
+                raise HTTPException(status_code=500, detail="Database error. Could not check code availability.")
         else:
             code = await code_generator.generate_unique(self.db)
         
@@ -737,14 +727,22 @@ class LinkManager:
         if expires_at:
             data["expires_at"] = expires_at
         
-        await asyncio.to_thread(self.collection.document(code).set, data)
+        try:
+            await asyncio.to_thread(self.collection.document(code).set, data)
+        except Exception as e:
+            logger.error(f"Database write failed during link creation: {e}")
+            raise HTTPException(status_code=500, detail="Database error when saving link.")
         
         logger.info(f"Created link {code} -> {long_url}")
         return {**data, "short_code": code}
     
     async def get(self, code: str) -> Optional[Dict[str, Any]]:
         """Retrieve link by short code"""
-        doc = await asyncio.to_thread(self.collection.document(code).get)
+        try:
+            doc = await asyncio.to_thread(self.collection.document(code).get)
+        except Exception as e:
+            logger.error(f"Database read failed for code {code}: {e}")
+            return None 
         
         if not doc.exists:
             return None
@@ -813,18 +811,22 @@ class LinkManager:
                 return link["long_url"]
             
             except Exception as e2:
-                logger.error(f"Fallback update failed for {code}: {e2}")
+                logger.error(f"CRITICAL: All DB updates/fallbacks failed for {code}: {e2}")
                 
-                # Last resort: just return URL without incrementing
                 doc = await asyncio.to_thread(doc_ref.get)
                 if doc.exists:
                     return doc.to_dict().get("long_url")
-                raise ResourceNotFoundException("Link not found")
+                raise ResourceNotFoundException("Link not found after multiple DB failures.")
     
     async def delete(self, code: str, token: str) -> bool:
         """Delete link if token matches"""
         doc_ref = self.collection.document(code)
-        doc = await asyncio.to_thread(doc_ref.get)
+        
+        try:
+            doc = await asyncio.to_thread(doc_ref.get)
+        except Exception as e:
+            logger.error(f"Database read error during deletion check for {code}: {e}")
+            raise HTTPException(status_code=500, detail="Database error. Cannot verify token.")
         
         if not doc.exists:
             raise ResourceNotFoundException("Link not found")
@@ -834,34 +836,42 @@ class LinkManager:
         if link.get("deletion_token") != token:
             raise ValidationException("Invalid deletion token")
         
-        await asyncio.to_thread(doc_ref.delete)
-        logger.info(f"Deleted link {code}")
-        return True
+        try:
+            await asyncio.to_thread(doc_ref.delete)
+            logger.info(f"Deleted link {code}")
+            return True
+        except Exception as e:
+            logger.error(f"Database delete operation failed for {code}: {e}")
+            raise HTTPException(status_code=500, detail="Database error when deleting link.")
     
     async def get_by_owner(self, owner_id: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Get all links for an owner"""
-        query = (
-            self.collection
-            .where(filter=FieldFilter("owner_id", "==", owner_id))
-            .order_by("created_at", direction=Query.DESCENDING)
-            .limit(limit)
-        )
-        
-        docs = await asyncio.to_thread(query.stream)
-        
-        links = []
-        for doc in docs:
-            data = doc.to_dict()
-            data["short_code"] = doc.id
+        try:
+            query = (
+                self.collection
+                .where(filter=FieldFilter("owner_id", "==", owner_id))
+                .order_by("created_at", direction=Query.DESCENDING)
+                .limit(limit)
+            )
             
-            if "created_at" in data and data["created_at"]:
-                data["created_at"] = data["created_at"].isoformat()
-            if "expires_at" in data and data["expires_at"]:
-                data["expires_at"] = data["expires_at"].isoformat()
+            docs = await asyncio.to_thread(query.stream)
             
-            links.append(data)
-        
-        return links
+            links = []
+            for doc in docs:
+                data = doc.to_dict()
+                data["short_code"] = doc.id
+                
+                if "created_at" in data and data["created_at"]:
+                    data["created_at"] = data["created_at"].isoformat()
+                if "expires_at" in data and data["expires_at"]:
+                    data["expires_at"] = data["expires_at"].isoformat()
+                
+                links.append(data)
+            
+            return links
+        except Exception as e:
+            logger.error(f"Database read error for owner {owner_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error when fetching links.")
     
     @staticmethod
     def _calculate_expiration(ttl: str) -> Optional[datetime]:
@@ -916,27 +926,32 @@ class CleanupWorker:
     
     def _cleanup_expired(self) -> int:
         """Delete expired links"""
-        collection = self.db.collection("links")
-        now = datetime.now(timezone.utc)
-        
-        expired_docs = (
-            collection
-            .where(filter=FieldFilter("expires_at", "<", now))
-            .limit(config.CLEANUP_BATCH_SIZE)
-            .stream()
-        )
-        
-        batch = self.db.batch()
-        count = 0
-        
-        for doc in expired_docs:
-            batch.delete(doc.reference)
-            count += 1
-        
-        if count > 0:
-            batch.commit()
-        
-        return count
+        try:
+            collection = self.db.collection("links")
+            now = datetime.now(timezone.utc)
+            
+            expired_docs = (
+                collection
+                .where(filter=FieldFilter("expires_at", "<", now))
+                .limit(config.CLEANUP_BATCH_SIZE)
+                .stream()
+            )
+            
+            batch = self.db.batch()
+            count = 0
+            
+            for doc in expired_docs:
+                batch.delete(doc.reference)
+                count += 1
+            
+            if count > 0:
+                batch.commit()
+            
+            return count
+        except Exception as e:
+            logger.error(f"Database error during cleanup: {e}")
+            return 0
+
 
 # ============================================================================
 # SECURITY MIDDLEWARE
@@ -951,7 +966,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         bootstrap_cdn_host = "cdn.jsdelivr.net"
         adsense_host = "*.google.com *.googleadservices.com *.googlesyndication.com"
         
-        # Policy for HTML responses (views)
         self.html_csp = (
             f"default-src 'self'; "
             f"script-src 'self' 'unsafe-inline' https://{bootstrap_cdn_host} {adsense_host}; "
@@ -959,7 +973,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             f"img-src 'self' data: https://*;"
         )
         
-        # Policy for API/JSON responses (stricter)
         self.api_csp = "default-src 'self';"
         
         self.hsts_header = f"max-age={max_age}; includeSubDomains"
@@ -967,14 +980,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response = await call_next(request)
         
-        # Determine if the response is an HTML page (localized routes)
         if response.media_type == "text/html" or is_localized_route(request.url.path):
             csp = self.html_csp
         else:
-            # API routes, static files, health checks, etc.
             csp = self.api_csp
         
-        # Add common security headers
         response.headers["Strict-Transport-Security"] = self.hsts_header
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -1298,7 +1308,6 @@ async def sitemap():
 async def index(request: Request, common_context: Dict = Depends(get_common_context)):
     """Homepage"""
     
-    # PWA Soft-Ask Logic: Check for the flag we set in the root_redirect
     INSTALL_PROMPT_KEY = "show_install_prompt"
     show_prompt = request.cookies.get(INSTALL_PROMPT_KEY) == "true"
     

@@ -1,116 +1,9 @@
-<!DOCTYPE html>
-<html lang="{{ locale }}" dir="{% if locale in RTL_LOCALES %}rtl{% else %}ltr{% endif %}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shortlinks.art - {{ _('nav_home') }}</title>
-    {% for tag in hreflang_tags %}
-    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
-    {% endfor %}
+{% extends "base.html" %}
 
-    {{ BOOTSTRAP_CDN | safe }}
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
-    <style>
-        /* Basic Dark Theme and Custom Styles */
-        body {
-            background-color: #1a1a2e;
-            color: #e4e4e4;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .container {
-            max-width: 500px;
-            margin-top: 50px;
-            padding: 20px;
-            background-color: #2a2a4a;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        }
-        .form-control, .btn {
-            border-radius: 10px;
-            height: 50px;
-            margin-bottom: 15px;
-        }
-        .form-control {
-            background-color: #3b3b64;
-            color: #e4e4e4;
-            border: 1px solid #5a5a8a;
-        }
-        .form-control::placeholder {
-            color: #b0b0d0;
-        }
-        .btn-primary {
-            background-image: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
-            border: none;
-            font-size: 1.1em;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            opacity: 0.9;
-            box-shadow: 0 0 15px rgba(37, 117, 252, 0.7);
-        }
-        h1 {
-            color: #9d4edd;
-            font-weight: 900;
-            text-shadow: 0 0 5px rgba(157, 77, 221, 0.5);
-            margin-bottom: 20px;
-        }
-        .language-switcher {
-            text-align: center;
-            padding: 20px 0;
-            margin-top: 20px;
-            border-top: 1px solid #3b3b64;
-        }
-        .language-switcher a {
-            font-size: 1.5rem;
-            margin: 0 5px;
-            text-decoration: none;
-            opacity: 0.6;
-            transition: opacity 0.2s ease;
-        }
-        .language-switcher a:hover, .language-switcher a.active {
-            opacity: 1;
-        }
-        .language-switcher a.active {
-            filter: drop-shadow(0 0 3px #fff);
-        }
-        .footer {
-            margin-top: auto;
-            text-align: center;
-            padding: 15px;
-            font-size: 0.9em;
-            color: #8a8aab;
-        }
-        .footer a {
-            color: #8a8aab;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-        .footer a:hover {
-            color: #e4e4e4;
-        }
-        /* Mobile styles */
-        @media (max-width: 576px) {
-            .container {
-                margin-top: 20px;
-            }
-        }
-    </style>
-</head>
-<body>
-    
-    <div class="container my-5">
-        
-        <div class="d-flex justify-content-end mb-3">
-            <a href="#" class="btn btn-sm btn-outline-light me-2 disabled">{{ _('my_links_button') }} →</a>
-            {% if request.url.path != url_for('localized', locale=locale, path='') %}
-            <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-sm btn-outline-light">{{ _('nav_home') }}</a>
-            {% endif %}
-        </div>
-        
+{% block title %}{{ _('nav_home') }}{% endblock %}
+
+{% block content %}
+    <div class="container hero-container">
         <h1 class="text-center">Shortlinks.art</h1>
         <p class="text-center text-secondary mb-4">{{ _('tagline') }}</p>
 
@@ -139,39 +32,12 @@
         </form>
 
         <div id="result-card" class="card mt-4 p-3 d-none">
-            <h5 class="card-title text-success">Link Created!</h5>
-            <p id="short_url_display" class="card-text">
-                <a href="#" target="_blank" id="short_link_href"></a>
-            </p>
             </div>
     </div>
-    
-    <div class="footer">
-        © {{ current_year }} Shortlinks.art 
-        <a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('nav_home') }}</a>
-        <a href="{{ url_for('localized', locale=locale, path='about') }}">{{ _('nav_about') }}</a>
-        
-        <div class="language-switcher">
-            {% for lang_code in config.SUPPORTED_LOCALES %}
-                {% set flag = FLAG_EMOJIS.get(lang_code) %}
-                <a href="{{ url_for('localized', locale=lang_code, path='') }}"
-                   class="lang-link {% if lang_code == locale %}active{% endif %}"
-                   aria-label="Switch to {{ lang_code|upper }}"
-                   title="{{ lang_code|upper }}">
-                    {{ flag }}
-                </a>
-            {% endfor %}
-        </div>
-        </div>
+{% endblock %}
 
-    {{ BOOTSTRAP_JS | safe }}
+{% block scripts %}
     <script>
-        // Your existing JavaScript for form submission goes here
+        // Form submission and AJAX logic for the index page here
     </script>
-
-    {% if config.ADSENSE_SCRIPT %}
-    {{ config.ADSENSE_SCRIPT | safe }}
-    {% endif %}
-
-</body>
-</html>
+{% endblock %}

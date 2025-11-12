@@ -67,8 +67,8 @@ config = Config()
 SHORT_CODE_LENGTH = config.SHORT_CODE_LENGTH
 MAX_ID_RETRIES = config.MAX_ID_RETRIES 
 MAX_URL_LENGTH = config.MAX_URL_LENGTH 
-RATE_LIMIT_CREATE = config.RATE_LIMIT_CREATE # <-- FIX 1
-RATE_LIMIT_STATS = config.RATE_LIMIT_STATS   # <-- FIX 2
+RATE_LIMIT_CREATE = config.RATE_LIMIT_CREATE
+RATE_LIMIT_STATS = config.RATE_LIMIT_STATS
 
 # Time-To-Live Mapping (timedelta objects)
 TTL_MAP: Dict[str, Optional[timedelta]] = {
@@ -80,6 +80,10 @@ TTL_MAP: Dict[str, Optional[timedelta]] = {
 
 # AdSense Script (uses the client ID from Config)
 ADSENSE_SCRIPT: str = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
+
+# 🌟 FIX FOR ATTRIBUTEERROR: Attach the module constant to the config object
+# This ensures that config.ADSENSE_SCRIPT can be accessed without error.
+setattr(config, 'ADSENSE_SCRIPT', ADSENSE_SCRIPT)
 
 
 # ============================================================================

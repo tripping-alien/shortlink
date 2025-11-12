@@ -40,7 +40,8 @@
                 </button>
                 <div class="lang-dropdown">
                     {% for lang in SUPPORTED_LOCALES %}
-                    <a href="/{{ lang }}{{ request.url.path.replace('/' + locale, '', 1) | default('/') }}">
+                    {% set new_path = request.url.path.replace('/' + locale, '', 1) | default('/') %}
+                    <a href="/{{ lang }}{{ new_path }}">
                         {{ LOCALE_TO_EMOJI.get(lang, "🌍") }} {{ _(f"lang_name_{lang}") }}
                     </a>
                     {% endfor %}
@@ -55,7 +56,7 @@
 
     <footer>
         <div class="container">
-            <p>&copy; {{ current_year }} Shortlinks.art. {{ _("js_copied") }} </p>
+            <p>&copy; {{ current_year }} Shortlinks.art.</p>
         </div>
     </footer>
 

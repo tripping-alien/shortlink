@@ -18,9 +18,7 @@ from pydantic import BaseModel, Field, validator, constr
 
 # Import local modules/constants
 import config
-from config import *
-from db_manager import cleanup_expired_links as db_cleanup_expired_links # Import cleanup function
-# NOTE: Necessary imports for MetadataFetcher/AISummarizer are handled inside the class bodies
+from config import * from db_manager import cleanup_expired_links as db_cleanup_expired_links 
 
 # --- LOGGING SETUP ---
 # ... (setup_logging and logger definition remains the same) ...
@@ -75,12 +73,11 @@ class ResourceExpiredException(HTTPException):
     def __init__(self, detail: str = "Resource has expired"):
         super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
 
-# --- CLEANUP WORKER (Unchanged) ---
-# ... (CleanupWorker class definition remains the same) ...
-
+# --- CLEANUP WORKER (Unchanged, uses imported CLEANUP_INTERVAL_SECONDS) ---
 class CleanupWorker:
     """Background worker for cleaning expired links"""
     
+    # NOTE: Relies on CLEANUP_INTERVAL_SECONDS imported via from config import *
     def __init__(self, interval: int = config.CLEANUP_INTERVAL_SECONDS):
         self.interval = interval
         self.running = False
@@ -115,8 +112,7 @@ class CleanupWorker:
             time.sleep(self.interval)
 
 # --- GLOBAL LOCALIZATION SETUP (Unchanged) ---
-# ... (load_translations_from_json and get_translation remain the same) ...
-
+# ... (load_translations_from_json, get_translation, get_browser_locale, etc.) ...
 translations: Dict[str, Dict[str, str]] = {}
 
 def load_translations_from_json() -> None:
@@ -157,8 +153,6 @@ def get_translation(locale: str, key: str) -> str:
     return f"[{key}]"
 
 # --- LOCALE & TRANSLATOR DEPENDENCIES (Duplicates Kept) ---
-# ... (get_browser_locale, get_current_locale, get_translator_and_locale, etc. remain the same) ...
-
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
     if lang_cookie and lang_cookie in config.SUPPORTED_LOCALES:
@@ -175,7 +169,6 @@ def get_browser_locale(request: Request) -> str:
     
     return config.DEFAULT_LOCALE
 
-# 🛑 FIRST DEFINITION (Overwritten)
 def get_current_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
     if lang_cookie and lang_cookie in config.SUPPORTED_LOCALES:
@@ -207,7 +200,6 @@ def get_translator_and_locale(
 def get_translator(tr: Tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
     return tr[0]
 
-# 🛑 SECOND DEFINITION (Active FastAPI Dependency)
 def get_current_locale(tr: Tuple = Depends(get_translator_and_locale)) -> str:
     return tr[1]
 
@@ -215,158 +207,110 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
     locale = get_browser_locale(request)
     return lambda key: get_translation(locale, key)
 
-# --- URL VALIDATION / SANITIZATION (Fixed URL Prepends and Public Check) ---
-# ... (URLValidator class definition remains the same) ...
 
-import ipaddress
-import re
-import socket
-from urllib.parse import urlparse
-from typing import Optional
-
-# --- Custom Exceptions ---
-class ValidationException(Exception):
-    """Raised when a URL fails validation."""
-
-
-class SecurityException(Exception):
-    """Raised when a URL is unsafe or disallowed."""
-
-
-# --- Config Placeholder ---
-class config:
-    MAX_URL_LENGTH = 2048
-    ALLOWED_SCHEMES = {"https", "http"}
-    BLOCKED_DOMAINS = {"example.com", "localhost", "metadata.google.internal"}
-
-
+# --- URL VALIDATION / SANITIZATION (FIXED LOGIC) ---
 class URLValidator:
-    """Comprehensive URL validation, normalization, and security enforcement."""
-
-    # ------------------------------
-    # 1. IP / Host Utilities
-    # ------------------------------
+    """Comprehensive URL validation and security checks"""
+    
     @staticmethod
-    def is_public_ip(ip: str) -> bool:
-        """Return True if the given IP is public and routable."""
+    def is_public_ip(ip_str: str) -> bool:
         try:
-            ip_obj = ipaddress.ip_address(ip)
-            return not (ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved or ip_obj.is_link_local)
+            ip = ipaddress.ip_address(ip_str)
+            return ip.is_global
         except ValueError:
             return False
-
+    
     @staticmethod
-    def resolve_hostname(hostname: str) -> Optional[str]:
-        """Resolve a hostname to its IP address, or None if resolution fails."""
+    async def resolve_hostname(hostname: str) -> str:
         try:
-            return socket.gethostbyname(hostname)
-        except (socket.gaierror, UnicodeError):
-            return None
-
-    # ------------------------------
-    # 2. Structure Validation
-    # ------------------------------
+            import asyncio
+            import socket
+            ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
+            
+            if not URLValidator.is_public_ip(ip_address):
+                raise SecurityException(f"Blocked request to non-public IP: {ip_address}")
+            
+            return ip_address
+        
+        except socket.gaierror as e:
+            raise ValidationException(f"Could not resolve hostname: {hostname}")
+    
     @staticmethod
     def validate_url_structure(url: str) -> str:
-        """
-        Validates and normalizes a given URL.
-        Ensures HTTPS scheme, valid domain, and compliance with config rules.
-        """
         if not url or not url.strip():
-            raise ValidationException("URL cannot be empty")
-
+             raise ValidationException("URL cannot be empty") 
         url = url.strip()
-
+        
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
-
-        # --- Ensure scheme (handle naked or protocol-relative URLs) ---
-        parsed = urlparse(url)
-        if not parsed.scheme:
-            if url.startswith("//"):
+        
+        # --- START FIX: Handle naked domains correctly (e.g., 'google.com') ---
+        parsed_test = urlparse(url)
+        
+        if not parsed_test.scheme:
+            # If scheme is missing, prepend HTTPS to ensure correct parsing of netloc
+            if not url.startswith(("http://", "https://", "//")):
+                url = "https://" + url 
+            elif url.startswith("//"):
                 url = "https:" + url
-            elif not re.match(r"^[a-zA-Z][a-zA-Z0-9+\-.]*://", url):
-                url = "https://" + url
+        # --- END FIX ---
+        
+        try:
+            # 2. Parse the potentially modified URL
             parsed = urlparse(url)
+            
+            # 3. Canonicalize/Upgrade explicit HTTP to HTTPS if HTTPS is allowed
+            if parsed.scheme == "http" and "https" in config.ALLOWED_SCHEMES:
+                url = url.replace("http://", "https://", 1)
+                parsed = urlparse(url) 
 
-        # --- Enforce allowed scheme(s) ---
-        if parsed.scheme == "http" and "https" in config.ALLOWED_SCHEMES:
-            url = url.replace("http://", "https://", 1)
-            parsed = urlparse(url)
-
-        if parsed.scheme not in config.ALLOWED_SCHEMES:
-            raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
-
-        # --- Validate domain ---
-        if not parsed.netloc:
-            raise ValidationException("URL must include a valid domain")
-
-        hostname = parsed.hostname.lower() if parsed.hostname else None
-        if not hostname:
-            raise ValidationException("Invalid or missing hostname")
-
-        # --- Blocked domains ---
-        if hostname in config.BLOCKED_DOMAINS:
-            raise SecurityException(f"Domain is blocked: {hostname}")
-
-        # --- Validate TLD or IP ---
-        if "." not in hostname:
-            try:
-                ipaddress.ip_address(hostname)
-            except ValueError:
-                raise ValidationException("Invalid domain: no TLD or valid IP found")
-
-        # --- Validate TLD form (optional strict check) ---
-        if not re.match(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", hostname) and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", hostname):
-            raise ValidationException("Invalid domain or IP format")
-
-        return url
-
-    # ------------------------------
-    # 3. Public URL Safety Check
-    # ------------------------------
+            # 4. Final Scheme Validation
+            if parsed.scheme not in config.ALLOWED_SCHEMES:
+                raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
+            
+            # 5. Check netloc (domain)
+            if not parsed.netloc:
+                raise ValidationException("URL must include a domain")
+            
+            # 6. Check for blocked domains
+            hostname = parsed.netloc.split(':')[0].lower()
+            if hostname in config.BLOCKED_DOMAINS:
+                raise SecurityException(f"Domain is blocked: {hostname}")
+            
+            # 7. Basic TLD/IP check
+            if '.' not in hostname:
+                try:
+                    ipaddress.ip_address(hostname)
+                except ValueError:
+                    raise ValidationException("Invalid domain: no TLD found")
+            
+            return url
+        
+        except ValueError as e:
+            raise ValidationException(f"Invalid URL format: {e}")
+    
+    @staticmethod
+    def validate_url_public(url: str) -> bool:
+        # validators.url uses the URL scheme for correct behavior
+        return validators.url(url)
+    
     @classmethod
-    def validate_url_public(cls, url: str) -> str:
-        """
-        Ensures the URL resolves to a public IP address.
-        Raises SecurityException if it points to private or loopback space.
-        """
+    async def validate_and_sanitize(cls, url: str) -> str:
+        url = cls.validate_url_structure(url)
+        
+        if not cls.validate_url_public(url):
+            raise ValidationException("URL must be publicly accessible")
+        
         parsed = urlparse(url)
-        hostname = parsed.hostname
-
-        if not hostname:
-            raise ValidationException("Missing hostname in URL")
-
-        resolved_ip = cls.resolve_hostname(hostname)
-        if not resolved_ip:
-            raise ValidationException("Could not resolve hostname")
-
-        if not cls.is_public_ip(resolved_ip):
-            raise SecurityException(f"URL resolves to a non-public IP: {resolved_ip}")
-
+        hostname = parsed.netloc.split(':')[0]
+        await cls.resolve_hostname(hostname)
+        
         return url
-
-    # ------------------------------
-    # 4. Full Validation Entry Point
-    # ------------------------------
-    @classmethod
-    def validate_and_sanitize(cls, url: str) -> str:
-        """
-        Full URL validation and sanitization pipeline:
-        - Structure check
-        - Scheme enforcement
-        - Public IP check
-        """
-        clean_url = cls.validate_url_structure(url)
-        return cls.validate_url_public(clean_url)
 
 # --- QR CODE GENERATION (Unchanged) ---
-# ... (generate_qr_code_data_uri remains the same) ...
-
 def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) -> str:
     """Generate QR code as base64 data URI"""
     try:
-        # NOTE: qrcode, io, base64 imports must be available
         import qrcode
         import io
         import base64
@@ -377,15 +321,14 @@ def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) ->
         return f"data:image/png;base64,{b64_str}"
     except Exception as e:
         logger.error(f"Failed to generate QR code: {e}")
-        # Re-raise or handle appropriately
         raise
 
-# --- METADATA FETCHER (Unchanged) ---
-# ... (MetadataFetcher class definition remains the same) ...
+# --- METADATA FETCHER (Uses fixed module constants) ---
 class MetadataFetcher:
     """Fetch and parse webpage metadata"""
     
-    def __init__(self, timeout: float = config.METADATA_FETCH_TIMEOUT):
+    # NOTE: Uses the METADATA_FETCH_TIMEOUT module constant
+    def __init__(self, timeout: float = METADATA_FETCH_TIMEOUT):
         self.timeout = timeout
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -401,7 +344,6 @@ class MetadataFetcher:
         }
         
         try:
-            # NOTE: httpx, urllib.parse, bs4 imports must be available
             import httpx
             from urllib.parse import urljoin, urlparse
             from bs4 import BeautifulSoup
@@ -442,16 +384,16 @@ class MetadataFetcher:
         
         return meta
 
-# --- AI SUMMARIZER (Unchanged) ---
-# ... (AISummarizer class definition remains the same) ...
+# --- AI SUMMARIZER (Uses fixed module constants) ---
 class AISummarizer:
     """AI-powered content summarization using Hugging Face"""
     
+    # NOTE: Uses SUMMARY_TIMEOUT module constant
     def __init__(self, model: str = config.SUMMARIZATION_MODEL, api_url_base: str = "https://api-inference.huggingface.co/models/"):
         self.api_key = config.HUGGINGFACE_API_KEY
         self.model = model
         self.api_url = f"{api_url_base}{self.model}"
-        self.timeout = config.SUMMARY_TIMEOUT
+        self.timeout = SUMMARY_TIMEOUT # Use module constant
         self.enabled = bool(self.api_key)
         
         if not self.enabled:
@@ -493,7 +435,8 @@ class AISummarizer:
             import httpx
             from bs4 import BeautifulSoup
             
-            async with httpx.AsyncClient(timeout=config.HTTP_TIMEOUT) as client:
+            # NOTE: Uses HTTP_TIMEOUT module constant
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client: 
                 headers = {"User-Agent": "Mozilla/5.0"}
                 response = await client.get(url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
@@ -528,8 +471,8 @@ class AISummarizer:
             logger.error(f"Summary generation failed for {doc_ref.id if hasattr(doc_ref, 'id') else 'link'}: {e}")
             pass
 
-# --- TEMPLATE CONTEXT DEPENDENCY (Fixed to include datetime/timezone) ---
-
+# --- TEMPLATE CONTEXT DEPENDENCY (Unchanged) ---
+# ... (get_hreflang_tags, get_common_context remain the same) ...
 BOOTSTRAP_CDN = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
 BOOTSTRAP_JS = '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'
 
@@ -577,7 +520,7 @@ async def get_common_context(
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
         "config": config, 
-        # 🟢 FIX for "datetime is undefined" error in templates
         "datetime": datetime, 
         "timezone": timezone,
     }
+

@@ -13,9 +13,14 @@
             <form id="shorten-form">
 
                 <div class="input-group input-group-lg mb-4 shadow-sm">
+                    
+                    <span class="input-group-text d-none d-sm-flex text-muted" id="https-prefix" style="background-color: #e9ecef; border-right: none;">https://</span>
+                    
                     <input type="url" id="long_url" class="form-control" 
                            placeholder="{{ _('long_url_placeholder') }}" required 
-                           aria-label="{{ _('long_url_placeholder') }}">
+                           aria-label="{{ _('long_url_placeholder') }}"
+                           onfocus="if (this.placeholder == '{{ _('long_url_placeholder') }}') this.placeholder = 'example.com/long/path';"
+                           onblur="if (this.placeholder == 'example.com/long/path') this.placeholder = '{{ _('long_url_placeholder') }}';">
                     
                     <select id="ttl" class="form-select" style="max-width: 130px;">
                         <option value="24h">{{ _('ttl_24h') }}</option>
@@ -78,6 +83,12 @@
                 </div>
             </div>
         </div>
+        <div class="text-center mt-5">
+            <div class="ad-placeholder bg-white p-4 border rounded shadow-sm d-inline-block">
+                [AdSense Placeholder: 728x90]
+            </div>
+        </div>
+        
         <div class="row mt-5 pt-5 justify-content-center">
             <div class="col-lg-10">
                 <h2 class="text-center text-primary mb-4">{{ _('seo_h2_primary') }}</h2>

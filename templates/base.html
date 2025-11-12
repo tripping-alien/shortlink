@@ -1,46 +1,86 @@
 <!DOCTYPE html>
-<html lang="{{ locale }}" dir="{% if locale in config.RTL_LOCALES %}rtl{% else %}ltr{% endif %}">
+<html lang="{{ locale }}" dir="{% if locale in RTL_LOCALES %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shortlinks.art - {% block title %}{{ _('nav_home') }}{% endblock %}</title>
-    
+    <title>Shortlinks.art | {% block title %}{{ _('app_tagline') }}{% endblock %}</title>
+
     {% for tag in hreflang_tags %}
-    <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
+    <link rel="{{ tag.rel }}" href="{{ tag.href }}" hreflang="{{ tag.hreflang }}">
     {% endfor %}
 
-    {{ BOOTSTRAP_CDN | safe }}
-    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    {% block head %}{% endblock %} 
+    {{ BOOTSTRAP_CDN | safe }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+    
+    {% block head %}{% endblock %}
+
+    {{ ADSENSE_SCRIPT | safe }}
 </head>
 <body>
-    <header>
-        <div class="container d-flex justify-content-between align-items-center">
-            <a href="{{ url_for('localized', locale=locale, path='') }}" class="logo text-decoration-none">
-                <span class="d-none d-sm-inline">⚡</span>Shortlinks.art
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="{{ url_for('localized', locale=locale, path='') }}">
+                <span style="font-size: 1.5rem;">🔗</span> Shortlinks.art
             </a>
             
-            <div class="nav-links">
-                <a href="{{ url_for('localized', locale=locale, path='dashboard') }}" class="{% if request.url.path == url_for('localized', locale=locale, path='dashboard') %}active{% endif %} btn btn-sm btn-outline-primary ms-2">{{ _('nav_dashboard') }}</a>
-            </div>
-            </div>
-    </header>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto align-items-center">
+                    
+                    <a class="nav-link mx-2" href="{{ url_for('localized', locale=locale, path='dashboard') }}">
+                        <i class="bi bi-speedometer2"></i> {{ _('nav_dashboard') }}
+                    </a>
+                    <a class="nav-link mx-2" href="{{ url_for('localized', locale=locale, path='about') }}">
+                        <i class="bi bi-info-circle"></i> {{ _('nav_about') }}
+                    </a>
 
-    <main>
+                    <div class="dropdown">
+                        <a class="btn btn-sm btn-outline-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ FLAG_EMOJIS[locale] }} {{ locale.upper() }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% for lang in config.SUPPORTED_LOCALES %}
+                            <li>
+                                <a class="dropdown-item d-flex justify-content-between align-items-center" 
+                                   href="{{ url_for('localized', locale=lang, path=request.url.path.split('/')[2:]|join('/') or '') }}">
+                                    {{ FLAG_EMOJIS[lang] }} 
+                                    <span class="ms-2 text-uppercase">{{ lang }}</span>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="mt-5 pt-5">
         {% block content %}{% endblock %}
     </main>
-    
-    <footer>
-        {% include '_footer.html' %}
+
+    <footer class="text-center py-4 text-muted border-top mt-5">
+        <div class="container">
+            <p class="mb-1">
+                &copy; {{ current_year }} Shortlinks.art. {{ _('footer_rights') }}
+            </p>
+            <p class="small mb-0">
+                <a href="{{ url_for('localized', locale=locale, path='about') }}" class="text-decoration-none text-secondary me-3">{{ _('nav_about') }}</a>
+                <a href="#" class="text-decoration-none text-secondary">{{ _('footer_terms') }}</a>
+            </p>
+        </div>
     </footer>
 
     {{ BOOTSTRAP_JS | safe }}
+    
     {% block scripts %}{% endblock %}
-
-    {% if config.ADSENSE_SCRIPT %}
-    {{ config.ADSENSE_SCRIPT | safe }}
-    {% endif %}
-
 </body>
 </html>

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from urllib.parse import urlparse
 from typing import Dict, Any, List, Tuple, Callable, Optional
-from functools import lru_cache # Added for clarity of @lru_cache
+from functools import lru_cache
 
 import validators
 from fastapi import Request, Depends, Path, HTTPException, status
@@ -121,8 +121,7 @@ def load_translations_from_json() -> None:
         file_path = os.path.join(os.path.dirname(__file__), "translations.json")
         if not os.path.exists(file_path):
             logger.warning("translations.json not found, creating empty translations")
-            # NOTE: Uses imported constants from 'config' module
-            translations = {locale: {} for locale in config.SUPPORTED_LOCALES} 
+            translations = {locale: {} for locale in config.SUPPORTED_LOCALES}
             return
 
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -153,7 +152,7 @@ def get_translation(locale: str, key: str) -> str:
     
     return f"[{key}]"
 
-# --- LOCALE & TRANSLATOR DEPENDENCIES (Contains Duplicates) ---
+# --- LOCALE & TRANSLATOR DEPENDENCIES (Duplicates Kept) ---
 
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
@@ -171,7 +170,7 @@ def get_browser_locale(request: Request) -> str:
     
     return config.DEFAULT_LOCALE
 
-# 🛑 FIRST DEFINITION (Will be overwritten by the second one below)
+# 🛑 FIRST DEFINITION (Overwritten)
 def get_current_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
     if lang_cookie and lang_cookie in config.SUPPORTED_LOCALES:
@@ -203,7 +202,7 @@ def get_translator_and_locale(
 def get_translator(tr: Tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
     return tr[0]
 
-# 🛑 SECOND DEFINITION (This is the one that is active and used by FastAPI)
+# 🛑 SECOND DEFINITION (Active FastAPI Dependency)
 def get_current_locale(tr: Tuple = Depends(get_translator_and_locale)) -> str:
     return tr[1]
 
@@ -211,7 +210,7 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
     locale = get_browser_locale(request)
     return lambda key: get_translation(locale, key)
 
-# --- URL VALIDATION / SANITIZATION (Unchanged) ---
+# --- URL VALIDATION / SANITIZATION (Fixed URL Prepends and Public Check) ---
 
 class URLValidator:
     """Comprehensive URL validation and security checks"""
@@ -243,7 +242,6 @@ class URLValidator:
     
     @staticmethod
     def validate_url_structure(url: str) -> str:
-        # ... (Method logic remains as per last update, with canonicalization) ...
         if not url or not url.strip():
              raise ValidationException("URL cannot be empty") 
         url = url.strip()
@@ -254,7 +252,7 @@ class URLValidator:
         # 1. Check if scheme is missing (handles 'domain.com')
         parsed_test = urlparse(url)
         if not parsed_test.scheme:
-            url = "https://" + url 
+            url = "https://" + url # Prepend HTTPS as the default secure scheme
         
         try:
             # 2. Parse the potentially modified URL
@@ -262,8 +260,9 @@ class URLValidator:
             
             # 3. Canonicalize/Upgrade explicit HTTP to HTTPS if HTTPS is allowed
             if parsed.scheme == "http" and "https" in config.ALLOWED_SCHEMES:
+                # Replace the first occurrence of "http://" with "https://"
                 url = url.replace("http://", "https://", 1)
-                parsed = urlparse(url) 
+                parsed = urlparse(url) # Re-parse the corrected URL for subsequent checks
 
             # 4. Final Scheme Validation
             if parsed.scheme not in config.ALLOWED_SCHEMES:
@@ -292,7 +291,7 @@ class URLValidator:
     
     @staticmethod
     def validate_url_public(url: str) -> bool:
-        # 🟢 FIX: Removed public=True constraint which was likely too strict for some valid URLs
+        # 🟢 FIX: Removed public=True constraint which was likely too strict and caused the 400 error
         return validators.url(url)
     
     @classmethod
@@ -300,6 +299,7 @@ class URLValidator:
         url = cls.validate_url_structure(url)
         
         if not cls.validate_url_public(url):
+            # This exception is what led to the 400 Bad Request in app.py when validators.url failed
             raise ValidationException("URL must be publicly accessible")
         
         parsed = urlparse(url)
@@ -410,8 +410,7 @@ class AISummarizer:
         try:
             import httpx
             headers = {"Authorization": f"Bearer {self.api_key}"}
-            # NOTE: Assumes SUMMARIZATION_MODEL is a constant that specifies max text length here
-            payload = {"inputs": text[:config.SUMMARIZATION_MODEL], 
+            payload = {"inputs": text[:config.SUMMARIZATION_MODEL],
                        "parameters": {"max_length": max_length, "min_length": min_length}}
             
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -514,7 +513,6 @@ async def get_common_context(
     """Get common template context"""
     return {
         "request": request,
-        # NOTE: Assumes ADSENSE_SCRIPT has been added to the 'config' instance via setattr()
         "ADSENSE_SCRIPT": config.ADSENSE_SCRIPT,
         "_": translator,
         "locale": locale,
@@ -525,6 +523,5 @@ async def get_common_context(
         "FLAG_EMOJIS": config.LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        # NOTE: Assumes 'config' is the instance (config = Config())
         "config": config, 
     }

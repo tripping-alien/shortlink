@@ -13,7 +13,9 @@ import io
 import base64
 import tempfile
 import logging
-import json # NEW: For loading translations from file
+import json # For loading translations from file
+import threading # For cleanup thread
+import time # For cleanup thread sleep
 
 import validators
 from pydantic import BaseModel, constr
@@ -67,14 +69,12 @@ LOCALE_TO_FLAG_CODE = {
     "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
 }
 
-# NEW: Placeholder for translations (will be loaded at startup)
 translations: Dict[str, Dict[str, str]] = {}
 
 def load_translations_from_json():
     """Loads all translation data from the external JSON file."""
     global translations
     try:
-        # Assumes translations.json is in the same directory as app.py
         file_path = os.path.join(os.path.dirname(__file__), "translations.json")
         if not os.path.exists(file_path):
             logger.error("translations.json not found! Using empty dictionary.")
@@ -86,7 +86,6 @@ def load_translations_from_json():
 
     except Exception as e:
         logger.error(f"Failed to load or parse translations.json: {e}")
-        # Fatal error, the application will not function properly without strings
         raise RuntimeError("Translation file loading failed.") from e
 
 
@@ -94,14 +93,13 @@ def load_translations_from_json():
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 SUMMARIZATION_MODEL = "facebook/bart-large-cnn" 
 HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
-HF_HEADERS = {"Authorization": f"Bearer {GEMINI_API_KEY}"} if GEMINI_API_KEY else {} # Using GEMINI_API_KEY here to keep it simple, ideally this would be HUGGINGFACE_API_KEY
+HF_HEADERS = {"Authorization": f"Bearer {GEMINI_API_KEY}"} if GEMINI_API_KEY else {}
 
 if not GEMINI_API_KEY:
     logger.warning("GEMINI_API_KEY is not set. AI summarizer will be disabled.")
 
 
 async def query_huggingface(payload: dict) -> Optional[str]:
-    # Changed to use GEMINI_API_KEY placeholder for consistency
     if not GEMINI_API_KEY: 
         return None
 
@@ -195,7 +193,6 @@ def get_translator_and_locale(
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
         if fallback:
             return fallback
-        # If the key is not found in any dictionary, return it bracketed for debug
         return f"[{key}]"
         
     return _, valid_locale

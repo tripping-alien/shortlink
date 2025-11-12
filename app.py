@@ -653,7 +653,9 @@ async def preview(
     if expires_at and expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail=_("link_expired"))
     long_url = link["long_url"]
-    safe_href_url = "https:///" + long_url if not long_url.startswith(("http://", "https")) else long_url
+    
+    # --- BUG FIX: Removed extra '/' ---
+    safe_href_url = "https://" + long_url if not long_url.startswith(("http://", "https")) else long_url
     
     if link.get("meta_fetched"):
         meta = {

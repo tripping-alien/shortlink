@@ -96,7 +96,8 @@ def get_db_connection():
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
             # 5. Get Firestore Client (ASYNCHRONOUS)
-            db = firestore.async_client(app=APP_INSTANCE)
+            # CRITICAL FIX: Changed firestore.async_client to firestore.AsyncClient
+            db = firestore.AsyncClient(app=APP_INSTANCE) 
             logger.info("Firebase Firestore ASYNC client initialized successfully.")
             
         except Exception as e:

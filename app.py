@@ -47,11 +47,10 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# FIX: We now import the module (config), the instance (config), 
-# and the new localization constant (LOCALE_TO_EMOJI) explicitly.
+# FIX: Import all constants and the final emoji map.
 import config
 from config import *
-from config import LOCALE_TO_EMOJI # <--- NEW: Import the ready-to-use emoji map
+from config import LOCALE_TO_EMOJI # <--- IMPORTED FOR FLAG EMOJI FIX
 # Note: Exceptions are NOT imported here.
 
 # ============================================================================
@@ -130,7 +129,6 @@ class LinkResponse(BaseModel):
 
 class LinkCreatePayload(BaseModel):
     """Request model for creating links"""
-    # Fix from previous conversation: config.MAX_URL_LENGTH is correctly accessible
     long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH) 
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
     custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
@@ -224,6 +222,7 @@ def get_translator_and_locale(
     valid_locale = locale if locale in config.SUPPORTED_LOCALES else config.DEFAULT_LOCALE
     
     def translate(key: str) -> str:
+        # NOTE: This is the function that resolves the keys (e.g., 'nav_home')
         return get_translation(valid_locale, key)
     
     return translate, valid_locale
@@ -650,7 +649,7 @@ summarizer = AISummarizer()
 
 # FIX Bug #5: Define reserved codes globally
 RESERVED_CODES = {'api', 'health', 'static', 'r', 'robots', 'sitemap', 
-                  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ar', 'ru', 'he', 'preview', 'dashboard'}
+                  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ar', 'ru', 'he', 'arr', 'preview', 'dashboard'}
 
 class LinkManager:
     """Manage link CRUD operations"""
@@ -985,7 +984,7 @@ async def get_common_context(
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": config.RTL_LOCALES,
         "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
-        "FLAG_EMOJIS": LOCALE_TO_EMOJI, # <--- FIX: Pass the correct emoji map here
+        "FLAG_EMOJIS": LOCALE_TO_EMOJI, # <--- CORRECTLY PASSING THE EMOJI MAP
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
         "config": config,
@@ -1095,12 +1094,17 @@ async def api_create_link(
         )
     
     except (ValidationException, SecurityException) as e:
+        # This is where localized error messages need to be handled.
+        # Since the exceptions are custom, you would typically pass a translation key
+        # into the 'detail' when raising the exception, or map it here.
+        # For now, we rely on the client to translate the key provided in the detail.
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         logger.error(f"Error creating link: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=translator("error_creating_link")
+            # Using the translator for the generic internal error message
+            detail=translator("error_creating_link") 
         )
 
 @app.get("/api/v1/my-links")
@@ -1242,7 +1246,8 @@ async def preview(
         link = await link_manager.get(short_code)
         
         if not link:
-            raise ResourceNotFoundException(translator("link_not_found"))
+            # Passes translation key to be handled by exception handler
+            raise ResourceNotFoundException(translator("link_not_found")) 
         
         expires_at = link.get("expires_at")
         if expires_at and expires_at < datetime.now(timezone.utc):
@@ -1403,7 +1408,7 @@ async def delete_link(
         context = {
             **common_context,
             "success": False,
-            "message": str(e.detail)
+            "message": str(e.detail) # The detail is already a translated key
         }
     except Exception as e:
         logger.error(f"Error deleting {short_code}: {e}")
@@ -1455,7 +1460,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         context = {
             "request": request,
             "status_code": exc.status_code,
-            "message": exc.detail,
+            "message": translator(exc.detail), # CRITICAL: Translate the error detail here
             "_": translator,
             "locale": locale,
             "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
@@ -1473,7 +1478,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     # 2. For all other errors, return JSON.
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.detail or "An internal error occurred"}
+        content={"error": exc.detail or translator("generic_error_message")}
     )
 
 # ============================================================================

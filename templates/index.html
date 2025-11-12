@@ -1,333 +1,177 @@
 <!DOCTYPE html>
-<html lang="{{ locale }}" dir="{{ 'rtl' if locale in config.RTL_LOCALES else 'ltr' }}">
+<html lang="{{ locale }}" dir="{% if locale in RTL_LOCALES %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>{{ _("app_title") }}</title>
-    <meta name="description" content="{{ _('meta_description_main') }}">
-    <meta name="keywords" content="{{ _('meta_keywords_main') }}">
-    
-    <link rel="canonical" href="https://shortlinks.art/" />
-    <meta name="robots" content="index, follow">
+    <title>Shortlinks.art - {{ _('nav_home') }}</title>
     {% for tag in hreflang_tags %}
     <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
     {% endfor %}
 
-    {{ ADSENSE_SCRIPT|safe }} 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-    
+    {{ BOOTSTRAP_CDN | safe }}
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
     <style>
-      /* Accessibility and Layout Styles (Retained) */
-      .sr-only {
-        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
-      }
-      /* Custom Styles Adjustments for Bootstrap (Retained) */
-      body { background-color: #121212; }
-      .card { max-width: 600px; margin: 50px auto; padding: 30px; background-color: #2a2a2a; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); color: #fff; text-align: center; }
-      .header-link { display: block; text-align: right; color: #007bff; text-decoration: none; margin-bottom: 20px; }
-      h1 { font-weight: 700; margin-bottom: 5px; }
-      .tagline { margin-bottom: 30px; color: #bbb; }
-      #error-msg { color: #ff4d4d; font-weight: 500; margin-top: 15px; display: none; }
-      #advanced-options { display: none; margin-top: 15px; }
-      #advanced-options.show { display: block; }
-      .loading .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.75s linear infinite; margin-left: 8px; vertical-align: middle; }
-      .loading .btn-text { display: none; }
-      .loading #shortenBtn { cursor: not-allowed; }
-      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      #result { border-top: 1px solid #444; padding-top: 20px; margin-top: 20px; display: none; text-align: left; }
-      #result.show { display: block; }
-      .result-item { margin-bottom: 15px; padding: 5px; background-color: #383838; border-radius: 6px; }
-      .result-item span { font-weight: 500; color: #888; display: block; font-size: 0.85rem; }
-      #shortUrlLink, #statsUrlLink { font-weight: 700; color: #007bff; word-break: break-all; display: inline-block; margin-right: 10px; }
-      #qr-code-box img { max-width: 150px; height: auto; border: 5px solid #fff; display: block; margin: 15px auto; }
-      .language-switcher { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; width: 100%; }
-      .language-switcher .lang-btn { color: #888; text-decoration: none; font-size: 1.5rem; } /* INCREASED FONT SIZE for emojis */
-      .language-switcher .lang-btn:hover { color: #eee; }
+        /* Basic Dark Theme and Custom Styles */
+        body {
+            background-color: #1a1a2e;
+            color: #e4e4e4;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 500px;
+            margin-top: 50px;
+            padding: 20px;
+            background-color: #2a2a4a;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        .form-control, .btn {
+            border-radius: 10px;
+            height: 50px;
+            margin-bottom: 15px;
+        }
+        .form-control {
+            background-color: #3b3b64;
+            color: #e4e4e4;
+            border: 1px solid #5a5a8a;
+        }
+        .form-control::placeholder {
+            color: #b0b0d0;
+        }
+        .btn-primary {
+            background-image: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
+            border: none;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(37, 117, 252, 0.7);
+        }
+        h1 {
+            color: #9d4edd;
+            font-weight: 900;
+            text-shadow: 0 0 5px rgba(157, 77, 221, 0.5);
+            margin-bottom: 20px;
+        }
+        .language-switcher {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 20px;
+            border-top: 1px solid #3b3b64;
+        }
+        .language-switcher a {
+            font-size: 1.5rem;
+            margin: 0 5px;
+            text-decoration: none;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+        .language-switcher a:hover, .language-switcher a.active {
+            opacity: 1;
+        }
+        .language-switcher a.active {
+            filter: drop-shadow(0 0 3px #fff);
+        }
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 15px;
+            font-size: 0.9em;
+            color: #8a8aab;
+        }
+        .footer a {
+            color: #8a8aab;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .footer a:hover {
+            color: #e4e4e4;
+        }
+        /* Mobile styles */
+        @media (max-width: 576px) {
+            .container {
+                margin-top: 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-      <main class="card">
-        <a href="{{ url_for('localized:dashboard', locale=locale) }}" class="header-link">
-          {{ _("my_links_button") }} 
-          <span aria-hidden="true">→</span>
-        </a>
-        <h1>Shortlinks<span>.art</span></h1>
-        <p class="tagline">{{ _("tagline") }}</p>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-md-9">
-                <label for="longUrl" class="sr-only">{{ _('long_url_placeholder') }}</label>
-                <input type="url" id="longUrl" class="form-control form-control-lg" placeholder="{{ _('long_url_placeholder') }}">
-            </div>
-            <div class="col-md-3">
-                <label for="ttl" class="sr-only">{{ _("ttl_label") }}</label>
-                <select id="ttl" class="form-select form-select-lg">
-                  <option value="1h">{{ _("ttl_1h") }}</option>
-                  <option value="24h" selected>{{ _("ttl_24h") }}</option>
-                  <option value="1w">{{ _("ttl_1w") }}</option>
-                  <option value="never">{{ _("ttl_never") }}</option>
-                </select>
-            </div>
-        </div>
-
-        <button class="btn btn-sm btn-link advanced-options-toggle text-decoration-none" id="advanced-toggle" aria-expanded="false" aria-controls="advanced-options">
-            {{ _("advanced_options_button") }} 
-            <span>+</span>
-        </button>
-
-        <div id="advanced-options">
-            <div class="mb-3">
-                <label for="customCode" class="sr-only">{{ _('custom_code_label') }}</label>
-                <input type="text" id="customCode" class="form-control" placeholder="{{ _('custom_code_label') }}">
-            </div>
-            <div class="mb-3">
-                <label for="utmTags" class="sr-only">{{ _('utm_tags_placeholder') }}</label>
-                <input type="text" id="utmTags" class="form-control" placeholder="{{ _('utm_tags_placeholder') }}">
-            </div>
-        </div>
-        
-        <div id="error-msg" role="alert"></div>
-        
-        <button id="shortenBtn" class="btn btn-primary btn-lg w-100 mt-3">
-            <span class="btn-text">{{ _("create_button") }}</span>
-            <div class="spinner"></div>
-        </button>
-        
-        <div id="result" role="status" aria-live="polite">
-          <div class="result-item">
-            <span id="short-link-label">{{ _("result_short_link") }}</span>
-            <div class="d-flex align-items-center justify-content-between">
-              <a href="#" id="shortUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="short-link-label" class="me-2"></a>
-              <button class="btn btn-outline-light btn-sm copy-btn" id="copyBtn">{{ _("copy_button") }}</button>
-            </div>
-          </div>
-          <div class="result-item">
-              <span id="stats-page-label">{{ _("result_stats_page") }}</span>
-              <a href="#" id="statsUrlLink" target="_blank" rel="noopener noreferrer" aria-labelledby="stats-page-label" class="text-info">{{ _("result_view_clicks") }}</a>
-          </div>
-          <div id="qr-code-box" class="text-center py-2">
-              <img id="qrCode" src="" alt="QR Code for short link">
-          </div>
-          <div id="delete-link-box" class="mt-3 p-3 bg-dark rounded">
-              <p class="mb-1 text-warning"><strong>{{ _("result_save_link_strong") }}</strong></p>
-              <p class="text-muted" style="font-size: 0.9rem;">{{ _("result_save_link_text") }}</p>
-              <a href="#" id="deleteUrlLink" target="_blank" class="text-danger small"></a>
-          </div>
-        </div>
-      </main>
-    </div>
-
-    <footer class="footer">
-        <span>© {{ current_year }} Shortlinks.art</span>
-        <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
-        <a href="{{ url_for('localized:about', locale=locale) }}">{{ _("nav_about") }}</a>
-
-        <nav class="language-switcher" aria-label="{{ _('language_switcher_label') }}">
-            {% for tag in hreflang_tags %}
-              {% if tag.hreflang != 'x-default' %}
-                <a href="{{ tag.href }}" 
-                   class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
-                   data-lang="{{ tag.hreflang }}"
-                   title="{{ _('lang_name_' + tag.hreflang) }}">
-                   <span aria-hidden="true">{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }}</span>
-                   <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
-                </a>
-              {% endif %}
-            {% endfor %}
-        </nav>
-    </footer>
-
-    {{ BOOTSTRAP_JS|safe }}
     
-    <script>
-    // Constants
-    const shortenBtn = document.getElementById("shortenBtn");
-    const resultDiv = document.getElementById("result");
-    const errorDiv = document.getElementById("error-msg");
-    const shortUrlLink = document.getElementById("shortUrlLink");
-    const copyBtn = document.getElementById("copyBtn");
-    const statsUrlLink = document.getElementById("statsUrlLink");
-    const qrCodeImg = document.getElementById("qrCode");
-    const deleteUrlLink = document.getElementById("deleteUrlLink");
-    const advancedToggle = document.getElementById("advanced-toggle");
-    const advancedOptionsDiv = document.getElementById("advanced-options");
-
-    // Translated strings
-    const TEXT_ENTER_URL = "{{ _('js_enter_url') }}";
-    const TEXT_ERROR = "{{ _('js_error_creating') }}";
-    const TEXT_ERROR_SERVER = "{{ _('js_error_server') }}";
-    const TEXT_SHORTEN = "{{ _('create_button') }}";
-    const TEXT_COPIED = "{{ _('js_copied') }}";
-    const TEXT_COPY = "{{ _('copy_button') }}";
-    const TEXT_FAILED = "{{ _('js_copy_failed') }}";
-
-    // Owner ID logic
-    let ownerId = null;
-    function getOrSetOwnerId() {
-        const idKey = 'shortlinks_owner_id';
-        let storedId = localStorage.getItem(idKey);
-        if (!storedId) {
-            storedId = crypto.randomUUID();
-            localStorage.setItem(idKey, storedId);
-        }
-        return storedId;
-    }
-    ownerId = getOrSetOwnerId();
-
-    // Advanced options toggle
-    advancedToggle.addEventListener("click", (e) => {
-        e.preventDefault();
-        const isShown = advancedOptionsDiv.classList.toggle("show");
-        advancedToggle.setAttribute("aria-expanded", isShown); 
-        advancedToggle.querySelector("span").textContent = isShown ? "−" : "+";
-    });
-
-    // Shorten button logic
-    shortenBtn.addEventListener("click", async () => {
-        const longUrl = document.getElementById("longUrl").value.trim();
-        const ttl = document.getElementById("ttl").value;
-        const customCode = document.getElementById("customCode").value.trim() || undefined;
-        const utmTags = document.getElementById("utmTags").value.trim() || undefined;
+    <div class="container my-5">
         
-        errorDiv.style.display = "none";
-        errorDiv.textContent = "";
-        resultDiv.classList.remove("show");
+        <div class="d-flex justify-content-end mb-3">
+            <a href="#" class="btn btn-sm btn-outline-light me-2 disabled">{{ _('my_links_button') }} →</a>
+            {% if request.url.path != url_for('localized', locale=locale, path='') %}
+            <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-sm btn-outline-light">{{ _('nav_home') }}</a>
+            {% endif %}
+        </div>
         
-        if (!longUrl) {
-            errorDiv.textContent = TEXT_ENTER_URL;
-            errorDiv.style.display = "block";
-            return;
-        }
-        
-        shortenBtn.disabled = true;
-        shortenBtn.classList.add("loading"); 
-        
-        try {
-            const res = await fetch("/api/v1/links", {
-                method:"POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    long_url: longUrl, 
-                    ttl: ttl, 
-                    custom_code: customCode, 
-                    utm_tags: utmTags,
-                    owner_id: ownerId
-                })
-            });
-            const data = await res.json();
+        <h1 class="text-center">Shortlinks.art</h1>
+        <p class="text-center text-secondary mb-4">{{ _('tagline') }}</p>
+
+        <form id="shorten-form">
+            <input type="url" id="long_url" class="form-control" placeholder="{{ _('long_url_placeholder') }}" required>
             
-            if (res.ok) {
-                shortUrlLink.href = data.short_url; 
-                shortUrlLink.textContent = data.short_url.replace(/^https?:\/\//, '');
-                statsUrlLink.href = data.stats_url;
-                deleteUrlLink.href = data.delete_url;
-                deleteUrlLink.textContent = data.delete_url.replace(/^https?:\/\//, '');
-                qrCodeImg.src = data.qr_code_data;
-                
-                resultDiv.classList.add("show");
-            } else {
-                // FIX: Data.detail is guaranteed to be set by the Python backend on error
-                errorDiv.textContent = data.detail || TEXT_ERROR; 
-                errorDiv.style.display = "block";
-            }
-        } catch(err) {
-            console.error(err);
-            errorDiv.textContent = TEXT_ERROR_SERVER;
-            errorDiv.style.display = "block";
-        } finally {
-            shortenBtn.disabled = false;
-            shortenBtn.classList.remove("loading");
-        }
-    });
+            <select id="ttl" class="form-select form-control">
+                <option value="24h">{{ _('ttl_24h') }}</option>
+                <option value="1h">{{ _('ttl_1h') }}</option>
+                <option value="1w">{{ _('ttl_1w') }}</option>
+                <option value="never">{{ _('ttl_never') }}</option>
+            </select>
+            
+            <button type="button" class="btn btn-secondary btn-sm mb-3 w-100" data-bs-toggle="collapse" data-bs-target="#advanced-options" aria-expanded="false" aria-controls="advanced-options">
+                {{ _('advanced_options_button') }} +
+            </button>
+            
+            <div class="collapse" id="advanced-options">
+                <input type="text" id="custom_code" class="form-control" placeholder="{{ _('custom_code_placeholder') }}">
+                <input type="text" id="utm_tags" class="form-control" placeholder="{{ _('utm_tags_placeholder') }}">
+            </div>
 
-    // Copy button logic
-    copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(shortUrlLink.href)
-            .then(() => {
-                copyBtn.textContent = TEXT_COPIED;
-                copyBtn.disabled = true;
-                copyBtn.classList.add('btn-success'); 
-                copyBtn.classList.remove('btn-outline-light');
-                
-                setTimeout(() => {
-                    copyBtn.textContent = TEXT_COPY;
-                    copyBtn.disabled = false;
-                    copyBtn.classList.remove('btn-success');
-                    copyBtn.classList.add('btn-outline-light');
-                }, 2000);
-            })
-            .catch(() => {
-                copyBtn.textContent = TEXT_FAILED;
-                copyBtn.disabled = true;
-                copyBtn.classList.add('btn-danger'); 
-                copyBtn.classList.remove('btn-outline-light');
-                 
-                 setTimeout(() => {
-                    copyBtn.textContent = TEXT_COPY;
-                    copyBtn.disabled = false;
-                    copyBtn.classList.remove('btn-danger');
-                    copyBtn.classList.add('btn-outline-light');
-                }, 2000);
-            });
-    });
+            <button type="submit" class="btn btn-primary w-100">
+                {{ _('create_button') }} <span class="ms-2">🚀</span>
+            </button>
+        </form>
 
-    // PWA: Check for install status and dismiss permanently after install
-    window.addEventListener('appinstalled', () => {
-        setInstallCookie('installed');
-    });
-
-    // PWA: Helper to set cookie for 1 year
-    const INSTALL_STATUS_COOKIE = 'shortlinks_install_status';
-    function setInstallCookie(status) {
-        const d = new Date();
-        d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
-        document.cookie = `${INSTALL_STATUS_COOKIE}=${status}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
-    }
+        <div id="result-card" class="card mt-4 p-3 d-none">
+            <h5 class="card-title text-success">Link Created!</h5>
+            <p id="short_url_display" class="card-text">
+                <a href="#" target="_blank" id="short_link_href"></a>
+            </p>
+            </div>
+    </div>
     
-    // PWA: Handle dismiss button on the banner
-    const bannerDismissBtn = document.getElementById('dismiss-btn');
-    if (bannerDismissBtn) {
-        bannerDismissBtn.addEventListener('click', () => {
-            document.getElementById('app-install-banner').style.display = 'none';
-            setInstallCookie('dismissed_manual');
-        });
-    }
-
-    // PWA: Handle the native install prompt
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
+    <div class="footer">
+        © {{ current_year }} Shortlinks.art 
+        <a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('nav_home') }}</a>
+        <a href="{{ url_for('localized', locale=locale, path='about') }}">{{ _('nav_about') }}</a>
         
-        // Check the server flag and only show if it was enabled and not dismissed
-        const serverPromptFlag = {{ 'true' if show_install_prompt else 'false' }};
-        if (serverPromptFlag && !document.cookie.includes(INSTALL_STATUS_COOKIE)) {
-            document.getElementById('app-install-banner').style.display = 'block';
-        }
-    });
+        <div class="language-switcher">
+            {% for lang_code in config.SUPPORTED_LOCALES %}
+                {% set flag = FLAG_EMOJIS.get(lang_code) %}
+                <a href="{{ url_for('localized', locale=lang_code, path='') }}"
+                   class="lang-link {% if lang_code == locale %}active{% endif %}"
+                   aria-label="Switch to {{ lang_code|upper }}"
+                   title="{{ lang_code|upper }}">
+                    {{ flag }}
+                </a>
+            {% endfor %}
+        </div>
+        </div>
 
-    if (document.getElementById('install-btn')) {
-        document.getElementById('install-btn').addEventListener('click', () => {
-            document.getElementById('app-install-banner').style.display = 'none';
-            if (deferredPrompt) {
-                deferredPrompt.prompt(); 
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        setInstallCookie('installed');
-                    } else {
-                        setInstallCookie('dismissed_after_prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            }
-        });
-    }
-
+    {{ BOOTSTRAP_JS | safe }}
+    <script>
+        // Your existing JavaScript for form submission goes here
     </script>
+
+    {% if config.ADSENSE_SCRIPT %}
+    {{ config.ADSENSE_SCRIPT | safe }}
+    {% endif %}
+
 </body>
 </html>

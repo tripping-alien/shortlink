@@ -47,7 +47,7 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# FIX: Import all constants and the final emoji map.
+# Import all constants and the final emoji map.
 import config
 from config import *
 from config import LOCALE_TO_EMOJI 
@@ -172,7 +172,6 @@ def load_translations_from_json() -> None:
         
         missing_locales = set(config.SUPPORTED_LOCALES) - set(translations.keys())
         if missing_locales:
-            # The warning we saw earlier is fixed by adding 'hi' and 'he' to the JSON
             logger.warning(f"Missing translations for locales: {missing_locales}")
             for locale in missing_locales:
                 translations[locale] = {}
@@ -450,7 +449,9 @@ class ShortCodeGenerator:
         for attempt in range(config.MAX_ID_RETRIES):
             code = self.generate()
             
+            # CRITICAL FIX: The synchronous Firebase call is correctly wrapped.
             doc = await asyncio.to_thread(collection.document(code).get)
+            
             if not doc.exists:
                 return code
             
@@ -647,7 +648,7 @@ summarizer = AISummarizer()
 # DATABASE OPERATIONS
 # ============================================================================
 
-# FIX Bug #5: Define reserved codes globally (Updated with 'hi' and 'he')
+# Define reserved codes globally (includes all supported locales)
 RESERVED_CODES = {'api', 'health', 'static', 'r', 'robots', 'sitemap', 
                   'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ar', 'ru', 'he', 'hi', 'arr', 'preview', 'dashboard'}
 
@@ -667,16 +668,18 @@ class LinkManager:
     ) -> Dict[str, Any]:
         """Create new shortened link"""
         if custom_code:
-            # FIX Bug #5: Check against reserved codes
+            # Check against reserved codes
             if custom_code.lower() in RESERVED_CODES:
                  raise ValidationException(f"'{custom_code}' is a reserved code and cannot be used.")
             
+            # CRITICAL FIX: Ensure blocking Firebase call is wrapped
             doc = await asyncio.to_thread(self.collection.document(custom_code).get)
             if doc.exists:
                 raise ValidationException("Custom code already exists")
             code = custom_code
         else:
-            code = await code_generator.generate_unique(self.db)
+            # Uses the corrected generate_unique method
+            code = await code_generator.generate_unique(self.db) 
         
         expires_at = self._calculate_expiration(ttl)
         
@@ -700,7 +703,8 @@ class LinkManager:
         if expires_at:
             data["expires_at"] = expires_at
         
-        await asyncio.to_thread(self.collection.document(code).set, data)
+        # CRITICAL FIX: Ensure the set operation is wrapped correctly
+        await asyncio.to_thread(self.collection.document(code).set, data) 
         
         logger.info(f"Created link {code} -> {long_url}")
         return {**data, "short_code": code}
@@ -1094,6 +1098,7 @@ async def api_create_link(
         )
     
     except (ValidationException, SecurityException) as e:
+        # Pass the exception detail (which is a translation key) to the client
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         logger.error(f"Error creating link: {e}")

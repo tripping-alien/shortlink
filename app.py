@@ -17,7 +17,7 @@ import json      # For loading translations
 import threading # For the cleanup thread
 import time      # For the cleanup thread
 
-import validators
+# Removed unused 'import validators'
 from pydantic import BaseModel, constr
 from firebase_admin.firestore import transactional
 
@@ -433,6 +433,9 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+#
+# --- FIX: REMOVED DUPLICATE 'LinkCreatePayload' DEFINITION ---
+#
 class LinkCreatePayload(BaseModel):
     long_url: str
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
@@ -477,7 +480,7 @@ async def api_create_link(
     if not long_url.startswith(("http://", "https://")):
         long_url = "https://" + long_url
     
-    # Robust validation (FIXED: removed validators.url)
+    # Robust validation
     try:
         parsed = urlparse(long_url)
         if not parsed.scheme or not parsed.netloc: raise ValueError("Missing scheme or domain")
@@ -624,15 +627,15 @@ async def redirect_link(
     return RedirectResponse(url=absolute_url)
 
 # === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===
-@i18n_router.get("/", response_class=HTMLResponse)
+@i18n_router.get("/", response_class=HTMLResponse, name="home_page") # <-- FIX
 async def index(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("index.html", common_context)
     
-@i18n_router.get("/dashboard", response_class=HTMLResponse)
+@i18n_router.get("/dashboard", response_class=HTMLResponse, name="dashboard_page") # <-- FIX
 async def dashboard(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("dashboard.html", common_context)
 
-@i18n_router.get("/about", response_class=HTMLResponse)
+@i18n_router.get("/about", response_class=HTMLResponse, name="about_page") # <-- FIX
 async def about(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("about.html", common_context)
 
@@ -717,7 +720,7 @@ async def delete(
     doc_ref = collection_ref.document(short_code)
     doc = doc_ref.get()
     if not doc.exists:
-        raise HTTPException(status_code=404, detail=_("link_not_found"))
+        raise HTTPException(status_code=4layout.htm, detail=_("link_not_found"))
     link = doc.to_dict()
     if link.get("deletion_token") == token:
         doc_ref.delete()
@@ -726,6 +729,9 @@ async def delete(
         context = {**common_context, "success": False, "message": _("delete_invalid_token")}
     return templates.TemplateResponse("delete_status.html", context)
 
+#
+# --- FIX: REMOVED DUPLICATE 'SecurityException' DEFINITION ---
+#
 class SecurityException(Exception):
     pass
 
@@ -765,6 +771,10 @@ def start_cleanup_thread():
     cleanup_thread.daemon = True 
     cleanup_thread.start()
     logger.info("Cleanup thread is now running in the background.")
+
+#
+# --- FIX: REMOVED DUPLICATE 'start_cleanup_thread' DEFINITION ---
+#
 
 # --- Start background tasks ---
 start_cleanup_thread()

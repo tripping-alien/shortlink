@@ -436,9 +436,6 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-#
-# --- FIX: REMOVED DUPLICATE 'LinkCreatePayload' DEFINITION ---
-#
 class LinkCreatePayload(BaseModel):
     long_url: str
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
@@ -630,15 +627,15 @@ async def redirect_link(
     return RedirectResponse(url=absolute_url)
 
 # === LOCALIZED PAGE ROUTES (Mounted on 'i18n_router') ===
-@i18n_router.get("/", response_class=HTMLResponse, name="home_page") # <-- FIX
+@i18n_router.get("/", response_class=HTMLResponse, name="home_page")
 async def index(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("index.html", common_context)
     
-@i18n_router.get("/dashboard", response_class=HTMLResponse, name="dashboard_page") # <-- FIX
+@i18n_router.get("/dashboard", response_class=HTMLResponse, name="dashboard_page")
 async def dashboard(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("dashboard.html", common_context)
 
-@i18n_router.get("/about", response_class=HTMLResponse, name="about_page") # <-- FIX
+@i18n_router.get("/about", response_class=HTMLResponse, name="about_page")
 async def about(common_context: dict = Depends(get_common_context)):
     return templates.TemplateResponse("about.html", common_context)
 
@@ -660,7 +657,6 @@ async def preview(
         raise HTTPException(status_code=410, detail=_("link_expired"))
     long_url = link["long_url"]
     
-    # --- BUG FIX: Removed extra '/' ---
     safe_href_url = "https://" + long_url if not long_url.startswith(("http://", "https")) else long_url
     
     if link.get("meta_fetched"):

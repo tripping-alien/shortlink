@@ -8,6 +8,17 @@ from functools import lru_cache
 # ============================================================================
 
 class Config:
+
+    # config.py
+    SHORT_CODE_LENGTH = 6  # or whatever you used before (typical range 6–8)
+    MAX_ID_RETRIES = 5
+    TTL_MAP = {
+        "1h": 3600,
+        "24h": 86400,
+        "1w": 604800,
+        "never": None
+    }
+    
     """Centralized configuration with validation"""
     BASE_URL: str = os.getenv("BASE_URL", "https://shortlinks.art")
     SHORT_CODE_LENGTH: int = 6

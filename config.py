@@ -4,23 +4,14 @@ from typing import Optional, List, Dict, Tuple
 from functools import lru_cache
 
 # ============================================================================
-# CONFIGURATION & CONSTANTS
+# CONFIGURATION CLASS
 # ============================================================================
 
 class Config:
-
-    # config.py
-    SHORT_CODE_LENGTH = 6  # or whatever you used before (typical range 6–8)
-    MAX_ID_RETRIES = 5
-    TTL_MAP = {
-        "1h": 3600,
-        "24h": 86400,
-        "1w": 604800,
-        "never": None
-    }
-    
     """Centralized configuration with validation"""
     BASE_URL: str = os.getenv("BASE_URL", "https://shortlinks.art")
+    
+    # Core Constants
     SHORT_CODE_LENGTH: int = 6
     MAX_ID_RETRIES: int = 10
     
@@ -30,10 +21,10 @@ class Config:
     BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
     
     # Rate limiting
-    RATE_LIMIT_CREATE: str = "10/minute"
-    RATE_LIMIT_STATS: str = "30/minute"
+    RATE_LIMIT_CREATE: str = os.getenv("RATE_LIMIT_CREATE", "10/minute")
+    RATE_LIMIT_STATS: str = os.getenv("RATE_LIMIT_STATS", "30/minute")
     
-    # Database
+    # Database/Cleanup
     CLEANUP_INTERVAL_SECONDS: int = 1800  # 30 minutes
     CLEANUP_BATCH_SIZE: int = 100
     
@@ -47,13 +38,13 @@ class Config:
     METADATA_FETCH_TIMEOUT: float = 5.0
     SUMMARY_TIMEOUT: float = 15.0
     
-    # Localization (FINAL: Added 'hi', 'he', and 'arr')
+    # Localization
     SUPPORTED_LOCALES: List[str] = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he", "arr"]
     DEFAULT_LOCALE: str = "en"
     RTL_LOCALES: List[str] = ["ar", "he"]
     
     # Google AdSense
-    ADSENSE_CLIENT_ID: str = "pub-6170587092427912"
+    ADSENSE_CLIENT_ID: str = os.getenv("ADSENSE_CLIENT_ID", "pub-6170587092427912")
     
     @classmethod
     def validate(cls):
@@ -65,10 +56,18 @@ class Config:
         if cls.SHORT_CODE_LENGTH < 4 or cls.SHORT_CODE_LENGTH > 20:
             raise ValueError("SHORT_CODE_LENGTH must be between 4 and 20")
 
+# ============================================================================
+# MODULE LEVEL CONSTANTS (Exported for imports like db_manager)
+# ============================================================================
+
 # Initialize the config instance
 config = Config()
 
-# Time-To-Live Mapping
+# --- FIX: Expose class attributes as module constants ---
+SHORT_CODE_LENGTH = config.SHORT_CODE_LENGTH
+MAX_ID_RETRIES = config.MAX_ID_RETRIES 
+
+# Time-To-Live Mapping (timedelta objects)
 TTL_MAP: Dict[str, Optional[timedelta]] = {
     "1h": timedelta(hours=1),
     "24h": timedelta(days=1),
@@ -81,24 +80,22 @@ ADSENSE_SCRIPT: str = f'<script async src="https://pagead2.googlesyndication.com
 
 
 # ============================================================================
-# LOCALIZATION CONSTANTS (FINAL: Updated with 'hi' and 'he' data)
+# LOCALIZATION CONSTANTS
 # ============================================================================
 
 # Maps locale code (en) to two-letter country code (gb)
 LOCALE_TO_FLAG_CODE: Dict[str, str] = {
     "en": "gb", "es": "es", "zh": "cn", 
-    "hi": "in",  # NEW: Hindi -> India
-    "pt": "br", "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", 
-    "he": "il",  # NEW: Hebrew -> Israel
+    "hi": "in", "pt": "br", "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", 
+    "he": "il", 
     "arr": "pirate" 
 }
 
 # Mapping of country codes to actual Unicode flag emojis
 FLAG_CODE_TO_EMOJI: Dict[str, str] = {
     "gb": "🇬🇧", "es": "🇪🇸", "cn": "🇨🇳", 
-    "in": "🇮🇳",  # NEW: India Flag Emoji
-    "br": "🇧🇷", "fr": "🇫🇷", "de": "🇩🇪", "sa": "🇸🇦", "ru": "🇷🇺", 
-    "il": "🇮🇱",  # NEW: Israel Flag Emoji
+    "in": "🇮🇳", "br": "🇧🇷", "fr": "🇫🇷", "de": "🇩🇪", "sa": "🇸🇦", "ru": "🇷🇺", 
+    "il": "🇮🇱",  
     "pirate": "🏴‍☠️", 
     "default": "❓" 
 }

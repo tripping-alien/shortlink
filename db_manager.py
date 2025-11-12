@@ -10,7 +10,8 @@ from datetime import datetime, timezone, timedelta
 
 from firebase_admin import credentials, initialize_app, firestore, get_app
 from firebase_admin import exceptions 
-# Import AsyncClient and Transaction for async operations (for typing/transactional decorator)
+# Import the new syntax for filtering
+from google.cloud.firestore_v1.query import FieldFilter # 🟢 NEW IMPORT
 from firebase_admin.firestore import AsyncClient, Transaction 
 
 # Import passlib for secure token hashing
@@ -33,7 +34,7 @@ CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
 FAR_FUTURE_EXPIRY = datetime(3000, 1, 1, tzinfo=timezone.utc) 
 
 # The 'db' client is now the synchronous client (Type Hint remains for context)
-db: AsyncClient = None
+db: firestore.client = None # 🟢 Corrected type hint for synchronous client
 APP_ID: str = ""
 APP_INSTANCE = None # Global to hold the initialized App instance
 
@@ -97,7 +98,6 @@ def get_db_connection():
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
             # 5. Get Firestore Client (SYNCHRONOUS)
-            # FIX: Use the standard factory function for compatibility. 
             db = firestore.client(app=APP_INSTANCE) 
             logger.info("Firebase Firestore client initialized successfully.")
             
@@ -146,10 +146,10 @@ def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
 
 async def _is_short_code_unique(short_code: str) -> bool:
     """Checks the database asynchronously to see if a short code already exists."""
+    # NOTE: No changes needed here, as the existence check is on a document reference.
     get_db_connection()
     doc_ref = get_collection_ref("links").document(short_code)
     
-    # FIX: Synchronous .get() must be wrapped in asyncio.to_thread
     doc = await asyncio.to_thread(doc_ref.get)
     return not doc.exists
 
@@ -306,8 +306,9 @@ async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     """Retrieves all non-expired links for sitemap generation (Async)."""
     try:
         links_ref = get_collection_ref("links")
-        # .stream() is synchronous, so we execute the iteration in a thread and collect results
-        expired_query = links_ref.where('expires_at', '>', now).stream() 
+        
+        # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument (Positional Warning Fix)
+        expired_query = links_ref.where(filter=FieldFilter('expires_at', '>', now)).stream() 
         
         # FIX: Run synchronous iteration (list comprehension) in a thread
         docs = await asyncio.to_thread(list, expired_query)
@@ -330,8 +331,8 @@ async def cleanup_expired_links(now: datetime):
     links_ref = get_collection_ref("links")
     db_client = get_db_connection()
     
-    # .stream() is synchronous
-    expired_query = links_ref.where('expires_at', '<=', now).stream()
+    # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument (Positional Warning Fix)
+    expired_query = links_ref.where(filter=FieldFilter('expires_at', '<=', now)).stream()
     
     deleted_count = 0
     batch = db_client.batch()

@@ -22,7 +22,9 @@ from pydantic import BaseModel, Field, validator, constr
 # Import local modules/constants
 import config
 # CRITICAL FIX: Split the two imports onto separate lines
-from config import * from db_manager import cleanup_expired_links as db_cleanup_expired_links 
+from config import * 
+import db_manager
+from db_manager import cleanup_expired_links as db_cleanup_expired_links 
 # NOTE: The wildcard import '*' is used here to get all constants (e.g., METADATA_FETCH_TIMEOUT)
 
 # Import core_logic functions/classes

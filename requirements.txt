@@ -28,3 +28,4 @@ validators           # For URL validation
 setuptools
 
 passlib[bcrypt]
+huggingface-hub

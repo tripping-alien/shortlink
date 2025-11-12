@@ -47,10 +47,11 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# FIX: We now import the module (config) and the instance (config) explicitly.
-# All other constants are accessed directly from the imported config module instance.
+# FIX: We now import the module (config), the instance (config), 
+# and the new localization constant (LOCALE_TO_EMOJI) explicitly.
 import config
 from config import *
+from config import LOCALE_TO_EMOJI # <--- NEW: Import the ready-to-use emoji map
 # Note: Exceptions are NOT imported here.
 
 # ============================================================================
@@ -129,7 +130,8 @@ class LinkResponse(BaseModel):
 
 class LinkCreatePayload(BaseModel):
     """Request model for creating links"""
-    long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH)
+    # Fix from previous conversation: config.MAX_URL_LENGTH is correctly accessible
+    long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH) 
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
     custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
     utm_tags: Optional[str] = Field(None, max_length=500)
@@ -983,6 +985,7 @@ async def get_common_context(
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": config.RTL_LOCALES,
         "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
+        "FLAG_EMOJIS": LOCALE_TO_EMOJI, # <--- FIX: Pass the correct emoji map here
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
         "config": config,

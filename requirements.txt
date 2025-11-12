@@ -29,3 +29,7 @@ setuptools
 
 passlib[bcrypt]
 huggingface-hub
+
+passlib
+# Pin bcrypt to a known stable version compatible with passlib
+bcrypt<4.0

@@ -133,10 +133,10 @@
     function showLoading() {
         createButton.disabled = true;
         buttonText.textContent = '{{ _('processing_request') }}';
-        loadingSpinner.style.display = 'inline-block'; // Show spinner
+        loadingSpinner.style.display = 'inline-block';
         resultCard.classList.add('d-none'); 
         
-        // Hide advanced options if they were open after successful creation
+        // Hide advanced options if they were open
         const collapseElement = document.getElementById('advanced-options');
         if (collapseElement && collapseElement.classList.contains('show') && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
              const collapseInstance = bootstrap.Collapse.getInstance(collapseElement) || new bootstrap.Collapse(collapseElement, { toggle: false });
@@ -147,7 +147,7 @@
     function hideLoading() {
         createButton.disabled = false;
         buttonText.textContent = '{{ _('create_button') }}';
-        loadingSpinner.style.display = 'none'; // Hide spinner
+        loadingSpinner.style.display = 'none';
     }
 
     form.addEventListener('submit', async (e) => {

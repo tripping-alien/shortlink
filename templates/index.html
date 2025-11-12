@@ -50,7 +50,6 @@
                     <span id="button-text">{{ _('create_button') }}</span>
                 </button>
 
-
             </form>
         </div>
         <div id="result-card" class="card result-card mt-5 d-none form-card">
@@ -121,8 +120,6 @@
 
 {% block scripts %}
 <script>
-    // ... (Your existing JavaScript remains the same, but ensure 'bootstrap' is referenced for Collapse if needed)
-    // The previous JS for form submission is used here.
     const form = document.getElementById('shorten-form');
     const createButton = document.getElementById('create-button');
     const buttonText = document.getElementById('button-text');
@@ -144,10 +141,12 @@
         buttonText.textContent = '{{ _('processing_request') }}';
         loadingSpinner.style.display = 'inline-block';
         resultCard.classList.add('d-none'); 
-        // Use 'bootstrap' global for Collapse instance if needed.
-        const collapseInstance = new bootstrap.Collapse(advancedOptions, { toggle: false });
-        if (advancedOptions.classList.contains('show')) {
-            collapseInstance.hide();
+        
+        // Hide advanced options if they were open after successful creation
+        const collapseElement = document.getElementById('advanced-options');
+        if (collapseElement && collapseElement.classList.contains('show') && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+             const collapseInstance = bootstrap.Collapse.getInstance(collapseElement) || new bootstrap.Collapse(collapseElement, { toggle: false });
+             collapseInstance.hide();
         }
     }
 

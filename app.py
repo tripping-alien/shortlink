@@ -160,10 +160,10 @@ async def api_create_link(
         )
     
     except ValueError as e:
-        logger.error(f"Link creation validation failed (ValueError): {e}") # Debugging for 400
+        logger.error(f"Link creation validation failed (ValueError): {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except (ValidationException, SecurityException) as e:
-        logger.error(f"Link creation validation failed (Security/Validation): {e.detail}") # Debugging for 400
+        logger.error(f"Link creation validation failed (Security/Validation): {e.detail}") # 👈 Log for 400 debug
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         logger.error(f"Error creating link: {e}")
@@ -311,11 +311,12 @@ async def get_common_context(
 
 # --- LOCALIZED ROUTES (i18n_router) ---
 
-# 🟢 FIX: All routes inside i18n_router must accept the 'locale' path parameter.
+# 🟢 FIX: Parameters reordered to prevent SyntaxError: parameter without a default follows parameter with a default
+# Path parameters (like short_code) must come before parameters with defaults (like locale=Path(...)).
 
 @i18n_router.get("/", response_class=HTMLResponse)
 async def index(
-    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    locale: str = Path(..., description="The language code"),
     common_context: Dict = Depends(get_common_context)
 ):
     """Homepage"""
@@ -323,7 +324,7 @@ async def index(
 
 @i18n_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(
-    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    locale: str = Path(..., description="The language code"),
     common_context: Dict = Depends(get_common_context)
 ):
     """Dashboard page"""
@@ -331,7 +332,7 @@ async def dashboard(
 
 @i18n_router.get("/about", response_class=HTMLResponse)
 async def about(
-    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    locale: str = Path(..., description="The language code"),
     common_context: Dict = Depends(get_common_context)
 ):
     """About page"""
@@ -339,8 +340,8 @@ async def about(
 
 @i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(
-    locale: str = Path(..., description="The language code"), # 🟢 FIX
-    short_code: str, 
+    short_code: str, # REQUIRED: Must come before locale
+    locale: str = Path(..., description="The language code"),
     background_tasks: BackgroundTasks, 
     common_context: Dict = Depends(get_common_context)
 ):
@@ -388,8 +389,8 @@ async def preview(
 
 @i18n_router.get("/preview/{short_code}/redirect", response_class=RedirectResponse)
 async def continue_to_link(
-    locale: str = Path(..., description="The language code"), # 🟢 FIX
-    short_code: str, 
+    short_code: str, # REQUIRED: Must come before locale
+    locale: str = Path(..., description="The language code"),
     translator: Callable = Depends(get_translator)
 ):
     """Continue to final destination (Click increment logic requires refactoring)"""
@@ -412,9 +413,10 @@ async def continue_to_link(
 @limiter.limit(RATE_LIMIT_STATS)
 async def stats(
     request: Request,
-    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    short_code: str, # REQUIRED: Must come before locale
+    locale: str = Path(..., description="The language code"),
     common_context: Dict = Depends(get_common_context), 
-    short_code: str = Path(...)
+    
 ):
     """Statistics page"""
     translator = common_context["_"]
@@ -427,13 +429,13 @@ async def stats(
     except ResourceNotFoundException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
-        logger.error(f"Error fetching stats for {short_code}: {e}") # ❗ CHECK YOUR LOGS FOR THE DB ERROR HERE
+        logger.error(f"Error fetching stats for {short_code}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("stats_error"))
 
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete_link(
-    locale: str = Path(..., description="The language code"), # 🟢 FIX
-    short_code: str, 
+    short_code: str, # REQUIRED: Must come before locale
+    locale: str = Path(..., description="The language code"),
     token: Optional[str] = None, 
     common_context: Dict = Depends(get_common_context)
 ):

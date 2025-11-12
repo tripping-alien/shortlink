@@ -4,24 +4,31 @@
 
 {% block head %}
 <style>
-    /* Add basic styling for the result card/QR code for QA purposes */
+    /* Custom style for the main form container */
+    .form-card {
+        max-width: 550px; /* Constrain width for better look on large screens */
+        margin: 0 auto; /* Center the card */
+        padding: 30px;
+        background-color: var(--bs-light); /* Use theme variable */
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Result Card Styling (Updated to use Bootstrap classes where possible) */
     .result-card {
-        background-color: #3b3b64;
-        border: 1px solid #5a5a8a;
-        padding: 20px;
-        border-radius: 10px;
+        border-color: var(--bs-success); /* Use success color for border */
     }
     .result-details {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 15px;
+        margin-bottom: 0;
     }
     #qrcode-container img {
         width: 100px;
         height: 100px;
         border: 5px solid white;
         border-radius: 5px;
+        flex-shrink: 0; /* Prevents image from shrinking */
     }
 
     /* Styling for the loading spinner */
@@ -33,54 +40,79 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container hero-container">
-        <h1 class="text-center">Shortlinks.art</h1>
-        <p class="text-center text-secondary mb-4">{{ _('tagline') }}</p>
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold">Shortlinks.art</h1>
+            <p class="lead text-muted">{{ _('tagline') }}</p>
+        </div>
 
-        <form id="shorten-form">
-            <input type="url" id="long_url" class="form-control" placeholder="{{ _('long_url_placeholder') }}" required>
-            
-            <select id="ttl" class="form-select form-control">
-                <option value="24h">{{ _('ttl_24h') }}</option>
-                <option value="1h">{{ _('ttl_1h') }}</option>
-                <option value="1w">{{ _('ttl_1w') }}</option>
-                <option value="never">{{ _('ttl_never') }}</option>
-            </select>
-            
-            <button type="button" class="btn btn-secondary btn-sm mb-3 w-100" data-bs-toggle="collapse" data-bs-target="#advanced-options" aria-expanded="false" aria-controls="advanced-options">
-                {{ _('advanced_options_button') }} +
-            </button>
-            
-            <div class="collapse" id="advanced-options">
-                <input type="text" id="custom_code" class="form-control" placeholder="{{ _('custom_code_placeholder') }}">
-                <input type="text" id="utm_tags" class="form-control" placeholder="{{ _('utm_tags_placeholder') }}">
-            </div>
+        <div class="form-card bg-light">
+            <form id="shorten-form">
 
-            <button type="submit" class="btn btn-primary w-100" id="create-button">
-                <span id="loading-spinner" class="spinner-border spinner-border-sm spinner" role="status" aria-hidden="true"></span>
-                <span id="button-text">{{ _('create_button') }}</span>
-                <span class="ms-2">🚀</span>
-            </button>
-        </form>
-
-        <div id="result-card" class="result-card mt-4 d-none">
-            <h4 class="text-success mb-3">{{ _('shorten_success_title') }}</h4>
-            
-            <div class="result-details">
-                <div id="qrcode-container">
-                    <img id="qr-code-image" src="" alt="QR Code" class="img-fluid">
+                <div class="input-group mb-4">
+                    <input type="url" id="long_url" class="form-control form-control-lg" 
+                           placeholder="{{ _('long_url_placeholder') }}" required 
+                           aria-label="{{ _('long_url_placeholder') }}">
+                    
+                    <select id="ttl" class="form-select" style="max-width: 130px;">
+                        <option value="24h">{{ _('ttl_24h') }}</option>
+                        <option value="1h">{{ _('ttl_1h') }}</option>
+                        <option value="1w">{{ _('ttl_1w') }}</option>
+                        <option value="never">{{ _('ttl_never') }}</option>
+                    </select>
                 </div>
 
-                <div class="ms-4 flex-grow-1">
-                    <label class="text-muted small">{{ _('short_url_label') }}:</label>
-                    <p class="mb-2">
-                        <a href="#" target="_blank" id="short-link-href" class="text-info fw-bold me-2"></a>
-                        <button class="btn btn-sm btn-outline-info" id="copy-button">{{ _('copy_button') }}</button>
-                    </p>
-                    <small class="d-block mt-3">
-                        <a href="#" id="stats-link" class="text-warning me-3">{{ _('stats_link') }}</a>
-                        <a href="#" id="delete-link" class="text-danger">{{ _('delete_link') }}</a>
-                    </small>
+                <button type="button" class="btn btn-outline-secondary btn-sm mb-3 w-100" 
+                        data-bs-toggle="collapse" data-bs-target="#advanced-options" 
+                        aria-expanded="false" aria-controls="advanced-options">
+                    {{ _('advanced_options_button') }}
+                    <span class="ms-2">⚙️</span>
+                </button>
+                
+                <div class="collapse" id="advanced-options">
+                    <div class="mb-3">
+                        <input type="text" id="custom_code" class="form-control" 
+                               placeholder="{{ _('custom_code_placeholder') }}"
+                               aria-label="{{ _('custom_code_placeholder') }}">
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" id="utm_tags" class="form-control" 
+                               placeholder="{{ _('utm_tags_placeholder') }}"
+                               aria-label="{{ _('utm_tags_placeholder') }}">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="create-button">
+                    <span id="loading-spinner" class="spinner-border spinner-border-sm spinner" role="status" aria-hidden="true"></span>
+                    <span id="button-text">{{ _('create_button') }}</span>
+                    <span class="ms-2">🚀</span>
+                </button>
+
+            </form>
+        </div>
+        <div id="result-card" class="card result-card bg-success-subtle mt-5 d-none form-card">
+            <div class="card-body p-4">
+                <h4 class="card-title text-success mb-3">{{ _('shorten_success_title') }}</h4>
+                
+                <div class="result-details">
+                    <div id="qrcode-container">
+                        <img id="qr-code-image" src="" alt="QR Code" class="img-fluid">
+                    </div>
+
+                    <div class="ms-4 flex-grow-1">
+                        <label class="text-muted small d-block mb-1">{{ _('short_url_label') }}:</label>
+                        <div class="d-flex align-items-center mb-3">
+                            <a href="#" target="_blank" id="short-link-href" class="text-info fw-bold me-2 text-break" style="font-size: 1.1rem;"></a>
+                            <button class="btn btn-sm btn-info ms-auto" id="copy-button">
+                                <i class="bi bi-clipboard"></i> {{ _('copy_button') }}
+                            </button>
+                        </div>
+                        
+                        <small class="d-block mt-3 border-top pt-2">
+                            <a href="#" id="stats-link" class="link-warning text-decoration-none me-3">📊 {{ _('stats_link') }}</a>
+                            <a href="#" id="delete-link" class="link-danger text-decoration-none">🗑️ {{ _('delete_link') }}</a>
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -89,6 +121,7 @@
 
 {% block scripts %}
 <script>
+    // ... (Your existing JavaScript remains the same, it is clean and functional)
     const form = document.getElementById('shorten-form');
     const createButton = document.getElementById('create-button');
     const buttonText = document.getElementById('button-text');
@@ -110,7 +143,7 @@
         createButton.disabled = true;
         buttonText.textContent = '{{ _('processing_request') }}';
         loadingSpinner.style.display = 'inline-block';
-        resultCard.classList.add('d-none'); // Hide previous result
+        resultCard.classList.add('d-none'); 
     }
 
     function hideLoading() {
@@ -124,26 +157,21 @@
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        showLoading(); // Show loading indicator
+        showLoading(); 
 
         try {
-            // 1. Construct Payload: Use || null for optional fields
             const payload = {
-                long_url: longUrlInput.value.trim(), // Required
-                ttl: ttlInput.value, // Required (but validated by Pydantic Literals)
-                
-                // Optional fields: use .trim() and set to null if empty
+                long_url: longUrlInput.value.trim(), 
+                ttl: ttlInput.value, 
                 custom_code: customCodeInput.value.trim() || null, 
                 utm_tags: utmTagsInput.value.trim() || null,
             };
             
-            // 2. Clean Payload: Delete fields that are explicitly null (the optional ones)
             Object.keys(payload).forEach(key => {
                 if (payload[key] === null) {
                     delete payload[key];
                 }
             });
-
 
             const response = await fetch('/api/v1/links', {
                 method: 'POST',
@@ -163,13 +191,13 @@
                 statsLink.href = data.stats_url;
                 deleteLink.href = data.delete_url;
                 
-                resultCard.classList.remove('d-none'); // Make panel visible
+                resultCard.classList.remove('d-none'); 
                 
                 // Clear the long URL input after success
                 longUrlInput.value = ''; 
                 
             } else {
-                // FAILURE LOGIC: Display localized error from API response
+                // FAILURE LOGIC
                 const errorMessage = data.detail || '{{ _('generic_error_message') }}';
                 alert(`Error: ${errorMessage}`);
                 console.error('API Error Response:', data);
@@ -179,7 +207,7 @@
             console.error('Network or Parse Error:', error);
             alert('{{ _('network_error_message') }}');
         } finally {
-            hideLoading(); // Hide loading indicator regardless of outcome
+            hideLoading(); 
         }
     });
 
@@ -191,6 +219,5 @@
         });
     });
 
-    // No need for a custom JS toggle function; Bootstrap's data-bs-toggle handles it.
 </script>
 {% endblock %}

@@ -488,5 +488,6 @@ async def get_common_context(
         "FLAG_EMOJIS": config.LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        "config": config.config, # Pass the instance here
+        # 🟢 CORRECTED LINE: Pass the instance directly
+        "config": config, 
     }

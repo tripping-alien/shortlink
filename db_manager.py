@@ -10,8 +10,8 @@ from datetime import datetime, timezone, timedelta
 
 from firebase_admin import credentials, initialize_app, firestore, get_app
 from firebase_admin import exceptions 
-# Import the new syntax for filtering
-from google.cloud.firestore_v1.query import FieldFilter # 🟢 NEW IMPORT
+# 🟢 FIX: Corrected import path for FieldFilter
+from google.cloud.firestore_v1 import FieldFilter 
 from firebase_admin.firestore import AsyncClient, Transaction 
 
 # Import passlib for secure token hashing
@@ -34,7 +34,7 @@ CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
 FAR_FUTURE_EXPIRY = datetime(3000, 1, 1, tzinfo=timezone.utc) 
 
 # The 'db' client is now the synchronous client (Type Hint remains for context)
-db: firestore.client = None # 🟢 Corrected type hint for synchronous client
+db: firestore.client = None 
 APP_ID: str = ""
 APP_INSTANCE = None # Global to hold the initialized App instance
 
@@ -146,7 +146,6 @@ def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
 
 async def _is_short_code_unique(short_code: str) -> bool:
     """Checks the database asynchronously to see if a short code already exists."""
-    # NOTE: No changes needed here, as the existence check is on a document reference.
     get_db_connection()
     doc_ref = get_collection_ref("links").document(short_code)
     
@@ -307,7 +306,7 @@ async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     try:
         links_ref = get_collection_ref("links")
         
-        # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument (Positional Warning Fix)
+        # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument
         expired_query = links_ref.where(filter=FieldFilter('expires_at', '>', now)).stream() 
         
         # FIX: Run synchronous iteration (list comprehension) in a thread
@@ -331,7 +330,7 @@ async def cleanup_expired_links(now: datetime):
     links_ref = get_collection_ref("links")
     db_client = get_db_connection()
     
-    # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument (Positional Warning Fix)
+    # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument
     expired_query = links_ref.where(filter=FieldFilter('expires_at', '<=', now)).stream()
     
     deleted_count = 0

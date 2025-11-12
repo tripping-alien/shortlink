@@ -33,8 +33,6 @@
     {{ ADSENSE_SCRIPT|safe }} 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/4.1.7/css/flag-icons.min.css" integrity="sha512-GwXqu3iKRTNfR2gMDNYS0jYgWGAFfFzLNJYcE0ETGlwLdTwujSxjBOANRSPCvVSBCSFwwVbTR3MpdCweIZiRFA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
     
     <style>
@@ -42,18 +40,22 @@
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
       }
-      /* UPDATED: Styles for the new flag icons */
-      .lang-flag {
-        width: 24px;
-        height: 18px; /* 4x3 Aspect Ratio */
-        border-radius: 3px;
+      .flag-emoji {
+        font-size: 1.5rem; /* Make emoji bigger */
         vertical-align: middle;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background-size: cover; /* Ensures flag fills the span */
+        line-height: 1;
         display: inline-block;
       }
-      .lang-btn.active .lang-flag {
-        border: 2px solid #fff;
+      .lang-btn {
+        padding: 4px;
+        border-radius: 4px;
+        text-decoration: none;
+      }
+      .lang-btn.active .flag-emoji {
+        /* Add a visual cue for the active language */
+        transform: scale(1.1);
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
       }
     </style>
 </head>
@@ -130,9 +132,9 @@
                 <a href="{{ tag.href }}" 
                    class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
                    data-lang="{{ tag.hreflang }}"
-                   title="{{ _('lang_name_' + tag.hreflang) }}"> <span class="flag-icon flag-icon-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
-                       <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
-                   </span>
+                   title="{{ _('lang_name_' + tag.hreflang) }}">
+                   <span class="flag-emoji" aria-hidden="true">{{ LOCALE_TO_EMOJI[tag.hreflang] }}</span>
+                   <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
                 </a>
               {% endif %}
             {% endfor %}

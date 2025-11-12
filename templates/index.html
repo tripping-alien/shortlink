@@ -24,7 +24,7 @@
         border-radius: 5px;
     }
 
-    /* NEW: Styling for the loading spinner */
+    /* Styling for the loading spinner */
     .spinner {
         display: none;
         margin-right: 8px;
@@ -99,12 +99,12 @@
     const statsLink = document.getElementById('stats-link');
     const deleteLink = document.getElementById('delete-link');
     const longUrlInput = document.getElementById('long_url');
-    const ttlInput = document.getElementById('ttl'); // NEW: Get TTL input
-    const customCodeInput = document.getElementById('custom_code'); // NEW: Get custom code input
-    const utmTagsInput = document.getElementById('utm_tags'); // NEW: Get UTM tags input
+    const ttlInput = document.getElementById('ttl');
+    const customCodeInput = document.getElementById('custom_code');
+    const utmTagsInput = document.getElementById('utm_tags');
     const copyButton = document.getElementById('copy-button');
 
-    // --- NEW FEEDBACK FUNCTIONS ---
+    // --- FEEDBACK FUNCTIONS ---
     function showLoading() {
         createButton.disabled = true;
         buttonText.textContent = '{{ _('processing_request') }}';
@@ -131,7 +131,6 @@
                 ttl: ttlInput.value,
                 custom_code: customCodeInput.value || null,
                 utm_tags: utmTagsInput.value || null,
-                // owner_id is generally added on the server side via cookies/session if used
             };
             
             // Clean payload from null/empty strings
@@ -167,6 +166,7 @@
                 
             } else {
                 // FAILURE LOGIC: Display localized error from API response
+                // NOTE: This currently alerts the raw message/key from the API.
                 const errorMessage = data.detail || '{{ _('generic_error_message') }}';
                 alert(`Error: ${errorMessage}`);
             }

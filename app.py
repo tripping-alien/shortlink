@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles # Import for serving static files
+from fastapi.staticfiles import StaticFiles
 
 from slowapi import Limiter, _rate_limit_exceeded_handler, errors
 from slowapi.util import get_remote_address
@@ -27,7 +27,7 @@ from db_manager import init_db, create_link as db_create_link, get_link_by_id as
 from core_logic import (
     logger, load_translations_from_json, get_translation,
     get_browser_locale, get_common_context, get_translator, get_api_translator,
-    get_current_locale, # 🟢 FIX FOR NameError: Explicitly imported the function
+    get_current_locale, 
     CleanupWorker, URLValidator, SecurityException, ValidationException,
     ResourceNotFoundException, ResourceExpiredException, 
     BOOTSTRAP_CDN, BOOTSTRAP_JS,
@@ -114,7 +114,6 @@ app.add_exception_handler(errors.RateLimitExceeded, _rate_limit_exceeded_handler
 
 
 # --- STATIC FILES SETUP ---
-# 🎯 FIX FOR Starlette.routing.NoMatchFound: Mount the static directory and name the route "static"
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -161,8 +160,10 @@ async def api_create_link(
         )
     
     except ValueError as e:
+        logger.error(f"Link creation validation failed (ValueError): {e}") # Debugging for 400
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except (ValidationException, SecurityException) as e:
+        logger.error(f"Link creation validation failed (Security/Validation): {e.detail}") # Debugging for 400
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         logger.error(f"Error creating link: {e}")
@@ -305,29 +306,44 @@ async def get_common_context(
         "FLAG_EMOJIS": config.config.LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        # 🎯 FIX FOR AttributeError: 'Config' object has no attribute 'config'
         "config": config.config, 
     }
 
 # --- LOCALIZED ROUTES (i18n_router) ---
 
+# 🟢 FIX: All routes inside i18n_router must accept the 'locale' path parameter.
+
 @i18n_router.get("/", response_class=HTMLResponse)
-async def index(common_context: Dict = Depends(get_common_context)):
+async def index(
+    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    common_context: Dict = Depends(get_common_context)
+):
     """Homepage"""
     return templates.TemplateResponse("index.html", common_context)
 
 @i18n_router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(common_context: Dict = Depends(get_common_context)):
+async def dashboard(
+    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    common_context: Dict = Depends(get_common_context)
+):
     """Dashboard page"""
     return templates.TemplateResponse("dashboard.html", common_context)
 
 @i18n_router.get("/about", response_class=HTMLResponse)
-async def about(common_context: Dict = Depends(get_common_context)):
+async def about(
+    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    common_context: Dict = Depends(get_common_context)
+):
     """About page"""
     return templates.TemplateResponse("about.html", common_context)
 
 @i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
-async def preview(short_code: str, background_tasks: BackgroundTasks, common_context: Dict = Depends(get_common_context)):
+async def preview(
+    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    short_code: str, 
+    background_tasks: BackgroundTasks, 
+    common_context: Dict = Depends(get_common_context)
+):
     """Preview page with metadata and security warning"""
     translator = common_context["_"]
     try:
@@ -371,7 +387,11 @@ async def preview(short_code: str, background_tasks: BackgroundTasks, common_con
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("preview_error"))
 
 @i18n_router.get("/preview/{short_code}/redirect", response_class=RedirectResponse)
-async def continue_to_link(short_code: str, translator: Callable = Depends(get_translator)):
+async def continue_to_link(
+    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    short_code: str, 
+    translator: Callable = Depends(get_translator)
+):
     """Continue to final destination (Click increment logic requires refactoring)"""
     try:
         link = await db_get_link(short_code)
@@ -391,9 +411,8 @@ async def continue_to_link(short_code: str, translator: Callable = Depends(get_t
 @i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
 @limiter.limit(RATE_LIMIT_STATS)
 async def stats(
-    # --- FIX: ADD REQUEST HERE FOR SLOWAPI ---
     request: Request,
-    # ----------------------------------------
+    locale: str = Path(..., description="The language code"), # 🟢 FIX
     common_context: Dict = Depends(get_common_context), 
     short_code: str = Path(...)
 ):
@@ -408,11 +427,16 @@ async def stats(
     except ResourceNotFoundException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
-        logger.error(f"Error fetching stats for {short_code}: {e}")
+        logger.error(f"Error fetching stats for {short_code}: {e}") # ❗ CHECK YOUR LOGS FOR THE DB ERROR HERE
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("stats_error"))
 
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
-async def delete_link(short_code: str, token: Optional[str] = None, common_context: Dict = Depends(get_common_context)):
+async def delete_link(
+    locale: str = Path(..., description="The language code"), # 🟢 FIX
+    short_code: str, 
+    token: Optional[str] = None, 
+    common_context: Dict = Depends(get_common_context)
+):
     """Delete link page"""
     translator = common_context["_"]
     if not token:

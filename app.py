@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field, validator, constr
 
 # Import core modules
 import config
-# CRITICAL FIX: Import global MAX_URL_LENGTH directly into this module's scope
+# CRITICAL FIX: Import global MAX_URL_LENGTH, RATE_LIMIT_CREATE/STATS directly into this module's scope
 from config import MAX_URL_LENGTH, RATE_LIMIT_CREATE, RATE_LIMIT_STATS
 from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection, get_collection_ref
 from core_logic import (
@@ -114,7 +114,7 @@ app.add_exception_handler(errors.RateLimitExceeded, _rate_limit_exceeded_handler
 api_router = APIRouter(prefix="/api/v1", tags=["API"])
 
 @api_router.post("/links", response_model=LinkResponse)
-@limiter.limit(RATE_LIMIT_CREATE)
+@limiter.limit(RATE_LIMIT_CREATE) # <-- FIX 1: Access global constant
 async def api_create_link(
     request: Request,
     payload: LinkCreatePayload,
@@ -163,7 +163,7 @@ async def api_create_link(
         )
 
 @api_router.get("/my-links")
-@limiter.limit(RATE_LIMIT_STATS)
+@limiter.limit(RATE_LIMIT_STATS) # <-- FIX 2: Access global constant
 async def api_get_my_links(
     request: Request,
     owner_id: str,
@@ -317,7 +317,7 @@ async def continue_to_link(short_code: str, translator: Callable = Depends(get_t
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("redirect_error"))
 
 @i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
-@limiter.limit(config.RATE_LIMIT_STATS)
+@limiter.limit(RATE_LIMIT_STATS) # <-- FIX 3: Access global constant
 async def stats(common_context: Dict = Depends(get_common_context), short_code: str = Path(...)):
     """Statistics page"""
     translator = common_context["_"]
@@ -366,22 +366,22 @@ def is_localized_route(path: str) -> bool:
     if not path.startswith('/'): return False
     segments = path.split('/')
     if len(segments) < 2: return False
-    return segments[1] in config.SUPPORTED_LOCALES
+    return segments[1] in config.config.SUPPORTED_LOCALES # Use config.config here for consistency
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     if exc.status_code in [status.HTTP_404_NOT_FOUND, status.HTTP_410_GONE] and is_localized_route(request.url.path):
         try:
             locale = request.url.path.split('/')[1]
-            if locale not in config.SUPPORTED_LOCALES: locale = config.DEFAULT_LOCALE
+            if locale not in config.config.SUPPORTED_LOCALES: locale = config.config.DEFAULT_LOCALE
         except:
-            locale = config.DEFAULT_LOCALE
+            locale = config.config.DEFAULT_LOCALE
             
         translator = lambda key: get_translation(locale, key)
         
         context = {"request": request, "status_code": exc.status_code, "message": translator(exc.detail), 
                    "_": translator, "locale": locale, "BOOTSTRAP_CDN": BOOTSTRAP_CDN, "BOOTSTRAP_JS": BOOTSTRAP_JS,
-                   "current_year": datetime.now(timezone.utc).year, "RTL_LOCALES": config.RTL_LOCALES}
+                   "current_year": datetime.now(timezone.utc).year, "RTL_LOCALES": config.config.RTL_LOCALES}
         
         return templates.TemplateResponse("error.html", context, status_code=exc.status_code)
 

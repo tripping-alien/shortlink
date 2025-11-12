@@ -281,6 +281,9 @@ def is_public_ip(ip_str: str) -> bool:
     except ValueError:
         return False
 
+class SecurityException(Exception):
+    pass
+
 async def fetch_metadata(url: str) -> dict:
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
     meta = {"title": None, "description": None, "image": None, "favicon": None}
@@ -720,7 +723,10 @@ async def delete(
     doc_ref = collection_ref.document(short_code)
     doc = doc_ref.get()
     if not doc.exists:
-        raise HTTPException(status_code=4layout.htm, detail=_("link_not_found"))
+        #
+        # --- SYNTAX ERROR FIX ---
+        #
+        raise HTTPException(status_code=404, detail=_("link_not_found"))
     link = doc.to_dict()
     if link.get("deletion_token") == token:
         doc_ref.delete()
@@ -732,8 +738,6 @@ async def delete(
 #
 # --- FIX: REMOVED DUPLICATE 'SecurityException' DEFINITION ---
 #
-class SecurityException(Exception):
-    pass
 
 # --- Mount the localized router ---
 app.mount("/{locale}", i18n_router, name="localized")

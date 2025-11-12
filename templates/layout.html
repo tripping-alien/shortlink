@@ -26,12 +26,14 @@
 
     <header>
         <nav class="container">
-            <a href="{{ url_for('home_page', locale=locale) }}" class="logo">🚀 {{ _("app_title").split(" - ")[0] }}</a>
+            <a href="{{ url_for('localized', path='.', locale=locale) }}" class="logo">🚀 {{ _("app_title").split(" - ")[0] }}</a>
             
             <div class="nav-links">
-                <a href="{{ url_for('home_page', locale=locale) }}">🏠 {{ _("nav_home") }}</a>
-                <a href="{{ url_for('about_page', locale=locale) }}">ℹ️ {{ _("nav_about") }}</a>
-                <a href="{{ url_for('dashboard_page', locale=locale) }}">🗂️ {{ _("my_links_button") }}</a>
+                <a href="{{ url_for('localized', path='.', locale=locale) }}">🏠 {{ _("nav_home") }}</a>
+                
+                <a href="{{ url_for('localized', path='about', locale=locale) }}">ℹ️ {{ _("nav_about") }}</a>
+                
+                <a href="{{ url_for('localized', path='dashboard', locale=locale) }}">🗂️ {{ _("my_links_button") }}</a>
             </div>
 
             <div class="lang-switcher">

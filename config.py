@@ -1,11 +1,10 @@
 import os
-# CRITICAL FIX: Import all necessary types for the class body
 from datetime import timedelta 
 from typing import Optional, List, Dict, Tuple
 from functools import lru_cache
 
 # ============================================================================
-# CONFIGURATION & CONSTANTS (Externalized)
+# CONFIGURATION & CONSTANTS
 # ============================================================================
 
 class Config:
@@ -37,7 +36,7 @@ class Config:
     METADATA_FETCH_TIMEOUT: float = 5.0
     SUMMARY_TIMEOUT: float = 15.0
     
-    # Localization (UPDATED: Added 'arr' for Pirate language)
+    # Localization (FINAL: Added 'hi', 'he', and 'arr')
     SUPPORTED_LOCALES: List[str] = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he", "arr"]
     DEFAULT_LOCALE: str = "en"
     RTL_LOCALES: List[str] = ["ar", "he"]
@@ -71,21 +70,25 @@ ADSENSE_SCRIPT: str = f'<script async src="https://pagead2.googlesyndication.com
 
 
 # ============================================================================
-# LOCALIZATION CONSTANTS (UPDATED: Added 'arr' mappings)
+# LOCALIZATION CONSTANTS (FINAL: Updated with 'hi' and 'he' data)
 # ============================================================================
 
 # Maps locale code (en) to two-letter country code (gb)
 LOCALE_TO_FLAG_CODE: Dict[str, str] = {
-    "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
-    "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
-    "arr": "pirate" # Added mapping for the new locale
+    "en": "gb", "es": "es", "zh": "cn", 
+    "hi": "in",  # NEW: Hindi -> India
+    "pt": "br", "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", 
+    "he": "il",  # NEW: Hebrew -> Israel
+    "arr": "pirate" 
 }
 
 # Mapping of country codes to actual Unicode flag emojis
 FLAG_CODE_TO_EMOJI: Dict[str, str] = {
-    "gb": "🇬🇧", "es": "🇪🇸", "cn": "🇨🇳", "in": "🇮🇳", "br": "🇧🇷",
-    "fr": "🇫🇷", "de": "🇩🇪", "sa": "🇸🇦", "ru": "🇷🇺", "il": "🇮🇱",
-    "pirate": "🏴‍☠️", # Added Pirate Flag Emoji
+    "gb": "🇬🇧", "es": "🇪🇸", "cn": "🇨🇳", 
+    "in": "🇮🇳",  # NEW: India Flag Emoji
+    "br": "🇧🇷", "fr": "🇫🇷", "de": "🇩🇪", "sa": "🇸🇦", "ru": "🇷🇺", 
+    "il": "🇮🇱",  # NEW: Israel Flag Emoji
+    "pirate": "🏴‍☠️", 
     "default": "❓" 
 }
 

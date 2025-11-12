@@ -410,7 +410,7 @@ class URLValidator:
     
     @staticmethod
     def validate_url_structure(url: str) -> str:
-        """Validate URL structure and format"""
+        """Validate URL structure and format, adding https:// if scheme is missing."""
         if not url or not url.strip():
              raise ValidationException("URL cannot be empty")
         url = url.strip()
@@ -418,12 +418,15 @@ class URLValidator:
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
-        if not url.startswith(("http://", "https://")):
-            url = "https://" + url
+        # --- CRITICAL FIX START: Handle naked domains (e.g., google.com) ---
+        parsed = urlparse(url)
+        if not parsed.scheme or parsed.scheme not in config.ALLOWED_SCHEMES:
+             url = "https://" + url
+             parsed = urlparse(url) # Re-parse with the added scheme
+        # --- CRITICAL FIX END ---
         
         try:
-            parsed = urlparse(url)
-            
+            # Check scheme again, in case the user input a blocked scheme like 'ftp://'
             if parsed.scheme not in config.ALLOWED_SCHEMES:
                 raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
             
@@ -448,6 +451,7 @@ class URLValidator:
     @staticmethod
     def validate_url_public(url: str) -> bool:
         """Validate URL points to public resource"""
+        # Note: validators.url relies on scheme being present, which is fixed above.
         return validators.url(url, public=True)
     
     @classmethod
@@ -935,12 +939,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     
     def __init__(self, app: FastAPI, max_age: int = 31536000, **kwargs):
         super().__init__(app)
-        # Configure Content-Security-Policy (CSP)
-        # 'self' allows resources from the same origin (your domain)
-        # data: allows base64 encoded images (used for QR codes)
-        # unsafe-inline is a necessary compromise for some Bootstrap/Jinja inline styles/scripts 
-        #   unless we implement Nonces, which is a significant undertaking.
-        # cdn.jsdelivr.net is the Bootstrap CDN host
         
         bootstrap_cdn_host = "cdn.jsdelivr.net"
         adsense_host = "*.google.com *.googleadservices.com *.googlesyndication.com"

@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from starlette.staticfiles import StaticFiles
 
 import database
 # Retained for dependency resolution, though not used for primary link generation
@@ -36,12 +37,11 @@ templates = Jinja2Templates(directory="templates")
 
 logger = logging.getLogger(__name__)
 
-# --- UI Routes (Omitted for brevity, but retained for context) ---
+# --- UI Routes ---
 
 @ui_router.get("/", include_in_schema=False)
 async def redirect_to_default_lang(request: Request):
     """Redirects the root path to the default language."""
-    # ... language detection logic ...
     lang = DEFAULT_LANGUAGE
     accept_language = request.headers.get("accept-language")
     if accept_language: 
@@ -59,14 +59,16 @@ async def redirect_to_default_lang(request: Request):
             if preferred_lang in TRANSLATIONS:
                 lang = preferred_lang
                 break
-
-    return RedirectResponse(url=f"/ui/{lang}/index")
+    
+    # Correctly redirects to the localized route using the detected language
+    return RedirectResponse(url=f"/ui/{lang}/index", status_code=307)
 
 
 @ui_router.get(
     "/ui/{lang_code:str}/index",
     response_class=HTMLResponse,
-    summary="Serve Frontend UI"
+    summary="Serve Frontend UI (Index Page)",
+    name="home_page" # <-- FIX: This is the name your layout.html expects
 )
 async def read_root(request: Request, lang_code: str, settings: Settings = Depends(get_settings)):
     """Serves the main index page for a given language."""
@@ -81,6 +83,44 @@ async def read_root(request: Request, lang_code: str, settings: Settings = Depen
         "base_url": str(settings.base_url).rstrip('/')
     })
 
+# Add placeholder/example routes for the rest of your header links
+@ui_router.get(
+    "/ui/{lang_code:str}/about",
+    response_class=HTMLResponse,
+    summary="Serve About Page",
+    name="about_page" # <-- FIX: Template will now find this
+)
+async def about_page(request: Request, lang_code: str, settings: Settings = Depends(get_settings)):
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+    translator = get_translator(lang_code)
+    # NOTE: You need a template named 'about.html'
+    return templates.TemplateResponse("about.html", {
+        "request": request,
+        "_": translator,
+        "lang_code": lang_code,
+        "base_url": str(settings.base_url).rstrip('/')
+    })
+
+@ui_router.get(
+    "/ui/{lang_code:str}/dashboard",
+    response_class=HTMLResponse,
+    summary="Serve Dashboard",
+    name="dashboard_page" # <-- FIX: Template will now find this
+)
+async def dashboard_page(request: Request, lang_code: str, settings: Settings = Depends(get_settings)):
+    if lang_code not in TRANSLATIONS and lang_code != DEFAULT_LANGUAGE:
+        raise HTTPException(status_code=404, detail="Language not supported")
+    translator = get_translator(lang_code)
+    # NOTE: You need a template named 'dashboard.html'
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "_": translator,
+        "lang_code": lang_code,
+        "base_url": str(settings.base_url).rstrip('/')
+    })
+
+# The rest of the UI routes follow...
 
 @ui_router.get("/health", response_class=HTMLResponse, summary="Health Check", tags=["Monitoring"])
 async def health_check(request: Request):

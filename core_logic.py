@@ -6,12 +6,17 @@ import time
 import asyncio
 import socket
 import ipaddress
+import io
+import base64
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from typing import Dict, Any, List, Tuple, Callable, Optional
 
 import validators
+import httpx
+from bs4 import BeautifulSoup
+import qrcode
 from fastapi import Request, Depends, Path, HTTPException, status
 from pydantic import BaseModel, Field, validator, constr # Used in Pydantic models
 
@@ -71,7 +76,7 @@ class ResourceExpiredException(HTTPException):
     def __init__(self, detail: str = "Resource has expired"):
         super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
 
-# --- CLEANUP WORKER ---
+# --- CLEANUP WORKER (Unchanged) ---
 
 class CleanupWorker:
     """Background worker for cleaning expired links"""
@@ -109,7 +114,7 @@ class CleanupWorker:
             
             time.sleep(self.interval)
 
-# --- GLOBAL LOCALIZATION SETUP ---
+# --- GLOBAL LOCALIZATION SETUP (Unchanged) ---
 
 translations: Dict[str, Dict[str, str]] = {}
 
@@ -150,7 +155,7 @@ def get_translation(locale: str, key: str) -> str:
     
     return f"[{key}]"
 
-# --- LOCALE & TRANSLATOR DEPENDENCIES ---
+# --- LOCALE & TRANSLATOR DEPENDENCIES (Unchanged) ---
 
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
@@ -189,7 +194,7 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
     locale = get_browser_locale(request)
     return lambda key: get_translation(locale, key)
 
-# --- URL VALIDATION / SANITIZATION ---
+# --- URL VALIDATION / SANITIZATION (Unchanged) ---
 
 class URLValidator:
     """Comprehensive URL validation and security checks"""
@@ -269,7 +274,171 @@ class URLValidator:
         
         return url
 
-# --- TEMPLATE CONTEXT DEPENDENCY ---
+# --- QR CODE GENERATION ---
+
+def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) -> str:
+    """Generate QR code as base64 data URI"""
+    try:
+        # NOTE: qrcode requires synchronous libraries, used in app.py
+        import qrcode
+        img = qrcode.make(text, box_size=box_size, border=border)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64_str = base64.b64encode(buf.getvalue()).decode("utf-8")
+        return f"data:image/png;base64,{b64_str}"
+    except Exception as e:
+        logger.error(f"Failed to generate QR code: {e}")
+        # Re-raise or handle appropriately
+        raise
+
+# --- METADATA FETCHER ---
+
+class MetadataFetcher:
+    """Fetch and parse webpage metadata"""
+    
+    def __init__(self, timeout: float = config.METADATA_FETCH_TIMEOUT):
+        self.timeout = timeout
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+    
+    async def fetch(self, url: str) -> Dict[str, Optional[str]]:
+        """Fetch metadata from URL"""
+        meta = {
+            "title": None,
+            "description": None,
+            "image": None,
+            "favicon": None
+        }
+        
+        try:
+            # httpx and BeautifulSoup imports must be available in the environment
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, headers=self.headers, follow_redirects=True)
+                response.raise_for_status()
+                
+                final_url = str(response.url)
+                # NOTE: BeautifulSoup import must be available
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(response.text, "lxml")
+                
+                if og_title := soup.find("meta", property="og:title"):
+                    meta["title"] = og_title.get("content")
+                elif title_tag := soup.find("title"):
+                    meta["title"] = title_tag.string
+                
+                if og_desc := soup.find("meta", property="og:description"):
+                    meta["description"] = og_desc.get("content")
+                
+                if og_image := soup.find("meta", property="og:image"):
+                    meta["image"] = urljoin(final_url, og_image.get("content"))
+                
+                if favicon := (soup.find("link", rel="icon") or soup.find("link", rel="shortcut icon")):
+                    meta["favicon"] = urljoin(final_url, favicon.get("href"))
+                else:
+                    parsed = urlparse(final_url)
+                    meta["favicon"] = f"{parsed.scheme}://{parsed.netloc}/favicon.ico"
+                
+                logger.info(f"Successfully fetched metadata for {url}")
+                return meta
+        
+        except httpx.TimeoutException:
+            logger.warning(f"Timeout fetching metadata for {url}")
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"HTTP error fetching metadata for {url}: {e.response.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching metadata for {url}: {e}")
+        
+        return meta
+
+# --- AI SUMMARIZER ---
+
+class AISummarizer:
+    """AI-powered content summarization using Hugging Face"""
+    
+    def __init__(self, model: str = config.SUMMARIZATION_MODEL, api_url_base: str = "https://api-inference.huggingface.co/models/"):
+        self.api_key = config.HUGGINGFACE_API_KEY
+        self.model = model
+        self.api_url = f"{api_url_base}{self.model}"
+        self.timeout = config.SUMMARY_TIMEOUT
+        self.enabled = bool(self.api_key)
+        
+        if not self.enabled:
+            logger.warning("HUGGINGFACE_API_KEY not set - AI summarization disabled")
+    
+    async def query_api(self, text: str, max_length: int = 150, min_length: int = 30) -> Optional[str]:
+        if not self.enabled: return None
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.api_key}"}
+            payload = {"inputs": text[:config.SUMMARY_MAX_LENGTH],
+                       "parameters": {"max_length": max_length, "min_length": min_length}}
+            
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(self.api_url, headers=headers, json=payload)
+                response.raise_for_status()
+                
+                result = response.json()
+                if isinstance(result, list) and result and 'summary_text' in result[0]:
+                    return result[0]['summary_text'].strip()
+                
+                logger.error(f"Unexpected API response format: {result}")
+                return None
+        
+        except httpx.TimeoutException:
+            logger.error("Timeout querying Hugging Face API")
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error from Hugging Face: {e.response.status_code} - {e.response.text}")
+        except Exception as e:
+            logger.error(f"Error querying Hugging Face API: {e}")
+        
+        return None
+    
+    async def fetch_and_summarize(self, url: str) -> Optional[str]:
+        if not self.enabled: return None
+        
+        try:
+            async with httpx.AsyncClient(timeout=config.HTTP_TIMEOUT) as client:
+                headers = {"User-Agent": "Mozilla/5.0"}
+                response = await client.get(url, headers=headers, follow_redirects=True)
+                response.raise_for_status()
+            
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(response.text, "lxml")
+            for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+                tag.decompose()
+            
+            page_text = soup.get_text(separator=" ", strip=True)
+            if not page_text:
+                raise ValueError("No text content found")
+            
+            summary = await self.query_api(page_text)
+            return summary
+        
+        except Exception as e:
+            logger.error(f"Failed to fetch and summarize {url}: {e}")
+            return None
+    
+    async def summarize_in_background(self, doc_ref, url: str) -> None:
+        # NOTE: This is placeholder logic, requires the doc_ref to be correctly handled
+        # as an AsyncCollectionReference from db_manager.
+        if not self.enabled:
+            return
+        
+        try:
+            summary = await self.fetch_and_summarize(url)
+            
+            if summary:
+                # Placeholder for Async DB Update
+                # This logic must be performed in the main app module
+                pass
+            
+        except Exception as e:
+            logger.error(f"Summary generation failed for {doc_ref.id if hasattr(doc_ref, 'id') else 'link'}: {e}")
+            # Placeholder for Async DB Update Failure
+            pass
+
+# --- TEMPLATE CONTEXT DEPENDENCY (Unchanged) ---
 
 BOOTSTRAP_CDN = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
 BOOTSTRAP_JS = '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'

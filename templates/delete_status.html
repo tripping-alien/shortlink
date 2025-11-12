@@ -1,31 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete Link</title>
-    <meta name="robots" content="noindex">
-    {{ ADSENSE_SCRIPT|safe }}
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-</head>
-<body>
-    <div class="card">
-        {% if success %}
-            <h1>Link Deleted</h1>
-            <p class="status-message success">{{ message }}</p>
-        {% else %}
-            <h1>Error</h1>
-            <p class="status-message error">{{ message }}</p>
-        {% endif %}
-        <a class="button" href="/">Go Home</a>
+{% extends "base.html" %}
+
+{% block title %}{{ _('delete_link') }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            
+            {% if success %}
+                <div class="card shadow-lg border-success">
+                    <div class="card-body p-5">
+                        <i class="bi bi-check-circle display-1 text-success mb-4"></i>
+                        <h2 class="card-title text-success">{{ _('shorten_success_title') }}</h2>
+                        <p class="card-text lead mt-3">{{ message }}</p>
+                        <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-success mt-4">
+                            <i class="bi bi-house-door me-2"></i> {{ _('nav_home') }}
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card shadow-lg border-danger">
+                    <div class="card-body p-5">
+                        <i class="bi bi-x-octagon display-1 text-danger mb-4"></i>
+                        <h2 class="card-title text-danger">{{ _('delete_failure_title_placeholder') }}</h2>
+                        <p class="card-text lead mt-3">{{ message }}</p>
+                        <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-outline-secondary mt-4">
+                            <i class="bi bi-arrow-left me-2"></i> {{ _('nav_home') }}
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+            
+        </div>
     </div>
-
-    <footer class="footer">
-        <span>© {{ datetime.now(timezone.utc).year }} Shortlinks.art</span>
-        <a href="{{ url_for('index') }}">Home</a>
-        <a href="{{ url_for('about') }}">About</a>
-    </footer>
-
-</body>
-</html>
+</div>
+{% endblock %}

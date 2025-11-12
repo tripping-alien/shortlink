@@ -11,8 +11,9 @@
                 {% set flag = FLAG_EMOJIS.get(lang_code) %}
                 
                 {# 
-                   Calculates the base path: (e.g., /en/about -> /about)
-                   CRITICAL FIX: Use .lstrip('/') instead of the non-existent 'trim_left' filter.
+                   1. Get the current path without the locale prefix (e.g., /en/about -> /about)
+                   2. CRITICAL FIX: Use .lstrip('/') to remove the leading slash, 
+                      which is required when passing the path argument to url_for.
                 #}
                 {% set current_path_no_locale = request.url.path.replace('/' + locale, '', 1) or '/' %}
                 

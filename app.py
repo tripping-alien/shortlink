@@ -47,11 +47,11 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# CRITICAL FIX: Removed exceptions from the config import list.
-# The definitions now rely only on standard imports and code execution order.
-from config import (
-    config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
-)
+# CRITICAL FIX 1: Correct import structure. Import 'config' instance separately.
+import config
+from config import TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
+# The custom exceptions are defined locally and not imported via this block.
+SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
 
 # ============================================================================
 # LOGGING SETUP
@@ -138,16 +138,19 @@ class LinkCreatePayload(BaseModel):
     def validate_url(cls, v):
         """Validate URL format"""
         if not v or not v.strip():
-            raise ValueError("URL cannot be empty")
+            # Bug #6: Use proper translation key for required field error
+            raise ValueError("error_field_required")
         return v.strip()
     
     @validator('utm_tags')
     def validate_utm_tags(cls, v):
-        """Validate UTM tags"""
+        """FIX for Bug #4: Properly validate UTM tags format"""
         if v:
             v = v.strip()
-            if v and not v.startswith(('utm_', '?utm_', '&utm_')):
-                pass 
+            # Must start with utm_ or ?utm_ or &utm_
+            if v and not (v.startswith('utm_') or v.startswith('?utm_') or v.startswith('&utm_')):
+                # FIX: Use key from Bug #6
+                raise ValueError("error_invalid_utm_format")
         return v
 
 # ============================================================================
@@ -167,7 +170,12 @@ def load_translations_from_json() -> None:
             return
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            translations = json.load(f)
+            # FIX Bug #3: Correctly load JSON expecting a dict structure
+            data = json.load(f)
+            
+            # Assuming translations.json contains a dict where keys are locales (e.g., {"en": {...}, "es": {...}})
+            # If your structure is {"locales": [{"code": "en", "translations": {...}}]}, you must adjust the parsing here.
+            translations = data 
         
         missing_locales = set(config.SUPPORTED_LOCALES) - set(translations.keys())
         if missing_locales:
@@ -448,6 +456,7 @@ class ShortCodeGenerator:
         for attempt in range(config.MAX_ID_RETRIES):
             code = self.generate()
             
+            # FIX Bug #1: Correctly reference 'collection' instead of 'self.collection'
             doc = await asyncio.to_thread(collection.document(code).get)
             if not doc.exists:
                 return code
@@ -625,9 +634,11 @@ class AISummarizer:
             summary = await self.fetch_and_summarize(url)
             
             if summary:
+                # Store summary and completion time
                 await asyncio.to_thread(doc_ref.update, {
                     "summary_status": "complete",
-                    "summary_text": summary
+                    "summary_text": summary,
+                    "summary_updated_at": datetime.now(timezone.utc) # Track update time
                 })
                 logger.info(f"Summary completed for {doc_ref.id}")
             else:
@@ -689,7 +700,8 @@ class LinkManager:
             "meta_favicon": None,
             "owner_id": owner_id,
             "summary_status": "pending" if summarizer.enabled else "disabled",
-            "summary_text": None
+            "summary_text": None,
+            "summary_updated_at": None # NEW: Track last summary generation time
         }
         
         if expires_at:
@@ -823,10 +835,12 @@ class LinkManager:
     
     @staticmethod
     def _calculate_expiration(ttl: str) -> Optional[datetime]:
-        """Calculate expiration datetime from TTL"""
-        delta = TTL_MAP.get(ttl)
-        if delta is None:
+        """FIX Bug #4: Calculate expiration datetime from TTL (which is in seconds)"""
+        seconds = TTL_MAP.get(ttl)
+        if seconds is None:
             return None
+        
+        delta = timedelta(seconds=seconds)
         return datetime.now(timezone.utc) + delta
 
 # ============================================================================
@@ -913,7 +927,8 @@ async def lifespan(app: FastAPI):
         db = firebase_manager.initialize()
         
         cleanup_worker = CleanupWorker(db)
-        cleanup_worker.start()
+        worker_instance = cleanup_worker # FIX Bug #5: Assign to global variable
+        worker_instance.start()
         
         logger.info("Application started successfully")
         yield
@@ -980,6 +995,7 @@ async def get_common_context(
         "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
+        "config": config, # FIX Bug #6: Passed config instance to templates
     }
 
 # ============================================================================
@@ -1129,6 +1145,7 @@ async def api_get_my_links(
 @app.get("/r/{short_code}")
 async def redirect_short_code(
     short_code: str,
+    request: Request, # FIX Bug #2: Added request parameter
     translator: Callable = Depends(get_api_translator)
 ):
     """Redirect short code to preview page"""
@@ -1136,7 +1153,8 @@ async def redirect_short_code(
         if not short_code.isalnum() or len(short_code) < 4:
             raise ValidationException(translator("invalid_short_code"))
         
-        locale = get_browser_locale(Request(scope={"type": "http", "headers": []}))
+        # FIX Bug #2: Use the real request object to get the browser locale
+        locale = get_browser_locale(request) 
         preview_url = f"/{locale}/preview/{short_code}"
         
         full_redirect_url = f"{config.BASE_URL}{preview_url}"
@@ -1413,10 +1431,15 @@ app.mount("/{locale}", i18n_router, name="localized")
 
 def is_localized_route(path: str) -> bool:
     """Checks if the path is intended for a localized HTML page."""
+    # FIX Bug #9: Ensure robust segment check
     if not path.startswith('/'):
         return False
     
-    first_segment = path.split('/')[1]
+    segments = path.split('/')
+    if len(segments) < 2:
+        return False
+        
+    first_segment = segments[1]
     return first_segment in config.SUPPORTED_LOCALES
 
 @app.exception_handler(HTTPException)

@@ -39,8 +39,8 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# UPDATED: Import new LLM library
-import google.generativeai as genai
+# UPDATED: No more google.generativeai import
+# import google.generativeai as genai 
 
 # ---------------- CONFIG ----------------
 BASE_URL = os.environ.get("BASE_URL", "https://shortlinks.art")
@@ -61,13 +61,12 @@ SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
 RTL_LOCALES = ["ar", "he"]
 
-# NEW: Mapping for language codes to flag-icon-css country codes
 LOCALE_TO_FLAG_CODE = {
     "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
     "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
 }
 
-# (Your full translations dictionary is assumed to be here)
+# (Your full translations dictionary goes here)
 translations = {
     "en": {
         "lang_name_en": "English", "lang_name_es": "Spanish", "lang_name_zh": "Chinese", "lang_name_hi": "Hindi", "lang_name_pt": "Portuguese", "lang_name_fr": "French", "lang_name_de": "German", "lang_name_ar": "Arabic", "lang_name_ru": "Russian", "lang_name_he": "Hebrew",
@@ -102,58 +101,95 @@ translations = {
         "dashboard_p_1": "This is your personal dashboard. All links you create on this device are saved here.",
         "link_not_found": "Link not found", "link_expired": "Link expired", "invalid_url": "Invalid URL provided.", "custom_code_exists": "Custom code already exists", "id_generation_failed": "Could not generate unique short code.", "owner_id_required": "Owner ID is required", "token_missing": "Deletion token is missing", "delete_success": "Link successfully deleted.", "delete_invalid_token": "Invalid deletion token. Link was not deleted.",
         "js_enter_url": "Please enter a URL.", "js_error_creating": "Error creating short link", "js_error_server": "Failed to connect to the server.", "js_copied": "Copied!", "js_copy_failed": "Failed!",
+        "preview_summary_pending": "AI summary loading... Check back in a few seconds!", # NEW
+        "preview_summary_failed": "AI summary failed. Showing original description.",        # NEW
     },
     # (Other languages omitted for brevity but should be included from previous step)
 }
+# --- END of translations dictionary ---
 
 
-# --- LLM Summarizer Setup ---
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    llm_model = genai.GenerativeModel('gemini-1.5-flash')
-    logger.info("Gemini LLM model initialized.")
-else:
-    llm_model = None
-    logger.warning("GEMINI_API_KEY is not set. AI summarizer will be disabled.")
+# ---------------- LLM Summarizer Setup (Hugging Face) ----------------
+HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
+SUMMARIZATION_MODEL = "facebook/bart-large-cnn"
+HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
+HF_HEADERS = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
+
+if not HUGGINGFACE_API_KEY:
+    logger.warning("HUGGINGFACE_API_KEY is not set. AI summarizer will be disabled.")
+
+
+async def query_huggingface(payload: dict) -> Optional[str]:
+    """Sends a query to the Hugging Face Inference API."""
+    if not HUGGINGFACE_API_KEY:
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(HF_API_URL, headers=HF_HEADERS, json=payload)
+            response.raise_for_status()
+            
+            result = response.json()
+            if result and isinstance(result, list) and 'summary_text' in result[0]:
+                return result[0]['summary_text'].strip()
+            
+            logger.error(f"Hugging Face API returned unexpected format: {result}")
+            return None
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Hugging Face API HTTP Error: {e.response.status_code}. Response: {e.response.text}")
+        return None
+    except Exception as e:
+        logger.error(f"Error querying Hugging Face: {e}")
+        return None
+
 
 async def generate_summary_background(doc_ref: firestore.DocumentReference, url: str):
-    """Background task to fetch, summarize, and save a page summary."""
-    if not llm_model:
-        logger.warning(f"Summarizer skipped for {doc_ref.id}: GEMINI_API_KEY not set.")
+    """Background task to fetch, summarize using Hugging Face, and save."""
+    if not HUGGINGFACE_API_KEY:
+        doc_ref.update({"summary_status": "failed"})
         return
 
     try:
+        # 1. Fetch website content
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True, timeout=10.0)
             response.raise_for_status()
         
+        # 2. Extract and sanitize text
         soup = BeautifulSoup(response.text, "lxml")
         for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
             element.decompose()
         page_text = soup.get_text(separator=" ", strip=True)
         
-        if len(page_text) > 10000:
-            page_text = page_text[:10000]
-
         if not page_text:
             raise ValueError("No text content found on page.")
+        
+        # 3. Call Hugging Face API for summarization
+        # Truncate content to 2000 tokens for safety and model limits
+        payload = {
+            "inputs": page_text[:2000], 
+            "parameters": {"max_length": 150, "min_length": 30}
+        }
+        
+        summary = await query_huggingface(payload)
 
-        prompt = f"Summarize the following webpage content into one compelling sentence: {page_text}"
-        summary_response = await llm_model.generate_content_async(prompt)
-        summary = summary_response.text.strip()
-
-        doc_ref.update({
-            "summary_status": "complete",
-            "summary_text": summary
-        })
-        logger.info(f"Successfully generated and saved summary for {doc_ref.id}")
+        if summary:
+            # 4. Save to Firestore
+            doc_ref.update({
+                "summary_status": "complete",
+                "summary_text": summary
+            })
+            logger.info(f"Successfully generated and saved summary for {doc_ref.id} using {SUMMARIZATION_MODEL}")
+        else:
+            raise Exception("Hugging Face summary was empty or failed.")
 
     except Exception as e:
         logger.error(f"Failed to generate summary for {doc_ref.id}: {e}")
         doc_ref.update({"summary_status": "failed"})
 
 # --- i18n Functions ---
+# (Unchanged functions for locale detection and translator logic)
 
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
@@ -258,18 +294,19 @@ APP_INSTANCE = None
 _firebase_temp_file_path = None
 
 def start_cleanup_thread():
-    # Only called once on startup
     import threading
     import time
 
     def cleanup_worker():
         while True:
             try:
+                # Need a local logger reference here if run outside main thread scope
+                local_logger = logging.getLogger(__name__) 
                 deleted = cleanup_expired_links()
-                logger.info(f"[CLEANUP] Deleted {deleted} expired links.")
+                local_logger.info(f"[CLEANUP] Deleted {deleted} expired links.")
             except Exception as e:
-                logger.error(f"[CLEANUP ERROR] {e}")
-            time.sleep(1800)  # 30 minutes
+                local_logger.error(f"[CLEANUP ERROR] {e}")
+            time.sleep(1800) 
 
     thread = threading.Thread(target=cleanup_worker, daemon=True)
     thread.start()
@@ -422,7 +459,6 @@ def is_public_ip(ip_str: str) -> bool:
         return False
 
 async def fetch_metadata(url: str) -> dict:
-    # (Unchanged metadata fetch logic)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -516,11 +552,11 @@ ADSENSE_SCRIPT = f"""
 @app.on_event("startup")
 def on_startup():
     init_firebase()
-    start_cleanup_thread() # Start the cleanup thread only once
+    start_cleanup_thread()
 
 @app.on_event("shutdown")
 def on_shutdown():
-    cleanup_firebase_temp_file() # Clean up temp file
+    cleanup_firebase_temp_file()
 
 @app.get("/")
 async def root_redirect(request: Request):
@@ -809,6 +845,7 @@ async def preview(
     meta_image = link.get("meta_image")
     meta_favicon = link.get("meta_favicon")
     summary = link.get("summary_text")
+    summary_status = link.get("summary_status", "pending")
     
     # 1. Fetch Metadata (if needed)
     if not link.get("meta_fetched"):
@@ -829,18 +866,26 @@ async def preview(
             logger.error(f"Error updating cache for {short_code}: {e}")
     
     # 2. Trigger LLM Summary (if pending)
-    if link.get("summary_status") == "pending" and llm_model:
+    if summary_status == "pending" and HUGGINGFACE_API_KEY:
         try:
+            # We don't need the local db_client reference inside the background task, 
+            # as it calls init_firebase() internally.
             background_tasks.add_task(generate_summary_background, doc_ref, safe_href_url)
             doc_ref.update({"summary_status": "in_progress"})
+            logger.info(f"Background summary task scheduled for {short_code}.")
         except Exception as e:
             logger.error(f"Failed to schedule background task for {short_code}: {e}")
 
     # 3. Determine Final Display Description
-    # Priority: AI Summary > Meta Description > Hardcoded fallback
-    display_description = summary or meta_description
-    if not display_description:
-        display_description = "No description available."
+    if summary_status == "complete" and summary:
+        display_description = summary
+    elif summary_status in ["pending", "in_progress"]:
+        display_description = _("preview_summary_pending") # Show status message
+    elif summary_status == "failed":
+        display_description = _("preview_summary_failed") # Show failure message
+    else:
+        # Fallback to meta description
+        display_description = meta_description or "No description available."
     
     context = {
         **common_context,
@@ -912,4 +957,3 @@ class SecurityException(Exception):
 
 # --- Mount the localized router ---
 app.mount("/{locale}", i18n_router, name="localized")
-

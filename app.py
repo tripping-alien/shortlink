@@ -373,20 +373,29 @@ class URLValidator:
     
     @staticmethod
     def validate_url_structure(url: str) -> str:
-        """Validate URL structure and format"""
+        """Validate URL structure and format, prepending https:// if necessary."""
         if not url or not url.strip():
-             raise ValidationException("URL cannot be empty")
+             raise ValidationException("URL cannot be empty") 
         url = url.strip()
         
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
-        if not url.startswith(("http://", "https://")):
+        # --- CRITICAL FIX: Prepend https:// if no scheme is found ---
+        parsed_test = urlparse(url)
+        
+        # If scheme is missing, we check if netloc is present. If netloc is absent, 
+        # it means the entire input was parsed as path, confirming it's a naked link.
+        # We also check if the scheme is explicitly empty.
+        if not parsed_test.scheme:
+            # We assume it should be https and prepend it.
             url = "https://" + url
+        # --- END FIX ---
         
         try:
             parsed = urlparse(url)
             
+            # Check if the scheme, after correction, is allowed
             if parsed.scheme not in config.ALLOWED_SCHEMES:
                 raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
             

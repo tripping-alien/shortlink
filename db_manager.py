@@ -40,6 +40,12 @@ db: AsyncClient = None
 APP_ID: str = ""
 APP_INSTANCE = None # Global to hold the initialized App instance
 
+# --- Custom Exception (Placeholder for demonstration, ensure this is defined elsewhere if needed) ---
+# NOTE: If ResourceNotFoundException is not defined, you must define it or change the delete_link function.
+class ResourceNotFoundException(Exception):
+    """Custom exception for resource not found errors."""
+    pass 
+
 # --- Hashing Helper Functions ---
 
 def _verify_token(plain_token: str, hashed_token: str) -> bool:
@@ -96,8 +102,8 @@ def get_db_connection():
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
             # 5. Get Firestore Client (ASYNCHRONOUS)
-            # CRITICAL FIX: Changed firestore.async_client to firestore.AsyncClient
-            db = firestore.AsyncClient(app=APP_INSTANCE) 
+            # --- FIX APPLIED HERE: Removed the problematic 'app=APP_INSTANCE' argument ---
+            db = firestore.AsyncClient() 
             logger.info("Firebase Firestore ASYNC client initialized successfully.")
             
         except Exception as e:
@@ -280,6 +286,7 @@ async def delete_link_by_id_and_token(
         logger.info(f"Successfully deleted link '{short_code}'.")
         return True
     except exceptions.NotFound:
+        # ResourceNotFoundException must be defined in your module or imported.
         raise ResourceNotFoundException(f"Link '{short_code}' not found.")
     except ValueError as e:
         raise ValueError(e)

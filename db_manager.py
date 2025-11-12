@@ -125,6 +125,29 @@ def init_db():
     """
     get_db_connection()
 
+# --- Missing Method Implementation ---
+
+async def delete_link_by_id_and_token(
+    short_code: str, 
+    token: str
+) -> bool:
+    """
+    Public function to delete a link, wrapping the transactional logic.
+
+    Returns: True on successful deletion.
+    Raises: ValueError for invalid token, ResourceNotFoundException if link is not found.
+    """
+    db_client = get_db_connection()
+    
+    # We use the existing transactional function to perform the atomic check and delete.
+    # The transactional function handles all error raising (ValueError, ResourceNotFoundException).
+    await delete_link_with_token_check(
+        db_client.transaction(), 
+        short_code, 
+        token
+    )
+    return True
+
 
 def get_collection_ref(collection_name: str) -> firestore.AsyncCollectionReference:
     """Returns the AsyncCollectionReference for a public collection."""

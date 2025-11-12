@@ -16,7 +16,7 @@ from firebase_admin.firestore import AsyncClient, Transaction
 # Import passlib for secure token hashing
 from passlib.context import CryptContext
 
-# --- FIX: Import globally exposed constants directly ---
+# Import the necessary constants from the user's config file
 from config import SHORT_CODE_LENGTH, MAX_ID_RETRIES, TTL_MAP 
 
 # --- Environment Setup and Security ---
@@ -24,6 +24,7 @@ from config import SHORT_CODE_LENGTH, MAX_ID_RETRIES, TTL_MAP
 logger = logging.getLogger(__name__)
 
 # 1. Setup Security Context for Hashing Deletion Tokens
+# We use bcrypt, a strong, one-way hashing algorithm.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # --- Constants & Globals ---
@@ -32,16 +33,12 @@ CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
 # A far-future date for "never expires" links to allow efficient querying
 FAR_FUTURE_EXPIRY = datetime(3000, 1, 1, tzinfo=timezone.utc) 
 
-# Set the alias locally here:
-MAX_ID_GENERATION_RETRIES = MAX_ID_RETRIES
-
 # The 'db' client is now an AsyncClient
 db: AsyncClient = None
 APP_ID: str = ""
 APP_INSTANCE = None # Global to hold the initialized App instance
 
-# --- Custom Exception (Placeholder for demonstration, ensure this is defined elsewhere if needed) ---
-# NOTE: Define ResourceNotFoundException here or import it if necessary
+# --- Custom Exception (Required for delete_link_with_token_check) ---
 class ResourceNotFoundException(Exception):
     """Custom exception for resource not found errors."""
     pass 
@@ -77,21 +74,17 @@ def get_db_connection():
         try:
             cred = None
             
-            # 2. Determine Credential Source (ONLY checking FIREBASE_CONFIG)
+            # 2. Determine Credential Source (ONLY checking FIREBASE_CONFIG, as requested)
             if firebase_config_str:
-                # Write the service account JSON string to a temporary file
                 with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
                     tmp_file.write(firebase_config_str)
                     temp_file_path = tmp_file.name 
-                
-                # Load credentials from the temporary file
                 cred = credentials.Certificate(temp_file_path)
                 logger.info("Using FIREBASE_CONFIG JSON string via temporary file.")
             
             # 3. Handle missing configuration
             if cred is None:
                 logger.error("FIREBASE_CONFIG is not set or is empty. Cannot connect to Firebase.")
-                # CRITICAL: Raised exception clearly states the required variable.
                 raise ValueError("Firebase configuration is missing. Please set the FIREBASE_CONFIG environment variable.")
 
             # 4. Initialize Firebase App
@@ -108,12 +101,10 @@ def get_db_connection():
             logger.info("Firebase Firestore ASYNC client initialized successfully via APP_INSTANCE.")
             
         except Exception as e:
-            # Catch the JSONDecodeError here for clearer logging if the content is still wrong
             if isinstance(e, json.JSONDecodeError):
                 logger.error(f"Error initializing Firebase or Firestore: The content of FIREBASE_CONFIG is not valid JSON. Detail: {e}")
             else:
                 logger.error(f"Error initializing Firebase or Firestore: {e}")
-            # Re-raise as a generic RuntimeError to match the original function signature
             raise RuntimeError("Database connection failure.") from e
         finally:
             # 6. Clean up the temp file
@@ -140,19 +131,11 @@ def get_collection_ref(collection_name: str) -> firestore.AsyncCollectionReferen
     if not APP_ID:
         raise ValueError("APP_ID is not set. Cannot construct collection path.")
     
-    path = f"artifacts/{APP_ID}/public/data/{collection_name}" 
-    # Ensure the async client is used
+    path = f"artifacts/{APP_ID}/public/data/{collection_name}"
     return get_db_connection().collection(path)
 
 
-# --- Utility Functions ---
-
-def _calculate_expiration(ttl_key: str) -> Optional[datetime]:
-    """Calculate expiration datetime from TTL key."""
-    delta: Optional[timedelta] = TTL_MAP.get(ttl_key)
-    if delta is None:
-        return None
-    return datetime.now(timezone.utc) + delta
+# --- Internal Short Code Generation Logic (Async) ---
 
 def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     """Generates a random short code using only lowercase letters and digits."""
@@ -163,58 +146,60 @@ async def _is_short_code_unique(short_code: str) -> bool:
     """Checks the database asynchronously to see if a short code already exists."""
     get_db_connection()
     doc_ref = get_collection_ref("links").document(short_code)
-    doc = await doc_ref.get() 
+    doc = await doc_ref.get() # <-- Await
     return not doc.exists
 
 async def generate_unique_short_code() -> str:
     """
     Generates a unique short code by checking the database and retrying on collision.
     """
-    for attempt in range(MAX_ID_GENERATION_RETRIES):
+    # NOTE: MAX_ID_GENERATION_RETRIES must be MAX_ID_RETRIES from config
+    for attempt in range(MAX_ID_RETRIES):
         new_id = _generate_short_code()
         
-        if await _is_short_code_unique(new_id): 
+        if await _is_short_code_unique(new_id): # <-- Await
             return new_id
         
         logger.debug(f"Collision detected for ID: {new_id}. Retrying... (Attempt {attempt + 1})")
 
     raise RuntimeError(
-        f"Failed to generate a unique short ID after {MAX_ID_GENERATION_RETRIES} attempts."
+        f"Failed to generate a unique short ID after {MAX_ID_RETRIES} attempts."
     )
 
 # --- Public Database Operations (Async, Secure) ---
 
 async def create_link(
     long_url: str, 
-    ttl_key: str, 
+    expires_at: Optional[datetime], 
     deletion_token: str, 
-    custom_code: Optional[str] = None,
-    owner_id: Optional[str] = None,
-    utm_tags: Optional[str] = None
+    short_code: Optional[str] = None
 ) -> str:
     """
-    Creates a new link document in Firestore. Returns the unique/chosen short code.
+    Creates a new link document in Firestore. Uses transactions/atomic
+    operations to prevent race conditions and hashes the deletion token.
+    
+    Returns: The unique/chosen short code.
+    Raises: ValueError if the provided short_code is already in use.
     """
     db_client = get_db_connection()
     
     # --- 1. Prepare Data ---
     hashed_token = _hash_token(deletion_token)
-    expires_at = _calculate_expiration(ttl_key)
     
     data = {
         "long_url": long_url,
-        "deletion_token": hashed_token, 
+        "deletion_token": hashed_token, # <-- Store the HASH, not the token
         "created_at": datetime.now(tz=timezone.utc),
-        "clicks": 0,
-        "owner_id": owner_id,
-        "utm_tags": utm_tags,
         # Use a far-future date for "never expires" to simplify queries
         "expires_at": expires_at if expires_at else FAR_FUTURE_EXPIRY
     }
     
-    if custom_code:
-        # --- 2a. Custom Code Path (Atomic Check-and-Set) ---
-        final_code = custom_code
+    if short_code:
+        # --- 2a. Custom Code Path (High-Risk for Race Condition) ---
+        if not short_code.isalnum(): 
+            raise ValueError("Invalid short code format: custom code must be alphanumeric.")
+        
+        final_code = short_code
         doc_ref = get_collection_ref("links").document(final_code)
         
         # Use a transaction to check-and-set atomically
@@ -223,24 +208,27 @@ async def create_link(
             doc_snapshot = await ref.get(transaction=transaction)
             if doc_snapshot.exists:
                 raise ValueError(f"Custom short code '{ref.id}' is already in use.")
+            # Set the data within the transaction
             transaction.set(ref, data_to_set)
         
         try:
             await _create_in_transaction(db_client.transaction(), doc_ref, data)
         except ValueError as e:
-            # Re-raise the "already in use" error as a ValidationException equivalent
-            raise ValueError(f"Custom code already exists")
+            raise e # Re-raise the "already in use" error
     
     else:
-        # --- 2b. Random Generation Path (Atomic Create) ---
+        # --- 2b. Random Generation Path (Low-Risk) ---
         final_code = await generate_unique_short_code()
         doc_ref = get_collection_ref("links").document(final_code)
         
         try:
             # Use .create() for an atomic "create if not exists" operation.
+            # This is faster than a full transaction.
             await doc_ref.create(data)
-        except exceptions.AlreadyExists as e:
-            logger.error(f"Critical collision on 'create' for {final_code}: {e}")
+        except exceptions.AlreadyExists:
+            # This should rarely happen given our uniqueness check,
+            # but it securely handles the race condition if it does.
+            logger.error(f"Critical collision on 'create' for {final_code}. This should not happen.")
             raise RuntimeError(
                 f"Failed to create link for {final_code} due to a rare collision."
             )
@@ -251,55 +239,63 @@ async def create_link(
 async def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
     """Retrieves a link record by its short code (Document ID) asynchronously."""
     doc_ref = get_collection_ref("links").document(short_code)
-    doc = await doc_ref.get() 
+    doc = await doc_ref.get() # <-- Await
     
     if doc.exists:
         data = doc.to_dict()
-        data['short_code'] = doc.id 
+        data['id'] = doc.id 
         return data
     return None
 
-async def delete_link_by_id_and_token(
+async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
+    """Retrieves all non-expired links for sitemap generation (Async)."""
+    try:
+        # This efficient query relies on "never expires" links
+        # having a far-future 'expires_at' date.
+        # NOTE: This query requires a Firestore Index on 'expires_at'.
+        query = get_collection_ref("links").where('expires_at', '>', now).stream() 
+        
+        links = []
+        async for doc in query: # <-- Use async for
+            data = doc.to_dict()
+            links.append({'id': doc.id, **data})
+        return links
+    except Exception as e:
+        logger.error(f"Failed to fetch active links for sitemap: {e}")
+        return []
+
+@firestore.transactional
+async def delete_link_with_token_check(
+    transaction: Transaction, 
     short_code: str, 
     token: str
 ) -> bool:
     """
     Atomically retrieves a doc, checks the deletion token, and deletes it.
     
-    Returns: True on successful deletion.
-    Raises: ValueError for invalid token, ResourceNotFoundException if link is not found.
+    Returns: True on success, False on failure (bad token/not found).
     """
-    db_client = get_db_connection()
     doc_ref = get_collection_ref("links").document(short_code)
+    doc_snapshot = await doc_ref.get(transaction=transaction)
 
-    @firestore.transactional
-    async def _delete_in_transaction(transaction: Transaction, ref, token_to_verify):
-        doc_snapshot = await ref.get(transaction=transaction)
-
-        if not doc_snapshot.exists:
-            raise exceptions.NotFound(f"Link '{ref.id}' not found.")
-
-        data = doc_snapshot.to_dict()
-        hashed_token = data.get("deletion_token")
-
-        if not hashed_token or not _verify_token(token_to_verify, hashed_token):
-            raise ValueError("Invalid deletion token.")
-            
-        transaction.delete(doc_ref)
-        return True
-
-    try:
-        await _delete_in_transaction(db_client.transaction(), doc_ref, token)
-        logger.info(f"Successfully deleted link '{short_code}'.")
-        return True
-    except exceptions.NotFound:
-        # ResourceNotFoundException must be defined in your module or imported.
+    if not doc_snapshot.exists:
+        logger.warning(f"Deletion attempt failed: Link '{short_code}' not found.")
+        # Raise ResourceNotFoundException instead of returning False for clear API error handling
         raise ResourceNotFoundException(f"Link '{short_code}' not found.")
-    except ValueError as e:
-        raise ValueError(e)
-    except Exception as e:
-        logger.error(f"Transaction failed for delete_link: {e}")
-        raise RuntimeError("Deletion transaction failed.")
+
+    data = doc_snapshot.to_dict()
+    hashed_token = data.get("deletion_token")
+
+    # Securely verify the provided token against the stored hash
+    if not hashed_token or not _verify_token(token, hashed_token):
+        logger.warning(f"Deletion attempt failed: Invalid token for '{short_code}'.")
+        # Raise ValueError for clear API error handling
+        raise ValueError("Invalid deletion token.")
+        
+    # Token is valid, proceed with deletion
+    transaction.delete(doc_ref)
+    logger.info(f"Successfully deleted link '{short_code}'.")
+    return True
 
 async def cleanup_expired_links(now: datetime):
     """

@@ -29,6 +29,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint # NEW IMPORT for custom middleware
 
 import httpx
 from bs4 import BeautifulSoup
@@ -926,6 +927,56 @@ class CleanupWorker:
         return count
 
 # ============================================================================
+# SECURITY MIDDLEWARE
+# ============================================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Adds essential security headers to all responses."""
+    
+    def __init__(self, app: FastAPI, max_age: int = 31536000, **kwargs):
+        super().__init__(app)
+        # Configure Content-Security-Policy (CSP)
+        # 'self' allows resources from the same origin (your domain)
+        # data: allows base64 encoded images (used for QR codes)
+        # unsafe-inline is a necessary compromise for some Bootstrap/Jinja inline styles/scripts 
+        #   unless we implement Nonces, which is a significant undertaking.
+        # cdn.jsdelivr.net is the Bootstrap CDN host
+        
+        bootstrap_cdn_host = "cdn.jsdelivr.net"
+        adsense_host = "*.google.com *.googleadservices.com *.googlesyndication.com"
+        
+        # Policy for HTML responses (views)
+        self.html_csp = (
+            f"default-src 'self'; "
+            f"script-src 'self' 'unsafe-inline' https://{bootstrap_cdn_host} {adsense_host}; "
+            f"style-src 'self' 'unsafe-inline' https://{bootstrap_cdn_host}; "
+            f"img-src 'self' data: https://*;"
+        )
+        
+        # Policy for API/JSON responses (stricter)
+        self.api_csp = "default-src 'self';"
+        
+        self.hsts_header = f"max-age={max_age}; includeSubDomains"
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        response = await call_next(request)
+        
+        # Determine if the response is an HTML page (localized routes)
+        if response.media_type == "text/html" or is_localized_route(request.url.path):
+            csp = self.html_csp
+        else:
+            # API routes, static files, health checks, etc.
+            csp = self.api_csp
+        
+        # Add common security headers
+        response.headers["Strict-Transport-Security"] = self.hsts_header
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Content-Security-Policy"] = csp
+        
+        return response
+
+# ============================================================================
 # FASTAPI APPLICATION
 # ============================================================================
 
@@ -974,6 +1025,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# NEW: Security Headers Middleware (CRITICAL ADDITION)
+app.add_middleware(SecurityHeadersMiddleware) 
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"]) # Added just in case it was missing a configuration.
+
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)

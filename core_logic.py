@@ -169,6 +169,24 @@ def get_browser_locale(request: Request) -> str:
     
     return config.DEFAULT_LOCALE
 
+
+def get_current_locale(request: Request) -> str:
+    lang_cookie = request.cookies.get("lang")
+    if lang_cookie and lang_cookie in config.SUPPORTED_LOCALES:
+        return lang_cookie
+    
+    try:
+        lang_header = request.headers.get("accept-language", "")
+        if lang_header:
+            primary_lang = lang_header.split(',')[0].split('-')[0].lower()
+            if primary_lang in config.SUPPORTED_LOCALES:
+                return primary_lang
+    except Exception:
+        pass
+    
+    return config.DEFAULT_LOCALE
+
+
 def get_translator_and_locale(
     request: Request, 
     locale: str = Path(..., description="The language code")

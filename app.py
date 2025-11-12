@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles # 🌟 ADDED: Import for serving static files
+from fastapi.staticfiles import StaticFiles # Import for serving static files
 
 from slowapi import Limiter, _rate_limit_exceeded_handler, errors
 from slowapi.util import get_remote_address
@@ -22,9 +22,12 @@ import config
 # CRITICAL FIX: Import global constants directly into this module's scope
 from config import MAX_URL_LENGTH, RATE_LIMIT_CREATE, RATE_LIMIT_STATS
 from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection, get_collection_ref
+
+# Import core_logic functions/classes
 from core_logic import (
     logger, load_translations_from_json, get_translation,
     get_browser_locale, get_common_context, get_translator, get_api_translator,
+    get_current_locale, # 🟢 FIX FOR NameError: Explicitly imported the function
     CleanupWorker, URLValidator, SecurityException, ValidationException,
     ResourceNotFoundException, ResourceExpiredException, 
     BOOTSTRAP_CDN, BOOTSTRAP_JS,
@@ -75,7 +78,6 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     global worker_instance
     try:
-        # NOTE: Assumes 'config' instance is already available and fixed
         config.config.validate() 
         load_translations_from_json()
         init_db()
@@ -216,7 +218,6 @@ async def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         
-        # NOTE: Assuming TRANSLATIONS structure is correct on config object
         error_detail = translator("db_connection_error") if 'db_connection_error' in getattr(config.config, 'TRANSLATIONS', {}).get(config.config.DEFAULT_LOCALE, {}) else str(e)
         
         return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -294,7 +295,6 @@ async def get_common_context(
     """Get common template context"""
     return {
         "request": request,
-        # NOTE: config.ADSENSE_SCRIPT access is valid due to previous fix (setattr)
         "ADSENSE_SCRIPT": config.config.ADSENSE_SCRIPT, 
         "_": translator,
         "locale": locale,
@@ -305,7 +305,8 @@ async def get_common_context(
         "FLAG_EMOJIS": config.config.LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        "config": config.config, # 🎯 FIX FOR AttributeError: 'Config' object has no attribute 'config'
+        # 🎯 FIX FOR AttributeError: 'Config' object has no attribute 'config'
+        "config": config.config, 
     }
 
 # --- LOCALIZED ROUTES (i18n_router) ---

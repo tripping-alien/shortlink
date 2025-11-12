@@ -10,9 +10,7 @@ from datetime import datetime, timezone, timedelta
 
 from firebase_admin import credentials, initialize_app, firestore, get_app
 from firebase_admin import exceptions 
-# Import AsyncClient and Transaction for async operations
-# NOTE: The imports below are for type hinting and transactional operations, 
-# not necessarily for client initialization method.
+# Import AsyncClient and Transaction for async operations (for typing/transactional decorator)
 from firebase_admin.firestore import AsyncClient, Transaction 
 
 # Import passlib for secure token hashing
@@ -26,7 +24,6 @@ from config import SHORT_CODE_LENGTH, MAX_ID_RETRIES, TTL_MAP
 logger = logging.getLogger(__name__)
 
 # 1. Setup Security Context for Hashing Deletion Tokens
-# We use bcrypt, a strong, one-way hashing algorithm.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # --- Constants & Globals ---
@@ -35,7 +32,7 @@ CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
 # A far-future date for "never expires" links to allow efficient querying
 FAR_FUTURE_EXPIRY = datetime(3000, 1, 1, tzinfo=timezone.utc) 
 
-# The 'db' client is now an AsyncClient (Type Hint)
+# The 'db' client is now the synchronous client (Type Hint remains for context)
 db: AsyncClient = None
 APP_ID: str = ""
 APP_INSTANCE = None # Global to hold the initialized App instance
@@ -50,6 +47,7 @@ class ResourceNotFoundException(Exception):
 def _verify_token(plain_token: str, hashed_token: str) -> bool:
     """Verifies a plain token against a hashed one."""
     try:
+        # pwd_context.verify is synchronous, but fast enough to not wrap in to_thread
         return pwd_context.verify(plain_token, hashed_token)
     except Exception as e:
         logger.warning(f"Token verification failed: {e}")
@@ -57,6 +55,7 @@ def _verify_token(plain_token: str, hashed_token: str) -> bool:
 
 def _hash_token(plain_token: str) -> str:
     """Hashes a plain token using bcrypt."""
+    # pwd_context.hash is synchronous, but fast enough to not wrap in to_thread
     return pwd_context.hash(plain_token)
 
 # --- Database Connection (Async) ---
@@ -97,9 +96,8 @@ def get_db_connection():
                 APP_INSTANCE = initialize_app(cred, name=APP_ID)
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
-            # 5. Get Firestore Client (ASYNCHRONOUS)
-            # FIX: Use the standard factory function and bind it to the APP_INSTANCE.
-            # This is the most compatible method across SDK versions for binding to a named app.
+            # 5. Get Firestore Client (SYNCHRONOUS)
+            # FIX: Use the standard factory function for compatibility. 
             db = firestore.client(app=APP_INSTANCE) 
             logger.info("Firebase Firestore client initialized successfully.")
             
@@ -129,15 +127,13 @@ def init_db():
     get_db_connection()
 
 
-def get_collection_ref(collection_name: str) -> firestore.AsyncCollectionReference:
-    """Returns the AsyncCollectionReference for a public collection."""
+def get_collection_ref(collection_name: str) -> firestore.CollectionReference:
+    """Returns the CollectionReference for a public collection."""
     if not APP_ID:
         raise ValueError("APP_ID is not set. Cannot construct collection path.")
     
     path = f"artifacts/{APP_ID}/public/data/{collection_name}"
-    # NOTE: Since the returned client is now synchronous in the latest fix, 
-    # the return type hint is technically inaccurate, but we continue 
-    # with the implementation pattern.
+    # NOTE: The client is synchronous, so the return type is synchronous.
     return get_db_connection().collection(path)
 
 
@@ -152,7 +148,9 @@ async def _is_short_code_unique(short_code: str) -> bool:
     """Checks the database asynchronously to see if a short code already exists."""
     get_db_connection()
     doc_ref = get_collection_ref("links").document(short_code)
-    doc = await doc_ref.get() # <-- Await
+    
+    # FIX: Synchronous .get() must be wrapped in asyncio.to_thread
+    doc = await asyncio.to_thread(doc_ref.get)
     return not doc.exists
 
 async def generate_unique_short_code() -> str:
@@ -162,7 +160,7 @@ async def generate_unique_short_code() -> str:
     for attempt in range(MAX_ID_RETRIES):
         new_id = _generate_short_code()
         
-        if await _is_short_code_unique(new_id): # <-- Await
+        if await _is_short_code_unique(new_id):
             return new_id
         
         logger.debug(f"Collision detected for ID: {new_id}. Retrying... (Attempt {attempt + 1})")
@@ -213,13 +211,16 @@ async def create_link(
         
         @firestore.transactional
         async def _create_in_transaction(transaction: Transaction, ref, data_to_set):
-            doc_snapshot = await ref.get(transaction=transaction)
+            # FIX: Synchronous .get() must be wrapped in asyncio.to_thread
+            doc_snapshot = await asyncio.to_thread(ref.get, transaction=transaction)
             if doc_snapshot.exists:
                 raise ValueError(f"Custom short code '{ref.id}' is already in use.")
-            transaction.set(ref, data_to_set)
+            # FIX: Synchronous .set() must be wrapped in asyncio.to_thread
+            await asyncio.to_thread(transaction.set, ref, data_to_set)
         
         try:
-            await _create_in_transaction(db_client.transaction(), doc_ref, data)
+            # FIX: Synchronous db_client.transaction().run must be wrapped in asyncio.to_thread
+            await asyncio.to_thread(db_client.transaction().run, _create_in_transaction, doc_ref, data)
         except ValueError as e:
             raise ValueError(f"Custom code already exists")
     
@@ -229,7 +230,8 @@ async def create_link(
         doc_ref = get_collection_ref("links").document(final_code)
         
         try:
-            await doc_ref.create(data)
+            # FIX: Synchronous .create() must be wrapped in asyncio.to_thread
+            await asyncio.to_thread(doc_ref.create, data)
         except exceptions.AlreadyExists as e:
             logger.error(f"Critical collision on 'create' for {final_code}: {e}")
             raise RuntimeError(f"Failed to create link due to a rare collision.")
@@ -240,7 +242,8 @@ async def create_link(
 async def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
     """Retrieves a link record by its short code (Document ID) asynchronously."""
     doc_ref = get_collection_ref("links").document(short_code)
-    doc = await doc_ref.get() # <-- Await
+    # FIX: Synchronous .get() must be wrapped in asyncio.to_thread
+    doc = await asyncio.to_thread(doc_ref.get)
     
     if doc.exists:
         data = doc.to_dict()
@@ -260,9 +263,10 @@ async def delete_link_by_id_and_token(
     """
     db_client = get_db_connection()
     
-    # We use the existing transactional function to perform the atomic check and delete.
-    await delete_link_with_token_check(
-        db_client.transaction(), 
+    # FIX: Synchronous db_client.transaction().run must be wrapped in asyncio.to_thread
+    await asyncio.to_thread(
+        db_client.transaction().run, 
+        delete_link_with_token_check, 
         short_code, 
         token
     )
@@ -276,12 +280,11 @@ async def delete_link_with_token_check(
 ) -> bool:
     """
     Atomically retrieves a doc, checks the deletion token, and deletes it.
-    
-    Returns: True on success.
-    Raises: ValueError for invalid token, ResourceNotFoundException if link is not found.
     """
     doc_ref = get_collection_ref("links").document(short_code)
-    doc_snapshot = await doc_ref.get(transaction=transaction)
+    
+    # FIX: Synchronous .get() must be wrapped in asyncio.to_thread
+    doc_snapshot = await asyncio.to_thread(doc_ref.get, transaction=transaction)
 
     if not doc_snapshot.exists:
         logger.warning(f"Deletion attempt failed: Link '{short_code}' not found.")
@@ -290,26 +293,27 @@ async def delete_link_with_token_check(
     data = doc_snapshot.to_dict()
     hashed_token = data.get("deletion_token")
 
-    # Securely verify the provided token against the stored hash
     if not hashed_token or not _verify_token(token, hashed_token):
         logger.warning(f"Deletion attempt failed: Invalid token for '{short_code}'.")
         raise ValueError("Invalid deletion token.")
         
-    # Token is valid, proceed with deletion
-    transaction.delete(doc_ref)
+    # FIX: Synchronous transaction.delete() must be wrapped in asyncio.to_thread
+    await asyncio.to_thread(transaction.delete, doc_ref)
     logger.info(f"Successfully deleted link '{short_code}'.")
     return True
 
 async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     """Retrieves all non-expired links for sitemap generation (Async)."""
     try:
-        # This efficient query relies on "never expires" links
-        # having a far-future 'expires_at' date.
-        # NOTE: This query requires a Firestore Index on 'expires_at'.
-        query = get_collection_ref("links").where('expires_at', '>', now).stream() 
+        links_ref = get_collection_ref("links")
+        # .stream() is synchronous, so we execute the iteration in a thread and collect results
+        expired_query = links_ref.where('expires_at', '>', now).stream() 
+        
+        # FIX: Run synchronous iteration (list comprehension) in a thread
+        docs = await asyncio.to_thread(list, expired_query)
         
         links = []
-        async for doc in query: # <-- Use async for
+        for doc in docs:
             data = doc.to_dict()
             links.append({'id': doc.id, **data})
         return links
@@ -326,21 +330,25 @@ async def cleanup_expired_links(now: datetime):
     links_ref = get_collection_ref("links")
     db_client = get_db_connection()
     
-    # NOTE: This query requires a Firestore Index on 'expires_at'
+    # .stream() is synchronous
     expired_query = links_ref.where('expires_at', '<=', now).stream()
     
     deleted_count = 0
     batch = db_client.batch()
     batch_count = 0
     
-    async for doc in expired_query: # <-- Use async for
+    # FIX: Run synchronous iteration in a thread and collect results
+    docs_to_delete = await asyncio.to_thread(list, expired_query)
+    
+    for doc in docs_to_delete:
         batch.delete(doc.reference)
         batch_count += 1
         deleted_count += 1
         
         # Firestore batches are limited to 500 operations
         if batch_count >= 499:
-            await batch.commit() # <-- Await
+            # FIX: Synchronous .commit() must be wrapped in asyncio.to_thread
+            await asyncio.to_thread(batch.commit)
             logger.info(f"Committed batch of {batch_count} deletions.")
             # Start a new batch
             batch = db_client.batch()
@@ -348,7 +356,8 @@ async def cleanup_expired_links(now: datetime):
 
     # Commit any remaining docs in the last batch
     if batch_count > 0:
-        await batch.commit() # <-- Await
+        # FIX: Synchronous .commit() must be wrapped in asyncio.to_thread
+        await asyncio.to_thread(batch.commit)
         logger.info(f"Committed final batch of {batch_count} deletions.")
 
     logger.info(f"Cleanup finished. Deleted {deleted_count} total expired links.")

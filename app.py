@@ -61,7 +61,6 @@ SUPPORTED_LOCALES = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
 DEFAULT_LOCALE = "en"
 RTL_LOCALES = ["ar", "he"]
 
-# FIX: Correct ISO country codes for flag-icon-css
 LOCALE_TO_FLAG_CODE = {
     "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
     "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
@@ -88,6 +87,7 @@ def load_translations_from_json():
 
 
 # ---------------- LLM Summarizer Setup (Hugging Face API) ----------------
+# NOTE: Use HUGGINGFACE_API_KEY environment variable for production.
 HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
 SUMMARIZATION_MODEL = "facebook/bart-large-cnn" 
 HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
@@ -243,6 +243,10 @@ def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale
     })
     return tags
 
+# BOOTSTRAP CONFIG
+BOOTSTRAP_CDN = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
+BOOTSTRAP_JS = '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'
+
 async def get_common_context(
     request: Request,
     _: Callable = Depends(get_translator),
@@ -257,7 +261,9 @@ async def get_common_context(
         "hreflang_tags": hreflang_tags,
         "current_year": datetime.now(timezone.utc).year,
         "RTL_LOCALES": RTL_LOCALES,
-        "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE
+        "LOCALE_TO_FLAG_CODE": LOCALE_TO_FLAG_CODE,
+        "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
+        "BOOTSTRAP_JS": BOOTSTRAP_JS,
     }
 
 # ---------------- FIREBASE ----------------
@@ -846,6 +852,7 @@ async def preview(
     else:
         safe_href_url = long_url
     
+    # Initialize variables for template
     meta_title = link.get("meta_title")
     meta_description = link.get("meta_description")
     meta_image = link.get("meta_image")

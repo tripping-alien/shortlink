@@ -29,12 +29,12 @@
                     <p class="small">
                         {{ _('license_all_rights') }}
                     </p>
-                    <p class="small">{{ _('footer_terms_placeholder') }}</p>
+                    <p class="small"><a href="{{ url_for('localized', locale=locale, path='terms') }}" class="text-decoration-none text-secondary">{{ _('nav_terms') }}</a></p>
                 </div>
                 <div class="col-md-6">
                     <h5 class="mb-3 text-secondary"><i class="bi bi-envelope me-2"></i> {{ _('contact_title_placeholder') }}</h5>
                     <p class="small">
-                        {{ _('contact_email_placeholder') }}: <a href="mailto:contact@shortlinks.art">contact@shortlinks.art</a>
+                        {{ _('contact_email_placeholder') }}: <a href="mailto:Andreyevenflow@gmail.com">Andreyevenflow@gmail.com</a>
                     </p>
                 </div>
             </div>

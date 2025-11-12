@@ -218,100 +218,147 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
 # --- URL VALIDATION / SANITIZATION (Fixed URL Prepends and Public Check) ---
 # ... (URLValidator class definition remains the same) ...
 
+import ipaddress
+import re
+import socket
+from urllib.parse import urlparse
+from typing import Optional
+
+# --- Custom Exceptions ---
+class ValidationException(Exception):
+    """Raised when a URL fails validation."""
+
+
+class SecurityException(Exception):
+    """Raised when a URL is unsafe or disallowed."""
+
+
+# --- Config Placeholder ---
+class config:
+    MAX_URL_LENGTH = 2048
+    ALLOWED_SCHEMES = {"https", "http"}
+    BLOCKED_DOMAINS = {"example.com", "localhost", "metadata.google.internal"}
+
+
 class URLValidator:
-    """Comprehensive URL validation and security checks"""
-    
+    """Comprehensive URL validation, normalization, and security enforcement."""
+
+    # ------------------------------
+    # 1. IP / Host Utilities
+    # ------------------------------
     @staticmethod
-    def is_public_ip(ip_str: str) -> bool:
+    def is_public_ip(ip: str) -> bool:
+        """Return True if the given IP is public and routable."""
         try:
-            ip = ipaddress.ip_address(ip_str)
-            return ip.is_global
+            ip_obj = ipaddress.ip_address(ip)
+            return not (ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved or ip_obj.is_link_local)
         except ValueError:
             return False
-    
+
     @staticmethod
-    async def resolve_hostname(hostname: str) -> str:
+    def resolve_hostname(hostname: str) -> Optional[str]:
+        """Resolve a hostname to its IP address, or None if resolution fails."""
         try:
-            # NOTE: asyncio and socket imports must be available
-            import asyncio
-            import socket
-            ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
-            
-            if not URLValidator.is_public_ip(ip_address):
-                raise SecurityException(f"Blocked request to non-public IP: {ip_address}")
-            
-            return ip_address
-        
-        except socket.gaierror as e:
-            # Re-raise as ValidationException to handle DNS errors gracefully
-            raise ValidationException(f"Could not resolve hostname: {hostname}")
-    
+            return socket.gethostbyname(hostname)
+        except (socket.gaierror, UnicodeError):
+            return None
+
+    # ------------------------------
+    # 2. Structure Validation
+    # ------------------------------
     @staticmethod
     def validate_url_structure(url: str) -> str:
+        """
+        Validates and normalizes a given URL.
+        Ensures HTTPS scheme, valid domain, and compliance with config rules.
+        """
         if not url or not url.strip():
-             raise ValidationException("URL cannot be empty") 
+            raise ValidationException("URL cannot be empty")
+
         url = url.strip()
-        
+
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
-        
-        # 1. Check if scheme is missing (handles 'domain.com')
-        parsed_test = urlparse(url)
-        if not parsed_test.scheme:
-            url = "https://" + url # Prepend HTTPS as the default secure scheme
-        
-        try:
-            # 2. Parse the potentially modified URL
-            parsed = urlparse(url)
-            
-            # 3. Canonicalize/Upgrade explicit HTTP to HTTPS if HTTPS is allowed
-            if parsed.scheme == "http" and "https" in config.ALLOWED_SCHEMES:
-                # Replace the first occurrence of "http://" with "https://"
-                url = url.replace("http://", "https://", 1)
-                parsed = urlparse(url) # Re-parse the corrected URL for subsequent checks
 
-            # 4. Final Scheme Validation
-            if parsed.scheme not in config.ALLOWED_SCHEMES:
-                raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
-            
-            # 5. Check netloc (domain)
-            if not parsed.netloc:
-                raise ValidationException("URL must include a domain")
-            
-            # 6. Check for blocked domains
-            hostname = parsed.netloc.split(':')[0].lower()
-            if hostname in config.BLOCKED_DOMAINS:
-                raise SecurityException(f"Domain is blocked: {hostname}")
-            
-            # 7. Basic TLD/IP check
-            if '.' not in hostname:
-                try:
-                    ipaddress.ip_address(hostname)
-                except ValueError:
-                    raise ValidationException("Invalid domain: no TLD found")
-            
-            return url
-        
-        except ValueError as e:
-            raise ValidationException(f"Invalid URL format: {e}")
-    
-    @staticmethod
-    def validate_url_public(url: str) -> bool:
-        # FIX: Removed public=True constraint which was likely too strict and caused the 400 error
-        return validators.url(url)
-    
-    @classmethod
-    async def validate_and_sanitize(cls, url: str) -> str:
-        url = cls.validate_url_structure(url)
-        
-        if not cls.validate_url_public(url):
-            raise ValidationException("URL must be publicly accessible")
-        
+        # --- Ensure scheme (handle naked or protocol-relative URLs) ---
         parsed = urlparse(url)
-        hostname = parsed.netloc.split(':')[0]
-        await cls.resolve_hostname(hostname)
-        
+        if not parsed.scheme:
+            if url.startswith("//"):
+                url = "https:" + url
+            elif not re.match(r"^[a-zA-Z][a-zA-Z0-9+\-.]*://", url):
+                url = "https://" + url
+            parsed = urlparse(url)
+
+        # --- Enforce allowed scheme(s) ---
+        if parsed.scheme == "http" and "https" in config.ALLOWED_SCHEMES:
+            url = url.replace("http://", "https://", 1)
+            parsed = urlparse(url)
+
+        if parsed.scheme not in config.ALLOWED_SCHEMES:
+            raise ValidationException(f"URL scheme must be one of: {config.ALLOWED_SCHEMES}")
+
+        # --- Validate domain ---
+        if not parsed.netloc:
+            raise ValidationException("URL must include a valid domain")
+
+        hostname = parsed.hostname.lower() if parsed.hostname else None
+        if not hostname:
+            raise ValidationException("Invalid or missing hostname")
+
+        # --- Blocked domains ---
+        if hostname in config.BLOCKED_DOMAINS:
+            raise SecurityException(f"Domain is blocked: {hostname}")
+
+        # --- Validate TLD or IP ---
+        if "." not in hostname:
+            try:
+                ipaddress.ip_address(hostname)
+            except ValueError:
+                raise ValidationException("Invalid domain: no TLD or valid IP found")
+
+        # --- Validate TLD form (optional strict check) ---
+        if not re.match(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", hostname) and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", hostname):
+            raise ValidationException("Invalid domain or IP format")
+
         return url
+
+    # ------------------------------
+    # 3. Public URL Safety Check
+    # ------------------------------
+    @classmethod
+    def validate_url_public(cls, url: str) -> str:
+        """
+        Ensures the URL resolves to a public IP address.
+        Raises SecurityException if it points to private or loopback space.
+        """
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+
+        if not hostname:
+            raise ValidationException("Missing hostname in URL")
+
+        resolved_ip = cls.resolve_hostname(hostname)
+        if not resolved_ip:
+            raise ValidationException("Could not resolve hostname")
+
+        if not cls.is_public_ip(resolved_ip):
+            raise SecurityException(f"URL resolves to a non-public IP: {resolved_ip}")
+
+        return url
+
+    # ------------------------------
+    # 4. Full Validation Entry Point
+    # ------------------------------
+    @classmethod
+    def validate_and_sanitize(cls, url: str) -> str:
+        """
+        Full URL validation and sanitization pipeline:
+        - Structure check
+        - Scheme enforcement
+        - Public IP check
+        """
+        clean_url = cls.validate_url_structure(url)
+        return cls.validate_url_public(clean_url)
 
 # --- QR CODE GENERATION (Unchanged) ---
 # ... (generate_qr_code_data_uri remains the same) ...

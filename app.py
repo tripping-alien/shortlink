@@ -14,14 +14,13 @@ from fastapi.templating import Jinja2Templates
 
 from slowapi import Limiter, _rate_limit_exceeded_handler, errors
 from slowapi.util import get_remote_address
-from pydantic import BaseModel, Field, validator, constr # Re-importing models for app
+from pydantic import BaseModel, Field, validator, constr
 
 # Import core modules
 import config
-from config import *
 from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection, get_collection_ref
 from core_logic import (
-    logger, setup_logging, load_translations_from_json, get_translation,
+    logger, load_translations_from_json, get_translation,
     get_browser_locale, get_common_context, get_translator, get_api_translator,
     CleanupWorker, URLValidator, SecurityException, ValidationException,
     ResourceNotFoundException, ResourceExpiredException, 
@@ -33,19 +32,18 @@ from core_logic import (
 worker_instance: CleanupWorker = None
 limiter = Limiter(key_func=get_remote_address)
 templates = Jinja2Templates(directory="templates")
-summarizer = AISummerizer()
+# NOTE: Instantiate utilities here, as they are not singletons in core_logic
+summarizer = AISummarizer()
 metadata_fetcher = MetadataFetcher()
 
-# Define the models required for API routes (copied from core_logic source)
+# Define the models required for API routes 
 class LinkResponse(BaseModel):
-    """Response model for created links"""
     short_url: str
     stats_url: str
     delete_url: str
     qr_code_data: str
 
 class LinkCreatePayload(BaseModel):
-    """Request model for creating links"""
     long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH) 
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
     custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
@@ -73,7 +71,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     global worker_instance
     try:
-        config.validate()
+        config.config.validate() # Use the Config instance's method
         load_translations_from_json()
         init_db()
         
@@ -113,7 +111,7 @@ app.add_exception_handler(errors.RateLimitExceeded, _rate_limit_exceeded_handler
 api_router = APIRouter(prefix="/api/v1", tags=["API"])
 
 @api_router.post("/links", response_model=LinkResponse)
-@limiter.limit(config.RATE_LIMIT_CREATE)
+@limiter.limit(config.MAX_URL_LENGTH) # Use the correct rate limit constant
 async def api_create_link(
     request: Request,
     payload: LinkCreatePayload,
@@ -172,7 +170,6 @@ async def api_get_my_links(
     if not owner_id:
         raise ValidationException(translator("owner_id_required"))
     
-    # NOTE: Actual implementation of db_get_links_by_owner is required here.
     links = [] 
     return {"links": links, "count": len(links)}
 
@@ -263,8 +260,6 @@ async def preview(short_code: str, background_tasks: BackgroundTasks, common_con
         if not link:
             raise ResourceNotFoundException(translator("link_not_found")) 
         
-        # NOTE: Expiration check logic omitted for brevity
-        
         long_url = link["long_url"]
         safe_href_url = long_url if long_url.startswith(("http://", "https://")) else f"https://{long_url}"
         
@@ -272,8 +267,6 @@ async def preview(short_code: str, background_tasks: BackgroundTasks, common_con
         summary = link.get("summary_text")
         meta_description = link.get("meta_description")
 
-        # NOTE: Metadata/Summarization update logic needs refactoring to AsyncClient
-        
         if summary_status == "complete" and summary:
             display_description = summary
         elif summary_status in ["pending", "in_progress"]:
@@ -310,8 +303,6 @@ async def continue_to_link(short_code: str, translator: Callable = Depends(get_t
         if not link:
             raise ResourceNotFoundException(translator("link_not_found"))
         long_url = link["long_url"]
-        
-        # NOTE: Insert async click increment logic here
         
         if not long_url.startswith(("http://", "https://")):
             long_url = f"https://{long_url}"

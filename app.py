@@ -163,7 +163,7 @@ async def api_create_link(
         logger.error(f"Link creation validation failed (ValueError): {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except (ValidationException, SecurityException) as e:
-        logger.error(f"Link creation validation failed (Security/Validation): {e.detail}") # 👈 Log for 400 debug
+        logger.error(f"Link creation validation failed (Security/Validation): {e.detail}")
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         logger.error(f"Error creating link: {e}")
@@ -311,8 +311,8 @@ async def get_common_context(
 
 # --- LOCALIZED ROUTES (i18n_router) ---
 
-# 🟢 FIX: Parameters reordered to prevent SyntaxError: parameter without a default follows parameter with a default
-# Path parameters (like short_code) must come before parameters with defaults (like locale=Path(...)).
+# 🟢 FIX: Parameters reordered to prevent SyntaxError
+# Required arguments (no default/Path(...)) must come before optional arguments (Path(...), Depends(...), None)
 
 @i18n_router.get("/", response_class=HTMLResponse)
 async def index(
@@ -340,10 +340,10 @@ async def about(
 
 @i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(
-    short_code: str, # REQUIRED: Must come before locale
-    locale: str = Path(..., description="The language code"),
-    background_tasks: BackgroundTasks, 
-    common_context: Dict = Depends(get_common_context)
+    short_code: str, # REQUIRED
+    background_tasks: BackgroundTasks, # REQUIRED
+    locale: str = Path(..., description="The language code"), # OPTIONAL/DEFAULTED
+    common_context: Dict = Depends(get_common_context) # OPTIONAL/DEFAULTED
 ):
     """Preview page with metadata and security warning"""
     translator = common_context["_"]
@@ -389,9 +389,9 @@ async def preview(
 
 @i18n_router.get("/preview/{short_code}/redirect", response_class=RedirectResponse)
 async def continue_to_link(
-    short_code: str, # REQUIRED: Must come before locale
-    locale: str = Path(..., description="The language code"),
-    translator: Callable = Depends(get_translator)
+    short_code: str, # REQUIRED
+    locale: str = Path(..., description="The language code"), # OPTIONAL/DEFAULTED
+    translator: Callable = Depends(get_translator) # OPTIONAL/DEFAULTED
 ):
     """Continue to final destination (Click increment logic requires refactoring)"""
     try:
@@ -412,11 +412,10 @@ async def continue_to_link(
 @i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
 @limiter.limit(RATE_LIMIT_STATS)
 async def stats(
-    request: Request,
-    short_code: str, # REQUIRED: Must come before locale
-    locale: str = Path(..., description="The language code"),
-    common_context: Dict = Depends(get_common_context), 
-    
+    request: Request, # REQUIRED (Note: Request is often treated as required and usually placed first)
+    short_code: str, # REQUIRED
+    locale: str = Path(..., description="The language code"), # OPTIONAL/DEFAULTED
+    common_context: Dict = Depends(get_common_context), # OPTIONAL/DEFAULTED
 ):
     """Statistics page"""
     translator = common_context["_"]
@@ -434,10 +433,10 @@ async def stats(
 
 @i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
 async def delete_link(
-    short_code: str, # REQUIRED: Must come before locale
-    locale: str = Path(..., description="The language code"),
-    token: Optional[str] = None, 
-    common_context: Dict = Depends(get_common_context)
+    short_code: str, # REQUIRED
+    locale: str = Path(..., description="The language code"), # OPTIONAL/DEFAULTED
+    token: Optional[str] = None, # OPTIONAL/DEFAULTED
+    common_context: Dict = Depends(get_common_context) # OPTIONAL/DEFAULTED
 ):
     """Delete link page"""
     translator = common_context["_"]

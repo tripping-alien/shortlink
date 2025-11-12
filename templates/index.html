@@ -51,7 +51,7 @@
                 {{ _('advanced_options_button') }} +
             </button>
             
-            <div class="collapse d-none" id="advanced-options">
+            <div class="collapse" id="advanced-options">
                 <input type="text" id="custom_code" class="form-control" placeholder="{{ _('custom_code_placeholder') }}">
                 <input type="text" id="utm_tags" class="form-control" placeholder="{{ _('utm_tags_placeholder') }}">
             </div>
@@ -103,7 +103,7 @@
     const customCodeInput = document.getElementById('custom_code');
     const utmTagsInput = document.getElementById('utm_tags');
     const copyButton = document.getElementById('copy-button');
-    const advancedOptions = document.getElementById('advanced-options'); // Ensure this is referenced
+    const advancedOptions = document.getElementById('advanced-options'); 
 
     // --- FEEDBACK FUNCTIONS ---
     function showLoading() {

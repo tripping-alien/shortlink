@@ -4,29 +4,36 @@
 
 {% block content %}
 <div class="container my-5">
-    <h2 class="text-center mb-4">{{ _('nav_about') }}</h2>
+    <h2 class="text-center mb-4">{{ _('seo_h2_primary') }}</h2>
     
     <div class="row justify-content-center">
         <div class="col-lg-10">
             
             <section class="mb-5">
-                <h3 class="text-primary mb-3">{{ _('about_section_mission_title') }}</h3>
-                <p class="text-lead">{{ _('about_section_mission_text_1') }}</p>
-                <p>{{ _('about_section_mission_text_2') }}</p>
+                <p class="text-lead text-center mb-5">{{ _('seo_p_intro') }}</p>
             </section>
 
             <section class="mb-5">
-                <h3 class="text-primary mb-3">{{ _('about_section_security_title') }}</h3>
-                <ul>
-                    <li>{{ _('about_security_point_1') }}</li>
-                    <li>{{ _('about_security_point_2') }}</li>
-                    <li>{{ _('about_security_point_3') }}</li>
+                <h3>{{ _('seo_h3_features') }}</h3>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item bg-transparent">{{ _('seo_feature_1') }}</li>
+                    <li class="list-group-item bg-transparent">{{ _('seo_feature_2') }}</li>
+                    <li class="list-group-item bg-transparent">{{ _('seo_feature_3') }}</li>
+                </ul>
+            </section>
+
+            <section class="mb-5">
+                <h3>{{ _('seo_h3_security') }}</h3>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item bg-transparent">{{ _('seo_security_1') }}</li>
+                    <li class="list-group-item bg-transparent">{{ _('seo_security_2') }}</li>
+                    <li class="list-group-item bg-transparent">{{ _('seo_security_3') }}</li>
                 </ul>
             </section>
             
-            <section class="text-center">
-                <h3 class="text-primary mb-3">{{ _('about_get_started_title') }}</h3>
-                <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-primary btn-lg hover-lift">
+            <section class="text-center mt-5 p-4 bg-primary-subtle rounded-3">
+                <h3>{{ _('seo_h3_cta') }}</h3>
+                <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-primary btn-lg hover-lift mt-3">
                     {{ _('create_link_now') }}
                 </a>
             </section>

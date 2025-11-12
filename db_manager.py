@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 
 from firebase_admin import credentials, initialize_app, firestore, get_app
 from firebase_admin import exceptions 
-# 🟢 FIX: Corrected import path for FieldFilter
+# FIX: Corrected import path for FieldFilter
 from google.cloud.firestore_v1 import FieldFilter 
 from firebase_admin.firestore import AsyncClient, Transaction 
 
@@ -170,6 +170,15 @@ async def generate_unique_short_code() -> str:
 
 # --- Public Database Operations (Async, Secure) ---
 
+# 🟢 FIX: Define transactional worker as synchronous
+@firestore.transactional
+def _create_in_transaction(transaction: firestore.Transaction, ref, data_to_set):
+    """Synchronous transactional worker for creating a custom short code."""
+    doc_snapshot = ref.get(transaction=transaction) 
+    if doc_snapshot.exists:
+        raise ValueError(f"Custom short code '{ref.id}' is already in use.")
+    transaction.set(ref, data_to_set) 
+
 async def create_link(
     long_url: str, 
     ttl_key: str, 
@@ -208,19 +217,16 @@ async def create_link(
         final_code = custom_code
         doc_ref = get_collection_ref("links").document(final_code)
         
-        @firestore.transactional
-        async def _create_in_transaction(transaction: Transaction, ref, data_to_set):
-            # FIX: Synchronous .get() must be wrapped in asyncio.to_thread
-            doc_snapshot = await asyncio.to_thread(ref.get, transaction=transaction)
-            if doc_snapshot.exists:
-                raise ValueError(f"Custom short code '{ref.id}' is already in use.")
-            # FIX: Synchronous .set() must be wrapped in asyncio.to_thread
-            await asyncio.to_thread(transaction.set, ref, data_to_set)
-        
         try:
-            # FIX: Synchronous db_client.transaction().run must be wrapped in asyncio.to_thread
-            await asyncio.to_thread(db_client.transaction().run, _create_in_transaction, doc_ref, data)
+            # 🟢 FIX: Wrap the synchronous transaction run in a worker function and execute via to_thread
+            def run_transaction_worker():
+                transaction = db_client.transaction()
+                # The run method is called on the Transaction object
+                transaction.run(_create_in_transaction, doc_ref, data)
+            
+            await asyncio.to_thread(run_transaction_worker)
         except ValueError as e:
+            # Re-raise the error caught from inside the transaction worker
             raise ValueError(f"Custom code already exists")
     
     else:
@@ -237,7 +243,6 @@ async def create_link(
     
     return final_code
 
-
 async def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
     """Retrieves a link record by its short code (Document ID) asynchronously."""
     doc_ref = get_collection_ref("links").document(short_code)
@@ -250,30 +255,10 @@ async def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
         return data
     return None
 
-async def delete_link_by_id_and_token(
-    short_code: str, 
-    token: str
-) -> bool:
-    """
-    Public function to delete a link, wrapping the transactional logic.
-
-    Returns: True on successful deletion.
-    Raises: ValueError for invalid token, ResourceNotFoundException if link is not found.
-    """
-    db_client = get_db_connection()
-    
-    # FIX: Synchronous db_client.transaction().run must be wrapped in asyncio.to_thread
-    await asyncio.to_thread(
-        db_client.transaction().run, 
-        delete_link_with_token_check, 
-        short_code, 
-        token
-    )
-    return True
-
+# 🟢 FIX: Define transactional worker as synchronous
 @firestore.transactional
-async def delete_link_with_token_check(
-    transaction: Transaction, 
+def delete_link_with_token_check(
+    transaction: firestore.Transaction, 
     short_code: str, 
     token: str
 ) -> bool:
@@ -282,8 +267,8 @@ async def delete_link_with_token_check(
     """
     doc_ref = get_collection_ref("links").document(short_code)
     
-    # FIX: Synchronous .get() must be wrapped in asyncio.to_thread
-    doc_snapshot = await asyncio.to_thread(doc_ref.get, transaction=transaction)
+    # Synchronous .get() (no need for asyncio.to_thread inside here)
+    doc_snapshot = doc_ref.get(transaction=transaction)
 
     if not doc_snapshot.exists:
         logger.warning(f"Deletion attempt failed: Link '{short_code}' not found.")
@@ -296,17 +281,35 @@ async def delete_link_with_token_check(
         logger.warning(f"Deletion attempt failed: Invalid token for '{short_code}'.")
         raise ValueError("Invalid deletion token.")
         
-    # FIX: Synchronous transaction.delete() must be wrapped in asyncio.to_thread
-    await asyncio.to_thread(transaction.delete, doc_ref)
+    # Synchronous transaction.delete()
+    transaction.delete(doc_ref)
     logger.info(f"Successfully deleted link '{short_code}'.")
     return True
+
+async def delete_link_by_id_and_token(
+    short_code: str, 
+    token: str
+) -> bool:
+    """
+    Public function to delete a link, wrapping the transactional logic.
+    """
+    db_client = get_db_connection()
+    
+    # 🟢 FIX: Wrap the synchronous transaction run in a worker function and execute via to_thread
+    def run_delete_worker():
+        transaction = db_client.transaction()
+        transaction.run(delete_link_with_token_check, short_code, token)
+        
+    await asyncio.to_thread(run_delete_worker)
+    return True
+
 
 async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     """Retrieves all non-expired links for sitemap generation (Async)."""
     try:
         links_ref = get_collection_ref("links")
         
-        # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument
+        # FIX: Use FieldFilter and the 'filter' keyword argument
         expired_query = links_ref.where(filter=FieldFilter('expires_at', '>', now)).stream() 
         
         # FIX: Run synchronous iteration (list comprehension) in a thread
@@ -330,7 +333,7 @@ async def cleanup_expired_links(now: datetime):
     links_ref = get_collection_ref("links")
     db_client = get_db_connection()
     
-    # 🟢 FIX: Use FieldFilter and the 'filter' keyword argument
+    # FIX: Use FieldFilter and the 'filter' keyword argument
     expired_query = links_ref.where(filter=FieldFilter('expires_at', '<=', now)).stream()
     
     deleted_count = 0

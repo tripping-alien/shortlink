@@ -47,61 +47,11 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# ============================================================================
-# CONFIGURATION & CONSTANTS
-# ============================================================================
-
-class Config:
-    """Centralized configuration with validation"""
-    BASE_URL: str = os.getenv("BASE_URL", "https://shortlinks.art")
-    SHORT_CODE_LENGTH: int = 6
-    MAX_ID_RETRIES: int = 10
-    
-    # Security
-    MAX_URL_LENGTH: int = 2048
-    ALLOWED_SCHEMES: tuple = ("http", "https")
-    BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
-    
-    # Rate limiting
-    RATE_LIMIT_CREATE: str = "10/minute"
-    RATE_LIMIT_STATS: str = "30/minute"
-    
-    # Database
-    CLEANUP_INTERVAL_SECONDS: int = 1800  # 30 minutes
-    CLEANUP_BATCH_SIZE: int = 100
-    
-    # External APIs
-    HUGGINGFACE_API_KEY: Optional[str] = os.getenv("HUGGINGFACE_API_KEY")
-    SUMMARIZATION_MODEL: str = "facebook/bart-large-cnn"
-    SUMMARY_MAX_LENGTH: int = 2000
-    
-    # Timeouts
-    HTTP_TIMEOUT: float = 10.0
-    METADATA_FETCH_TIMEOUT: float = 5.0
-    SUMMARY_TIMEOUT: float = 15.0
-    
-    # Localization
-    SUPPORTED_LOCALES: List[str] = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he"]
-    DEFAULT_LOCALE: str = "en"
-    RTL_LOCALES: List[str] = ["ar", "he"]
-    
-    # Google AdSense
-    ADSENSE_CLIENT_ID: str = "pub-6170587092427912"
-    
-    @classmethod
-    def validate(cls):
-        """Validate configuration on startup"""
-        if not cls.BASE_URL:
-            raise ValueError("BASE_URL must be set")
-        if not cls.BASE_URL.startswith(("http://", "https://")):
-            raise ValueError("BASE_URL must include http:// or https://")
-        if cls.SHORT_CODE_LENGTH < 4 or cls.SHORT_CODE_LENGTH > 20:
-            raise ValueError("SHORT_CODE_LENGTH must be between 4 and 20")
-
-config = Config()
-
-# FIX: Define ADSENSE_SCRIPT immediately after config is initialized
-ADSENSE_SCRIPT = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
+# NEW: Import config and constants from the new config.py file
+from config import (
+    config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
+    SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
+)
 
 # ============================================================================
 # LOGGING SETUP
@@ -141,48 +91,41 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 
 # ============================================================================
-# CUSTOM EXCEPTIONS
+# PYDANTIC MODELS (Moved to the top to fix NameError)
 # ============================================================================
 
-class SecurityException(HTTPException):
-    """Raised when security validation fails"""
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+class LinkResponse(BaseModel):
+    """Response model for created links"""
+    short_url: str
+    stats_url: str
+    delete_url: str
+    qr_code_data: str
 
-class ValidationException(HTTPException):
-    """Raised when input validation fails"""
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
-
-class ResourceNotFoundException(HTTPException):
-    """Raised when a resource is not found"""
-    def __init__(self, detail: str = "Resource not found"):
-        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
-
-class ResourceExpiredException(HTTPException):
-    """Raised when a resource has expired"""
-    def __init__(self, detail: str = "Resource has expired"):
-        super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
-
-# ============================================================================
-# TIME-TO-LIVE CONFIGURATION
-# ============================================================================
-
-TTL_MAP = {
-    "1h": timedelta(hours=1),
-    "24h": timedelta(days=1),
-    "1w": timedelta(weeks=1),
-    "never": None
-}
+class LinkCreatePayload(BaseModel):
+    """Request model for creating links"""
+    long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH)
+    ttl: Literal["1h", "24h", "1w", "never"] = "24h"
+    custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}')] = None
+    utm_tags: Optional[str] = Field(None, max_length=500)
+    owner_id: Optional[str] = Field(None, max_length=100)
+    
+    @validator('long_url')
+    def validate_url(cls, v):
+        if not v or not v.strip():
+            raise ValueError("URL cannot be empty")
+        return v.strip()
+    
+    @validator('utm_tags')
+    def validate_utm_tags(cls, v):
+        if v:
+            v = v.strip()
+            if v and not v.startswith(('utm_', '?utm_', '&utm_')):
+                pass 
+        return v
 
 # ============================================================================
 # LOCALIZATION
 # ============================================================================
-
-LOCALE_TO_FLAG_CODE = {
-    "en": "gb", "es": "es", "zh": "cn", "hi": "in", "pt": "br",
-    "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", "he": "il",
-}
 
 translations: Dict[str, Dict[str, str]] = {}
 
@@ -199,7 +142,6 @@ def load_translations_from_json() -> None:
         with open(file_path, 'r', encoding='utf-8') as f:
             translations = json.load(f)
         
-        # Validate that all locales are present
         missing_locales = set(config.SUPPORTED_LOCALES) - set(translations.keys())
         if missing_locales:
             logger.warning(f"Missing translations for locales: {missing_locales}")
@@ -221,11 +163,9 @@ def get_translation(locale: str, key: str) -> str:
     if locale in translations and key in translations[locale]:
         return translations[locale][key]
     
-    # Fallback to default locale
     if key in translations.get(config.DEFAULT_LOCALE, {}):
         return translations[config.DEFAULT_LOCALE][key]
     
-    # Return key in brackets if not found
     logger.debug(f"Missing translation: {locale}.{key}")
     return f"[{key}]"
 
@@ -276,10 +216,8 @@ def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale
     tags = []
     current_path = request.url.path
     
-    # Remove locale prefix from path
     base_path = current_path.replace(f"/{locale}", "", 1) or "/"
     
-    # Add tag for each supported locale
     for lang in config.SUPPORTED_LOCALES:
         lang_path = f"/{lang}{base_path}".replace("//", "/")
         tags.append({
@@ -288,7 +226,6 @@ def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale
             "href": str(request.url.replace(path=lang_path))
         })
     
-    # Add x-default
     default_path = f"/{config.DEFAULT_LOCALE}{base_path}".replace("//", "/")
     tags.append({
         "rel": "alternate",
@@ -413,11 +350,9 @@ class URLValidator:
              raise ValidationException("URL cannot be empty")
         url = url.strip()
         
-        # Check length
         if len(url) > config.MAX_URL_LENGTH:
             raise ValidationException(f"URL exceeds maximum length of {config.MAX_URL_LENGTH}")
         
-        # Add scheme if missing
         if not url.startswith(("http://", "https://")):
             url = "https://" + url
         
@@ -926,17 +861,6 @@ class CleanupWorker:
         return count
 
 # ============================================================================
-# PYDANTIC MODELS (Used for type hinting and response validation)
-# ============================================================================
-
-class LinkResponse(BaseModel):
-    """Response model for created links"""
-    short_url: str
-    stats_url: str
-    delete_url: str
-    qr_code_data: str
-
-# ============================================================================
 # FASTAPI APPLICATION SETUP
 # ============================================================================
 
@@ -998,9 +922,6 @@ templates = Jinja2Templates(directory="templates")
 # ============================================================================
 # TEMPLATE CONTEXT
 # ============================================================================
-
-BOOTSTRAP_CDN = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
-BOOTSTRAP_JS = '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'
 
 async def get_common_context(
     request: Request,

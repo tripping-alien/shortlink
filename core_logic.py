@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from urllib.parse import urlparse
 from typing import Dict, Any, List, Tuple, Callable, Optional
+from functools import lru_cache # Added for clarity of @lru_cache
 
 import validators
 from fastapi import Request, Depends, Path, HTTPException, status
@@ -120,7 +121,8 @@ def load_translations_from_json() -> None:
         file_path = os.path.join(os.path.dirname(__file__), "translations.json")
         if not os.path.exists(file_path):
             logger.warning("translations.json not found, creating empty translations")
-            translations = {locale: {} for locale in config.SUPPORTED_LOCALES}
+            # NOTE: Uses imported constants from 'config' module
+            translations = {locale: {} for locale in config.SUPPORTED_LOCALES} 
             return
 
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -151,7 +153,7 @@ def get_translation(locale: str, key: str) -> str:
     
     return f"[{key}]"
 
-# --- LOCALE & TRANSLATOR DEPENDENCIES (Unchanged) ---
+# --- LOCALE & TRANSLATOR DEPENDENCIES (Contains Duplicates) ---
 
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
@@ -169,7 +171,7 @@ def get_browser_locale(request: Request) -> str:
     
     return config.DEFAULT_LOCALE
 
-
+# 🛑 FIRST DEFINITION (Will be overwritten by the second one below)
 def get_current_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
     if lang_cookie and lang_cookie in config.SUPPORTED_LOCALES:
@@ -201,6 +203,7 @@ def get_translator_and_locale(
 def get_translator(tr: Tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
     return tr[0]
 
+# 🛑 SECOND DEFINITION (This is the one that is active and used by FastAPI)
 def get_current_locale(tr: Tuple = Depends(get_translator_and_locale)) -> str:
     return tr[1]
 
@@ -291,7 +294,7 @@ class URLValidator:
         
         return url
 
-# --- QR CODE GENERATION ---
+# --- QR CODE GENERATION (Unchanged) ---
 
 def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) -> str:
     """Generate QR code as base64 data URI"""
@@ -310,7 +313,7 @@ def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) ->
         # Re-raise or handle appropriately
         raise
 
-# --- METADATA FETCHER ---
+# --- METADATA FETCHER (Unchanged) ---
 
 class MetadataFetcher:
     """Fetch and parse webpage metadata"""
@@ -372,7 +375,7 @@ class MetadataFetcher:
         
         return meta
 
-# --- AI SUMMARIZER ---
+# --- AI SUMMARIZER (Unchanged) ---
 
 class AISummarizer:
     """AI-powered content summarization using Hugging Face"""
@@ -393,7 +396,8 @@ class AISummarizer:
         try:
             import httpx
             headers = {"Authorization": f"Bearer {self.api_key}"}
-            payload = {"inputs": text[:config.SUMMARIZATION_MODEL],
+            # NOTE: Assumes SUMMARIZATION_MODEL is a constant that specifies max text length here
+            payload = {"inputs": text[:config.SUMMARIZATION_MODEL], 
                        "parameters": {"max_length": max_length, "min_length": min_length}}
             
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -496,6 +500,7 @@ async def get_common_context(
     """Get common template context"""
     return {
         "request": request,
+        # NOTE: Assumes ADSENSE_SCRIPT has been added to the 'config' instance via setattr()
         "ADSENSE_SCRIPT": config.ADSENSE_SCRIPT,
         "_": translator,
         "locale": locale,
@@ -506,6 +511,6 @@ async def get_common_context(
         "FLAG_EMOJIS": config.LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        # 🟢 CORRECTED LINE: Pass the instance directly
+        # NOTE: Assumes 'config' is the instance (config = Config())
         "config": config, 
     }

@@ -14,7 +14,7 @@ class Config:
     # Core Constants
     SHORT_CODE_LENGTH: int = 6
     MAX_ID_RETRIES: int = 10
-    METADATA_FETCH_TIMEOUT: float = 5.0
+    
     # Security
     MAX_URL_LENGTH: int = 2048 
     ALLOWED_SCHEMES: Tuple[str, ...] = ("http", "https")
@@ -69,6 +69,12 @@ MAX_ID_RETRIES = config.MAX_ID_RETRIES
 MAX_URL_LENGTH = config.MAX_URL_LENGTH 
 RATE_LIMIT_CREATE = config.RATE_LIMIT_CREATE
 RATE_LIMIT_STATS = config.RATE_LIMIT_STATS
+
+# 🟢 FIX: Expose Timeouts (to resolve core_logic.py AttributeError when using from config import *)
+HTTP_TIMEOUT = config.HTTP_TIMEOUT
+METADATA_FETCH_TIMEOUT = config.METADATA_FETCH_TIMEOUT
+SUMMARY_TIMEOUT = config.SUMMARY_TIMEOUT
+
 
 # Time-To-Live Mapping (timedelta objects)
 TTL_MAP: Dict[str, Optional[timedelta]] = {

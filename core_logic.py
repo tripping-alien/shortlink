@@ -6,7 +6,7 @@ import time
 import asyncio
 import socket
 import ipaddress
-from datetime import datetime, timezone
+from datetime import datetime, timezone # Already imported here
 from logging.handlers import RotatingFileHandler
 from urllib.parse import urlparse
 from typing import Dict, Any, List, Tuple, Callable, Optional
@@ -23,6 +23,7 @@ from db_manager import cleanup_expired_links as db_cleanup_expired_links # Impor
 # NOTE: Necessary imports for MetadataFetcher/AISummarizer are handled inside the class bodies
 
 # --- LOGGING SETUP ---
+# ... (setup_logging and logger definition remains the same) ...
 
 def setup_logging() -> logging.Logger:
     """Configure structured logging with rotation"""
@@ -56,6 +57,7 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 
 # --- CUSTOM EXCEPTIONS (REQUIRED BY ROUTERS) ---
+# ... (Exception class definitions remain the same) ...
 
 class SecurityException(HTTPException):
     def __init__(self, detail: str):
@@ -74,6 +76,7 @@ class ResourceExpiredException(HTTPException):
         super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
 
 # --- CLEANUP WORKER (Unchanged) ---
+# ... (CleanupWorker class definition remains the same) ...
 
 class CleanupWorker:
     """Background worker for cleaning expired links"""
@@ -112,6 +115,7 @@ class CleanupWorker:
             time.sleep(self.interval)
 
 # --- GLOBAL LOCALIZATION SETUP (Unchanged) ---
+# ... (load_translations_from_json and get_translation remain the same) ...
 
 translations: Dict[str, Dict[str, str]] = {}
 
@@ -153,6 +157,7 @@ def get_translation(locale: str, key: str) -> str:
     return f"[{key}]"
 
 # --- LOCALE & TRANSLATOR DEPENDENCIES (Duplicates Kept) ---
+# ... (get_browser_locale, get_current_locale, get_translator_and_locale, etc. remain the same) ...
 
 def get_browser_locale(request: Request) -> str:
     lang_cookie = request.cookies.get("lang")
@@ -211,6 +216,7 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
     return lambda key: get_translation(locale, key)
 
 # --- URL VALIDATION / SANITIZATION (Fixed URL Prepends and Public Check) ---
+# ... (URLValidator class definition remains the same) ...
 
 class URLValidator:
     """Comprehensive URL validation and security checks"""
@@ -291,7 +297,7 @@ class URLValidator:
     
     @staticmethod
     def validate_url_public(url: str) -> bool:
-        # 🟢 FIX: Removed public=True constraint which was likely too strict and caused the 400 error
+        # FIX: Removed public=True constraint which was likely too strict and caused the 400 error
         return validators.url(url)
     
     @classmethod
@@ -299,7 +305,6 @@ class URLValidator:
         url = cls.validate_url_structure(url)
         
         if not cls.validate_url_public(url):
-            # This exception is what led to the 400 Bad Request in app.py when validators.url failed
             raise ValidationException("URL must be publicly accessible")
         
         parsed = urlparse(url)
@@ -309,6 +314,7 @@ class URLValidator:
         return url
 
 # --- QR CODE GENERATION (Unchanged) ---
+# ... (generate_qr_code_data_uri remains the same) ...
 
 def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) -> str:
     """Generate QR code as base64 data URI"""
@@ -328,7 +334,7 @@ def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) ->
         raise
 
 # --- METADATA FETCHER (Unchanged) ---
-
+# ... (MetadataFetcher class definition remains the same) ...
 class MetadataFetcher:
     """Fetch and parse webpage metadata"""
     
@@ -390,7 +396,7 @@ class MetadataFetcher:
         return meta
 
 # --- AI SUMMARIZER (Unchanged) ---
-
+# ... (AISummarizer class definition remains the same) ...
 class AISummarizer:
     """AI-powered content summarization using Hugging Face"""
     
@@ -475,7 +481,7 @@ class AISummarizer:
             logger.error(f"Summary generation failed for {doc_ref.id if hasattr(doc_ref, 'id') else 'link'}: {e}")
             pass
 
-# --- TEMPLATE CONTEXT DEPENDENCY (Unchanged) ---
+# --- TEMPLATE CONTEXT DEPENDENCY (Fixed to include datetime/timezone) ---
 
 BOOTSTRAP_CDN = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
 BOOTSTRAP_JS = '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'
@@ -524,4 +530,7 @@ async def get_common_context(
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
         "config": config, 
+        # 🟢 FIX for "datetime is undefined" error in templates
+        "datetime": datetime, 
+        "timezone": timezone,
     }

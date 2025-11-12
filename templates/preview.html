@@ -1,55 +1,30 @@
-<!DOCTYPE html>
-<html lang="{{ locale }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preview - {{ short_code }}</title>
-    <meta name="robots" content="noindex">
-    <meta name="description" content="Preview link before visiting">
-    {{ ADSENSE_SCRIPT|safe }}
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-</head>
-<body dir="{{ 'rtl' if locale in RTL_LOCALES else 'ltr' }}">
-    <div class="card">
-        <h1>Link Preview</h1>
-        {% if has_image %}
-            <img src="{{ meta_image_url }}" alt="Preview Image" class="preview-image">
-        {% endif %}
-        <div class="meta-header">
-            {% if has_favicon %}
-                <img src="{{ meta_favicon_url }}" class="favicon" alt="">
-            {% endif %}
-            <h2 class="meta-title" dir="auto">{{ meta_title }}</h2>
-        </div>
-        
-        {% if has_description %}
-            <p class="description" dir="auto">{{ meta_description }}</p>
-        {% endif %}
+<main class="card preview-container">
+  <h1>{{ _("result_short_link") }} Preview</h1>
+  
+  {% if meta_image_url and has_image %}
+      <img src="{{ meta_image_url }}" alt="Preview image for {{ meta_title }}" class="preview-image">
+  {% endif %}
 
-        {% if has_summary %}
-        <div class="summary-container" dir="auto">
-            <strong>🤖 AI Summary:</strong>
-            <p class="meta-summary">{{ summary }}</p>
-        </div>
-        {% elif not summary_fetched %} 
-        <div class="summary-container-loading" dir="auto">
-            <p>🤖 <i>AI summary is being generated. Refresh in a few moments.</i></p>
-        </div>
-        {% endif %}
-        <hr>
-        <p class="info">You are being redirected to:</p>
-        <p class="url" dir="auto">{{ escaped_long_url_display }}</p>
-        
-        <a class="button" href="{{ url_for('redirect_link', short_code=short_code) }}" rel="noopener noreferrer">Proceed to Link</a>
-    </div>
+  <div class="preview-title">{{ meta_title | default("Loading Title...") }}</div>
+  
+  <div class="preview-description">
+      {% if meta_description == _("preview_summary_pending") %}
+          <div class="spinner-container">
+             <div class="loading-spinner"></div> 
+             {{ meta_description }}
+          </div>
+      {% else %}
+          {{ meta_description }}
+      {% endif %}
+  </div>
+  
+  <div class="preview-url">Destination: {{ escaped_long_url_display }}</div>
 
-    <footer class="footer">
-        <span>© {{ current_year }} Shortlinks.art</span>
+  <a href="{{ url_for('redirect_link', short_code=short_code) }}" class="redirect-btn">
+    Continue to Destination
+  </a>
 
-        <a href="{{ url_for('localized:index', locale=locale) }}">Home</a>
-        <a href="{{ url_for('localized:about', locale=locale) }}">About</a>
-    </footer>
-
-</body>
-</html>
+  <p style="margin-top: 20px; font-size: 0.8rem; color: #666;">
+    You are being redirected to an external site.
+  </p>
+</main>

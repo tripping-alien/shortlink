@@ -41,6 +41,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.exceptions import RequestValidationError # ADDED for custom Pydantic error handling
 
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
@@ -212,6 +213,19 @@ def get_flag_emoji(country_code: str) -> str:
     ris2 = to_ris(country_code[1])
 
     return ris1 + ris2
+
+# Mapping Pydantic error types to our localized message keys (Used in the handler below)
+PYDANTIC_ERROR_MAP = {
+    'string_type': 'error_invalid_url',
+    'url_scheme': 'error_invalid_url',
+    'missing': 'error_field_required',
+    'string_min_length': 'error_length_min',
+    'string_max_length': 'error_length_max',
+    'string_pattern_mismatch': 'error_invalid_chars',
+    # Default fallback
+    'value_error': 'generic_error_message'
+}
+
 
 @lru_cache(maxsize=128)
 def get_translation(locale: str, key: str) -> str:
@@ -389,7 +403,7 @@ class URLValidator:
     async def resolve_hostname(hostname: str) -> str:
         """
         Resolve hostname to IP with security checks.
-        Handles environment issues by failing gracefully.
+        Handles environment DNS failure (socket.gaierror) gracefully.
         """
         try:
             ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
@@ -400,10 +414,9 @@ class URLValidator:
             return ip_address
         
         except socket.gaierror as e:
-            # Fix 2: Changed to Warning and return a dummy IP. 
-            # This prevents the whole request from crashing if DNS lookup fails in the environment.
-            logger.warning(f"DNS resolution failed for {hostname}: {e}. Skipping IP check.")
-            return "0.0.0.0" 
+            # If DNS fails, raise a specific validation error instead of crashing the API with a 500
+            logger.warning(f"DNS resolution failed for {hostname}: {e}.")
+            raise ValidationException("Could not resolve hostname: Hostname is invalid or DNS lookup failed.")
         except Exception as e:
             logger.error(f"Unexpected error during hostname resolution: {e}")
             raise ValidationException("Hostname resolution failed due to internal error.")
@@ -459,17 +472,27 @@ class URLValidator:
     @classmethod
     async def validate_and_sanitize(cls, url: str) -> str:
         """Complete URL validation pipeline"""
-        url = cls.validate_url_structure(url)
-        
-        if not cls.validate_url_public(url):
-            raise ValidationException("URL must be publicly accessible")
-        
-        parsed = urlparse(url)
-        hostname = parsed.netloc.split(':')[0]
-        await cls.resolve_hostname(hostname)
-        
-        # Return the validated URL string
-        return url
+        try:
+            url = cls.validate_url_structure(url)
+            
+            if not cls.validate_url_public(url):
+                raise ValidationException("URL must be publicly accessible")
+            
+            parsed = urlparse(url)
+            hostname = parsed.netloc.split(':')[0]
+            
+            # This is where the security check (including DNS lookup failure handling) occurs.
+            await cls.resolve_hostname(hostname)
+            
+            # Return the validated URL string
+            return url
+            
+        except ValidationException:
+            # Re-raise any ValidationException (including DNS failure mapped in resolve_hostname)
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during sanitization of {url}: {e}")
+            raise ValidationException("Internal validation error. Please check URL format.")
 
 # ============================================================================
 # SHORT CODE GENERATION
@@ -984,8 +1007,7 @@ def is_localized_route(path: str) -> bool:
         return False
     
     segments = path.split('/')
-    # FIX 9: Handle short paths like '/' or '/en' which split to ['', 'en'] or ['', '']
-    if len(segments) < 2:
+    if len(segments) < 2: 
         return False
         
     first_segment = segments[1]
@@ -1018,7 +1040,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response = await call_next(request)
         
-        # FIX 3: is_localized_route is now defined and accessible
         if response.media_type == "text/html" or is_localized_route(request.url.path):
             csp = self.html_csp
         else:
@@ -1143,6 +1164,48 @@ async def get_common_context(
         # --- CRITICAL FIX: Pass the config module object itself ---
         "config": config,
     }
+
+# ============================================================================
+# CUSTOM PYDANTIC VALIDATION HANDLER (Robust Error Messages)
+# ============================================================================
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Handles Pydantic validation errors, localizes the messages, and returns a clean 422 JSON response.
+    """
+    locale = get_browser_locale(request)
+    translator = lambda key: get_translation(locale, key)
+
+    formatted_errors = []
+    for error in exc.errors():
+        # 1. Get the Pydantic error type and map it to our localization key
+        # Default to 'value_error' if type is complex (e.g., value_error.url_scheme)
+        error_type = error.get('type', 'value_error').split('_type')[0]
+        msg_key = PYDANTIC_ERROR_MAP.get(error_type, 'generic_error_message')
+        
+        # 2. Get the localized message
+        message = translator(msg_key)
+
+        # 3. Handle parameters (min/max length, required, etc.)
+        if 'ctx' in error and isinstance(error['ctx'], dict):
+            # Dynamically insert values like min/max length into the message string
+            for key, value in error['ctx'].items():
+                message = message.replace(f"{{{key}}}", str(value))
+        
+        # 4. Construct the localized error detail
+        formatted_errors.append({
+            "loc": " -> ".join(map(str, error['loc'])),
+            "msg": message,
+        })
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "error": translator('error_validation_failed'),
+            "details": formatted_errors
+        }
+    )
 
 # ============================================================================
 # NON-LOCALIZED ROUTES

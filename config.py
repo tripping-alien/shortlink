@@ -1,6 +1,8 @@
 # ============================================================================
 # CONFIGURATION & CONSTANTS
 # ============================================================================
+import os
+
 
 class Config:
     """Centralized configuration with validation"""

@@ -8,14 +8,14 @@ from typing import Optional, Dict, Any, Literal, Callable
 
 import socket
 import ipaddress
-import asyncio # <-- Used for HF API retry
+import asyncio
 import io
 import base64
 import tempfile
 import logging
-import json      
-import threading 
-import time      
+import json      # For loading translations
+import threading # For the cleanup thread
+import time      # For the cleanup thread
 
 import validators
 from pydantic import BaseModel, constr
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 #
 # =====================================================================
-#  NEW: Configuration for Hugging Face Inference API
+#  Configuration for Hugging Face Inference API
 # =====================================================================
 #
 # Your HF Token (MUST be set as an environment variable)
@@ -80,6 +80,7 @@ translations = {}
 TRANSLATIONS_FILE = "translations.json"
 
 def load_translations():
+    """Loads translation strings from the JSON file."""
     global translations
     if not os.path.exists(TRANSLATIONS_FILE):
         logger.critical(f"FATAL: Translations file not found at {TRANSLATIONS_FILE}")
@@ -94,7 +95,9 @@ def load_translations():
     except Exception as e:
         logger.critical(f"FATAL: Could not read {TRANSLATIONS_FILE}: {e}")
         raise RuntimeError(f"Could not read translations file: {e}")
+# Load translations on startup
 load_translations()
+
 
 # --- i18n Functions ---
 def get_browser_locale(request: Request) -> str:
@@ -118,11 +121,9 @@ def get_translator_and_locale(
     valid_locale = locale if locale in SUPPORTED_LOCALES else DEFAULT_LOCALE
     def _(key: str) -> str:
         translated = translations.get(valid_locale, {}).get(key)
-        if translated:
-            return translated
+        if translated: return translated
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
-        if fallback:
-            return fallback
+        if fallback: return fallback
         return key
     return _, valid_locale
 
@@ -130,11 +131,9 @@ def get_api_translator(request: Request) -> Callable[[str], str]:
     locale = get_browser_locale(request)
     def _(key: str) -> str:
         translated = translations.get(locale, {}).get(key)
-        if translated:
-            return translated
+        if translated: return translated
         fallback = translations.get(DEFAULT_LOCALE, {}).get(key)
-        if fallback:
-            return fallback
+        if fallback: return fallback
         return key
     return _
 
@@ -249,7 +248,7 @@ def create_link_in_db(long_url: str, ttl: str, custom_code: Optional[str] = None
         "clicks_by_day": {}, "clicks_by_country": {},
         "meta_fetched": False, "meta_title": None, "meta_description": None,
         "meta_image": None, "meta_favicon": None, "owner_id": owner_id,
-        "meta_summary": None, "summary_fetched": False # <-- Summary fields
+        "meta_summary": None, "summary_fetched": False # Summary fields
     }
     if expires_at:
         data["expires_at"] = expires_at
@@ -305,6 +304,7 @@ async def fetch_metadata(url: str) -> dict:
     return meta
 
 async def update_country_stats(short_code: str, ip_address: str):
+    """BG Task: Update country stats based on IP"""
     if not is_public_ip(ip_address):
         logger.debug(f"Skipping country lookup for non-public IP: {ip_address}")
         return
@@ -323,54 +323,34 @@ async def update_country_stats(short_code: str, ip_address: str):
     except Exception as e:
         logger.warning(f"Failed to get/update country stats for {short_code} (IP: {ip_address}): {e}")
 
-
-#
-# =====================================================================
-#  REPLACED: LLM Summary function now uses Hugging Face API
-# =====================================================================
-#
 async def get_llm_summary(text: str) -> Optional[str]:
-    """
-    Calls the Hugging Face Inference API to get a summary.
-    """
+    """Calls the Hugging Face Inference API to get a summary."""
     if not text:
         return None
-        
     if not HF_TOKEN:
         logger.error("HF_TOKEN environment variable not set. Cannot get summary.")
         return None
 
     payload = {
         "inputs": text,
-        "parameters": {
-            "min_length": 25,  # Request a summary of at least 25 words
-            "max_length": 100  # And no more than 100 words
-        }
+        "parameters": {"min_length": 25, "max_length": 100}
     }
-    
-    headers = {
-        "Authorization": f"Bearer {HF_TOKEN}"
-    }
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(HF_MODEL_ENDPOINT, json=payload, headers=headers, timeout=30.0)
             
-            # Handle 503: Model is loading (cold start)
-            if response.status_code == 503:
+            if response.status_code == 503: # Handle 503: Model is loading
                 logger.warning("Hugging Face model is loading (503). Retrying after wait...")
                 retry_data = response.json()
                 wait_time = retry_data.get("estimated_time", 20.0)
                 await asyncio.sleep(wait_time)
-                
-                # Retry the request
                 response = await client.post(HF_MODEL_ENDPOINT, json=payload, headers=headers, timeout=30.0)
 
-            response.raise_for_status() # Raise on other errors
-            
+            response.raise_for_status()
             data = response.json()
             
-            # The response is a list with one dictionary: [{"summary_text": "..."}]
             if data and isinstance(data, list) and data[0] and "summary_text" in data[0]:
                 summary = data[0]["summary_text"]
                 return summary.strip()
@@ -383,13 +363,10 @@ async def get_llm_summary(text: str) -> Optional[str]:
         logger.error(f"Hugging Face API returned error: {e.response.status_code} {e.response.text}")
     except Exception as e:
         logger.error(f"Error getting LLM summary: {e}")
-        
     return None
 
 async def generate_and_cache_summary(short_code: str, url: str):
-    """
-    Background task to fetch, summarize, and cache the summary.
-    """
+    """BG Task: Fetch, summarize, and cache the summary."""
     logger.debug(f"Starting summary task for {short_code} ({url})")
     full_text = None
     try:
@@ -428,7 +405,7 @@ async def generate_and_cache_summary(short_code: str, url: str):
         try:
             db_client = init_firebase()
             doc_ref = db_client.collection("links").document(short_code)
-            doc_ref.update({"summary_fetched": True})
+            doc_ref.update({"summary_fetched": True}) # Mark as tried
         except Exception as db_e:
             logger.error(f"Failed to update summary_fetched status for {short_code}: {db_e}")
 
@@ -478,7 +455,9 @@ async def health():
 @app.post("/api/v1/links")
 @limiter.limit("10/minute")
 async def api_create_link(
-    request: Request, payload: LinkCreatePayload,
+    request: Request, 
+    payload: LinkCreatePayload,
+    background_tasks: BackgroundTasks, # Added
     _ : Callable = Depends(get_api_translator)
 ):
     long_url = payload.long_url.strip()
@@ -504,9 +483,14 @@ async def api_create_link(
             long_url = f"{long_url}{'&' if '?' in long_url else '?'}{cleaned_tags}"
     try:
         link = create_link_in_db(long_url, payload.ttl, payload.custom_code, payload.owner_id)
+        
         locale = get_browser_locale(request)
         short_code = link['short_code']
         token = link['deletion_token']
+
+        # Trigger the summary task immediately in the background
+        background_tasks.add_task(generate_and_cache_summary, short_code, long_url)
+
         localized_preview_url = f"{BASE_URL}/{locale}/preview/{short_code}"
         qr_code_data_uri = generate_qr_code_data_uri(localized_preview_url)
         return {
@@ -614,14 +598,17 @@ async def redirect_link(
                     else: raise HTTPException(status_code=404, detail=_("link_not_found"))
                 except Exception as e3:
                      logger.error(f"Final attempt to get long_url for {short_code} failed: {e3}.")
-                     raise HTTPException(status_code=44, detail=_("link_not_found"))
+                     raise HTTPException(status_code=404, detail=_("link_not_found"))
     if not long_url:
         raise HTTPException(status_code=404, detail=_("link_not_found"))
+    
+    # Trigger country stats task
     try:
         ip_address = get_remote_address(request)
         background_tasks.add_task(update_country_stats, short_code, ip_address)
     except Exception as e:
         logger.warning(f"Failed to schedule country stats task for {short_code}: {e}")
+    
     absolute_url = "https://" + long_url if not long_url.startswith(("http://", "https")) else long_url
     return RedirectResponse(url=absolute_url)
 
@@ -641,7 +628,6 @@ async def about(common_context: dict = Depends(get_common_context)):
 @i18n_router.get("/preview/{short_code}", response_class=HTMLResponse)
 async def preview(
     short_code: str,
-    background_tasks: BackgroundTasks,
     common_context: dict = Depends(get_common_context)
 ):
     _ = common_context["_"]
@@ -657,6 +643,7 @@ async def preview(
         raise HTTPException(status_code=410, detail=_("link_expired"))
     long_url = link["long_url"]
     safe_href_url = "https://" + long_url if not long_url.startswith(("http://", "https")) else long_url
+    
     if link.get("meta_fetched"):
         meta = {
             "title": link.get("meta_title"), "description": link.get("meta_description"),
@@ -673,9 +660,9 @@ async def preview(
         except Exception as e:
             print(f"Error updating cache for {short_code}: {e}")
     
+    # Get summary status
     summary = link.get("meta_summary")
-    if not link.get("summary_fetched"):
-        background_tasks.add_task(generate_and_cache_summary, short_code, safe_href_url)
+    summary_fetched = link.get("summary_fetched", False)
             
     context = {
         **common_context, "short_code": short_code,
@@ -687,7 +674,9 @@ async def preview(
         "meta_favicon_url": html.escape(meta.get("favicon") or "", quote=True),
         "has_image": bool(meta.get("image")), "has_favicon": bool(meta.get("favicon")),
         "has_description": bool(meta.get("description")),
-        "summary": html.escape(summary or ""), "has_summary": bool(summary)
+        "summary": html.escape(summary or ""),
+        "has_summary": bool(summary),
+        "summary_fetched": summary_fetched # Pass status to template
     }
     return templates.TemplateResponse("preview.html", context)
 

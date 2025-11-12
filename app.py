@@ -50,7 +50,7 @@ from google.cloud.firestore_v1.query import Query
 # FIX: We now import the module (config) and the instance (config) explicitly.
 # All other constants are accessed directly from the imported config module instance.
 import config
-from config import TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE 
+from config import *
 # Note: Exceptions are NOT imported here.
 
 # ============================================================================

@@ -485,9 +485,13 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             
         translator = lambda key: get_translation(locale, key)
         
+        # 🟢 FIX: Explicitly pass datetime/timezone to the error handler context
         context = {"request": request, "status_code": exc.status_code, "message": translator(exc.detail), 
                    "_": translator, "locale": locale, "BOOTSTRAP_CDN": BOOTSTRAP_CDN, "BOOTSTRAP_JS": BOOTSTRAP_JS,
-                   "current_year": datetime.now(timezone.utc).year, "RTL_LOCALES": config.config.RTL_LOCALES}
+                   "current_year": datetime.now(timezone.utc).year, 
+                   "RTL_LOCALES": config.config.RTL_LOCALES,
+                   "datetime": datetime,
+                   "timezone": timezone}
         
         return templates.TemplateResponse("error.html", context, status_code=exc.status_code)
 

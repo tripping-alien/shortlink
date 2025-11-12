@@ -47,10 +47,10 @@ from firebase_admin import credentials, firestore, get_app
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.query import Query
 
-# NEW: Import config and constants from the new config.py file
+# CRITICAL FIX: Removed exceptions from the config import list.
+# The definitions now rely only on standard imports and code execution order.
 from config import (
     config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
-    SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
 )
 
 # ============================================================================

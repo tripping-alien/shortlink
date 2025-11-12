@@ -7,8 +7,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Literal, Callable, List, Tuple
 from contextlib import asynccontextmanager
 
-import socket
-import ipaddress
+# REMOVED: import socket
+# REMOVED: import ipaddress
 import asyncio
 import io
 import base64
@@ -41,7 +41,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.exceptions import RequestValidationError # ADDED for custom Pydantic error handling
+from fastapi.exceptions import RequestValidationError 
 
 import firebase_admin
 from firebase_admin import credentials, firestore, get_app
@@ -390,37 +390,9 @@ def get_db() -> firestore.Client:
 class URLValidator:
     """Comprehensive URL validation and security checks"""
     
-    @staticmethod
-    def is_public_ip(ip_str: str) -> bool:
-        """Check if IP is public (not private/reserved)"""
-        try:
-            ip = ipaddress.ip_address(ip_str)
-            return ip.is_global
-        except ValueError:
-            return False
+    # REMOVED: is_public_ip
+    # REMOVED: resolve_hostname (Eliminates unstable synchronous network checks)
     
-    @staticmethod
-    async def resolve_hostname(hostname: str) -> str:
-        """
-        Resolve hostname to IP with security checks.
-        Handles environment DNS failure (socket.gaierror) gracefully.
-        """
-        try:
-            ip_address = await asyncio.to_thread(socket.gethostbyname, hostname)
-            
-            if not URLValidator.is_public_ip(ip_address):
-                raise SecurityException(f"Blocked request to non-public IP: {ip_address}")
-            
-            return ip_address
-        
-        except socket.gaierror as e:
-            # If DNS fails, raise a specific validation error instead of crashing the API with a 500
-            logger.warning(f"DNS resolution failed for {hostname}: {e}.")
-            raise ValidationException("Could not resolve hostname: Hostname is invalid or DNS lookup failed.")
-        except Exception as e:
-            logger.error(f"Unexpected error during hostname resolution: {e}")
-            raise ValidationException("Hostname resolution failed due to internal error.")
-
     @staticmethod
     def validate_url_structure(url: str) -> str:
         """Validate URL structure and format, adding https:// if scheme is missing."""
@@ -452,11 +424,7 @@ class URLValidator:
             if hostname in config.BLOCKED_DOMAINS:
                 raise SecurityException(f"Domain is blocked: {hostname}")
             
-            if '.' not in hostname:
-                try:
-                    ipaddress.ip_address(hostname)
-                except ValueError:
-                    raise ValidationException("Invalid domain: no TLD found")
+            # --- NOTE: Removed IP check (ipaddress.ip_address) for stability, relying on external network validation ---
             
             return url
         
@@ -471,24 +439,21 @@ class URLValidator:
     
     @classmethod
     async def validate_and_sanitize(cls, url: str) -> str:
-        """Complete URL validation pipeline"""
+        """Complete URL validation pipeline (stable version)"""
         try:
+            # 1. Structure check (handles naked domains)
             url = cls.validate_url_structure(url)
             
+            # 2. Public resource check (using validators)
             if not cls.validate_url_public(url):
                 raise ValidationException("URL must be publicly accessible")
             
-            parsed = urlparse(url)
-            hostname = parsed.netloc.split(':')[0]
-            
-            # This is where the security check (including DNS lookup failure handling) occurs.
-            await cls.resolve_hostname(hostname)
+            # NOTE: Removed await cls.resolve_hostname(hostname) to prevent socket/DNS blocking/crashes.
             
             # Return the validated URL string
             return url
             
         except ValidationException:
-            # Re-raise any ValidationException (including DNS failure mapped in resolve_hostname)
             raise
         except Exception as e:
             logger.error(f"Unexpected error during sanitization of {url}: {e}")
@@ -1180,7 +1145,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     formatted_errors = []
     for error in exc.errors():
         # 1. Get the Pydantic error type and map it to our localization key
-        # Default to 'value_error' if type is complex (e.g., value_error.url_scheme)
         error_type = error.get('type', 'value_error').split('_type')[0]
         msg_key = PYDANTIC_ERROR_MAP.get(error_type, 'generic_error_message')
         

@@ -1,3 +1,11 @@
+You got it. Ensuring the server-side logic is robust is the highest priority.
+Here is the complete, final version of your app.py file, which includes all fixes discussed:
+ * Firebase Database Fixes: Correctly using await asyncio.to_thread() for all synchronous Firestore calls in LinkManager and ShortCodeGenerator.
+ * Localization/Config Fixes: Full support for all declared locales (hi, he, arr), including correct flag data.
+ * PWA Cleanup: All PWA soft-ask cookie logic has been removed from the root_redirect and index functions.
+ * Reserved Codes: Updated to include all new locale codes.
+This file should replace your existing app.py in its entirety.
+📄 Complete and Corrected app.py
 import os
 import secrets
 import html
@@ -1004,28 +1012,13 @@ async def root_redirect(request: Request):
     locale = get_browser_locale(request)
     
     # 1. Prepare initial response
-    response = RedirectResponse(url=f"/{locale}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    # Use 302 Found after ditching PWA logic
+    response = RedirectResponse(url=f"/{locale}", status_code=status.HTTP_302_FOUND)
     
     # 2. Set preferred language cookie
     response.set_cookie("lang", locale, max_age=365*24*60*60, samesite="lax")
     
-    # 3. PWA Soft-Ask Logic
-    FIRST_VISIT_COOKIE = "shortlinks_first_visit"
-    INSTALL_PROMPT_KEY = "show_install_prompt"
-    INSTALL_STATUS_COOKIE = "shortlinks_install_status"
-    
-    first_visit = request.cookies.get(FIRST_VISIT_COOKIE)
-    install_status = request.cookies.get(INSTALL_STATUS_COOKIE)
-    
-    if not first_visit:
-        # First ever visit: Set a short-lived cookie to track return in the next 1 hour
-        response.set_cookie(FIRST_VISIT_COOKIE, "true", samesite="lax", max_age=3600) 
-    
-    elif first_visit == "true" and install_status is None:
-        # Returning visitor (after first hour) AND hasn't installed/dismissed.
-        # Set a flag cookie to show the JS prompt on the homepage
-        response.set_cookie(INSTALL_PROMPT_KEY, "true", samesite="lax", max_age=60)
-        logger.info("Setting install prompt cookie for returning user.")
+    # PWA Soft-Ask Logic REMOVED
     
     return response
 
@@ -1210,13 +1203,10 @@ async def sitemap():
 async def index(request: Request, common_context: Dict = Depends(get_common_context)):
     """Homepage"""
     
-    # PWA Soft-Ask Logic: Check for the flag we set in the root_redirect
-    INSTALL_PROMPT_KEY = "show_install_prompt"
-    show_prompt = request.cookies.get(INSTALL_PROMPT_KEY) == "true"
+    # PWA Soft-Ask Logic REMOVED from context passing
     
     context = {
         **common_context,
-        "show_install_prompt": show_prompt
     }
     
     return templates.TemplateResponse("index.html", context)
@@ -1495,3 +1485,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
+

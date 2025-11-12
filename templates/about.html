@@ -3,27 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ _("app_title") }}</title>
     
+    <title>{{ _("about_page_title") }}</title>
+    <meta name="description" content="{{ _('about_meta_description') }}">
+    
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="{{ _('about_page_title') }}">
+    <meta property="og:description" content="{{ _('about_meta_description') }}">
+
     {% for tag in hreflang_tags %}
     <link rel="{{ tag.rel }}" hreflang="{{ tag.hreflang }}" href="{{ tag.href }}">
     {% endfor %}
     
     {{ ADSENSE_SCRIPT|safe }} 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/4.1.7/css/flag-icons.min.css" integrity="sha512-GwXqu3iKRTNfR2gMDNYS0jYgWGAFfFzLNJYcE0ETGlwLdTwujSxjBOANRSPCvVSBCSFwwVbTR3MpdCweIZiRFA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    
     <style>
+      .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+      }
       .lang-flag {
-        width: 24px; height: auto; border-radius: 3px;
-        vertical-align: middle; border: 1px solid rgba(255, 255, 255, 0.1);
+        width: 24px; height: 18px; border-radius: 3px; vertical-align: middle;
+        border: 1px solid rgba(255, 255, 255, 0.1); background-size: cover; display: inline-block;
       }
       .lang-btn.active .lang-flag { border: 2px solid #fff; }
+      
+      /* Simple styles for the about page content */
+      .content-card {
+        text-align: left;
+        max-width: 700px;
+      }
+      .content-card h2 {
+        margin-top: 2rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+      }
+      .content-card p {
+        margin-bottom: 1rem;
+        line-height: 1.6;
+      }
+      .content-card ul {
+        margin-left: 20px;
+        margin-bottom: 1rem;
+      }
+      .content-card li {
+        margin-bottom: 0.5rem;
+      }
     </style>
 </head>
 <body>
-    <main class="card">
-      <h1>{{ _("nav_about") }}</h1>
-      <p>This is the About page. Please add your content here.</p>
+    <main class="card content-card">
+      <h1>{{ _("about_heading") }}</h1>
+      
+      <h2>{{ _("about_subheading_1") }}</h2>
+      <p>{{ _("about_p_1") }}</p>
+      
+      <h2>{{ _("about_subheading_2") }}</h2>
+      <p>{{ _("about_p_2") }}</p>
+
+      <h2>{{ _("about_subheading_3") }}</h2>
+      <ul>
+        <li>{{ _("about_li_1") }}</li>
+        <li>{{ _("about_li_2") }}</li>
+        <li>{{ _("about_li_3") }}</li>
+        <li>{{ _("about_li_4") }}</li>
+        <li>{{ _("about_li_5") }}</li>
+      </ul>
+
       <a href="{{ url_for('localized:index', locale=locale) }}">{{ _("nav_home") }}</a>
     </main>
 
@@ -37,10 +86,11 @@
               {% if tag.hreflang != 'x-default' %}
                 <a href="{{ tag.href }}" 
                    class="lang-btn {{ 'active' if tag.hreflang == locale else '' }}" 
-                   data-lang="{{ tag.hreflang }}">
-                   <img src="{{ url_for('static', path='flags/' + tag.hreflang + '.svg') }}" 
-                        alt="{{ _('lang_name_' + tag.hreflang) }}"
-                        class="lang-flag">
+                   data-lang="{{ tag.hreflang }}"
+                   title="{{ _('lang_name_' + tag.hreflang) }}">
+                   <span class="flag-icon flag-icon-{{ LOCALE_TO_FLAG_CODE[tag.hreflang] }} lang-flag">
+                       <span class="sr-only">{{ _('lang_name_' + tag.hreflang) }}</span>
+                   </span>
                 </a>
               {% endif %}
             {% endfor %}

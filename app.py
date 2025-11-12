@@ -209,11 +209,6 @@ def get_current_locale(tr: Tuple = Depends(get_translator_and_locale)) -> str:
     """Get current locale"""
     return tr[1]
 
-def get_api_translator(request: Request) -> Callable[[str], str]:
-    """Get translator for API endpoints"""
-    locale = get_browser_locale(request)
-    return lambda key: get_translation(locale, key)
-
 def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale)) -> List[Dict]:
     """Generate hreflang tags for SEO"""
     tags = []
@@ -1395,13 +1390,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={"error": exc.detail or "An internal error occurred"}
     )
-
-# The following handlers are now redundant as they are covered by the main HTTPException handler
-# @app.exception_handler(ValidationException)
-# @app.exception_handler(SecurityException)
-# @app.exception_handler(ResourceNotFoundException)
-# @app.exception_handler(ResourceExpiredException)
-
 
 # ============================================================================
 # MAIN ENTRY POINT

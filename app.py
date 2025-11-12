@@ -87,7 +87,6 @@ def load_translations_from_json():
 
 
 # ---------------- LLM Summarizer Setup (Hugging Face API) ----------------
-# NOTE: Use HUGGINGFACE_API_KEY environment variable for production.
 HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
 SUMMARIZATION_MODEL = "facebook/bart-large-cnn" 
 HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
@@ -828,7 +827,7 @@ async def about(common_context: dict = Depends(get_common_context)):
 async def preview(
     short_code: str,
     common_context: dict = Depends(get_common_context),
-    background_tasks: BackgroundTasks = Depends()
+    background_tasks: BackgroundTasks # FIX: Removed Depends()
 ):
     _ = common_context["_"]
     db_client = init_firebase()

@@ -41,7 +41,7 @@ APP_ID: str = ""
 APP_INSTANCE = None # Global to hold the initialized App instance
 
 # --- Custom Exception (Placeholder for demonstration, ensure this is defined elsewhere if needed) ---
-# NOTE: If ResourceNotFoundException is not defined, you must define it or change the delete_link function.
+# NOTE: Define ResourceNotFoundException here or import it if necessary
 class ResourceNotFoundException(Exception):
     """Custom exception for resource not found errors."""
     pass 
@@ -59,8 +59,6 @@ def _verify_token(plain_token: str, hashed_token: str) -> bool:
 def _hash_token(plain_token: str) -> str:
     """Hashes a plain token using bcrypt."""
     return pwd_context.hash(plain_token)
-
-# --- Database Connection (Async) ---
 
 # --- Database Connection (Async) ---
 
@@ -105,8 +103,9 @@ def get_db_connection():
                 logger.info(f"Initialized new Firebase App instance: {APP_ID}")
             
             # 5. Get Firestore Client (ASYNCHRONOUS)
-            db = firestore.AsyncClient() 
-            logger.info("Firebase Firestore ASYNC client initialized successfully.")
+            # FIX: Use the app instance's client factory method for correct async initialization
+            db = APP_INSTANCE.client(client_type='async') 
+            logger.info("Firebase Firestore ASYNC client initialized successfully via APP_INSTANCE.")
             
         except Exception as e:
             # Catch the JSONDecodeError here for clearer logging if the content is still wrong
@@ -114,6 +113,7 @@ def get_db_connection():
                 logger.error(f"Error initializing Firebase or Firestore: The content of FIREBASE_CONFIG is not valid JSON. Detail: {e}")
             else:
                 logger.error(f"Error initializing Firebase or Firestore: {e}")
+            # Re-raise as a generic RuntimeError to match the original function signature
             raise RuntimeError("Database connection failure.") from e
         finally:
             # 6. Clean up the temp file
@@ -141,6 +141,7 @@ def get_collection_ref(collection_name: str) -> firestore.AsyncCollectionReferen
         raise ValueError("APP_ID is not set. Cannot construct collection path.")
     
     path = f"artifacts/{APP_ID}/public/data/{collection_name}" 
+    # Ensure the async client is used
     return get_db_connection().collection(path)
 
 

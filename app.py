@@ -50,7 +50,7 @@ from google.cloud.firestore_v1.query import Query
 # NEW: Import config and constants from the new config.py file
 from config import (
     config, TTL_MAP, ADSENSE_SCRIPT, LOCALE_TO_FLAG_CODE, 
-    SecurityException, ValidationException, ResourceNotFoundException, ResourceExpiredException
+    # REMOVED: SecurityException, ValidationException, etc. are now defined locally below.
 )
 
 # ============================================================================
@@ -91,7 +91,32 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 
 # ============================================================================
-# PYDANTIC MODELS (Moved to the top to fix NameError)
+# CUSTOM EXCEPTIONS (Restored to app.py)
+# ============================================================================
+
+class SecurityException(HTTPException):
+    """Raised when security validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
+class ValidationException(HTTPException):
+    """Raised when input validation fails"""
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+class ResourceNotFoundException(HTTPException):
+    """Raised when a resource is not found"""
+    def __init__(self, detail: str = "Resource not found"):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+
+class ResourceExpiredException(HTTPException):
+    """Raised when a resource has expired"""
+    def __init__(self, detail: str = "Resource has expired"):
+        super().__init__(status_code=status.HTTP_410_GONE, detail=detail)
+
+
+# ============================================================================
+# PYDANTIC MODELS (Used for type hinting and response validation)
 # ============================================================================
 
 class LinkResponse(BaseModel):
@@ -105,7 +130,6 @@ class LinkCreatePayload(BaseModel):
     """Request model for creating links"""
     long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH)
     ttl: Literal["1h", "24h", "1w", "never"] = "24h"
-    # FIX: Corrected constr pattern usage syntax
     custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
     utm_tags: Optional[str] = Field(None, max_length=500)
     owner_id: Optional[str] = Field(None, max_length=100)
@@ -953,8 +977,31 @@ async def get_common_context(
 async def root_redirect(request: Request):
     """Redirect to localized homepage"""
     locale = get_browser_locale(request)
+    
+    # 1. Prepare initial response
     response = RedirectResponse(url=f"/{locale}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    
+    # 2. Set preferred language cookie
     response.set_cookie("lang", locale, max_age=365*24*60*60, samesite="lax")
+    
+    # 3. PWA Soft-Ask Logic
+    FIRST_VISIT_COOKIE = "shortlinks_first_visit"
+    INSTALL_PROMPT_KEY = "show_install_prompt"
+    INSTALL_STATUS_COOKIE = "shortlinks_install_status"
+    
+    first_visit = request.cookies.get(FIRST_VISIT_COOKIE)
+    install_status = request.cookies.get(INSTALL_STATUS_COOKIE)
+    
+    if not first_visit:
+        # First ever visit: Set a short-lived cookie to track return in the next 1 hour
+        response.set_cookie(FIRST_VISIT_COOKIE, "true", samesite="lax", max_age=3600) 
+    
+    elif first_visit == "true" and install_status is None:
+        # Returning visitor (after first hour) AND hasn't installed/dismissed.
+        # Set a flag cookie to show the JS prompt on the homepage
+        response.set_cookie(INSTALL_PROMPT_KEY, "true", samesite="lax", max_age=60)
+        logger.info("Setting install prompt cookie for returning user.")
+    
     return response
 
 @app.get("/health")
@@ -1132,9 +1179,19 @@ async def sitemap():
 # ============================================================================
 
 @i18n_router.get("/", response_class=HTMLResponse)
-async def index(common_context: Dict = Depends(get_common_context)):
+async def index(request: Request, common_context: Dict = Depends(get_common_context)):
     """Homepage"""
-    return templates.TemplateResponse("index.html", common_context)
+    
+    # PWA Soft-Ask Logic: Check for the flag we set in the root_redirect
+    INSTALL_PROMPT_KEY = "show_install_prompt"
+    show_prompt = request.cookies.get(INSTALL_PROMPT_KEY) == "true"
+    
+    context = {
+        **common_context,
+        "show_install_prompt": show_prompt
+    }
+    
+    return templates.TemplateResponse("index.html", context)
 
 @i18n_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(common_context: Dict = Depends(get_common_context)):
@@ -1236,7 +1293,7 @@ async def preview(
         )
 
 @i18n_router.get("/preview/{short_code}/redirect", response_class=RedirectResponse)
-async def continue_to_destination(
+async def continue_to_link(
     short_code: str,
     translator: Callable = Depends(get_translator),
     db: firestore.Client = Depends(get_db)
@@ -1405,3 +1462,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
+

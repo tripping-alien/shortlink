@@ -71,7 +71,7 @@
     }
 
     function createLinkRow(linkData) {
-        const shortUrl = `{{ config.BASE_URL }}/preview/${linkData.id}`;
+        const shortUrl = `{{ config.BASE_URL }}/r/${linkData.id}`;
         // FIX: Use the new neutral route names 'info' and 'remove'
         const statsUrl = `{{ url_for('localized:info', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id);
         const deleteUrl = `{{ url_for('localized:remove', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id) + `?token=${linkData.deletion_token}`;

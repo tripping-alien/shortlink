@@ -158,8 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Handles the copy to clipboard action.
      */
-    copyButton.addEventListener('click', () => {
-        const textToCopy = shortLinkHref.href;
+    copyButton.addEventListener('click', (e) => {
+        // FIX: Ensure we copy the href from the link element, not from the original API data.
+        const textToCopy = document.getElementById('short-link-href').href;
 
         try {
             // Use the Clipboard API for modern, secure copying

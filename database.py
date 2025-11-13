@@ -5,13 +5,8 @@ import string
 import asyncio
 import json 
 import tempfile 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from datetime import datetime, timezone, timedelta 
-
-from firebase_admin import credentials, initialize_app, firestore, get_app
-from firebase_admin import exceptions 
-# Import AsyncClient and Transaction for async operations
-from firebase_admin.firestore import AsyncClient, Transaction 
 
 # Import passlib for secure token hashing
 from passlib.context import CryptContext
@@ -30,13 +25,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # --- Constants & Globals ---
 
 CLIENT_APP_ID_FALLBACK = 'shortlink-app-default'
+LOCAL_DB_FILE = "shortlinks.json" # Path to your local JSON database file
 # A far-future date for "never expires" links to allow efficient querying
 FAR_FUTURE_EXPIRY = datetime(3000, 1, 1, tzinfo=timezone.utc) 
-
-# The 'db' client is now an AsyncClient
-db: AsyncClient = None
-APP_ID: str = ""
-APP_INSTANCE = None # Global to hold the initialized App instance
 
 # --- Custom Exception (Required for delete_link_with_token_check) ---
 class ResourceNotFoundException(Exception):
@@ -57,82 +48,53 @@ def _hash_token(plain_token: str) -> str:
     """Hashes a plain token using bcrypt."""
     return pwd_context.hash(plain_token)
 
-# --- Database Connection (Async) ---
+# --- Local File Database Helpers (Synchronous) ---
 
-def get_db_connection():
-    """Initializes and returns the Firestore ASYNC client (runs once)."""
-    global db, APP_ID, APP_INSTANCE
+def _read_db_file() -> Dict[str, Any]:
+    """Reads the entire local database file and returns its content."""
+    if not os.path.exists(LOCAL_DB_FILE):
+        return {}
+    try:
+        with open(LOCAL_DB_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        logger.error(f"Error decoding JSON from {LOCAL_DB_FILE}. File might be corrupt. Returning empty database.")
+        return {}
+    except Exception as e:
+        logger.error(f"Error reading database file {LOCAL_DB_FILE}: {e}")
+        return {}
 
-    if db is None:
-        # 1. Get configuration safely
-        app_id_env = os.environ.get('APP_ID')
-        APP_ID = app_id_env if app_id_env else CLIENT_APP_ID_FALLBACK
-        
-        firebase_config_str = os.environ.get('FIREBASE_CONFIG')
+def _write_db_file(data: Dict[str, Any]):
+    """Writes the given data dictionary to the local database file."""
+    try:
+        with open(LOCAL_DB_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        logger.error(f"Error writing to database file {LOCAL_DB_FILE}: {e}")
+        raise RuntimeError("Failed to write to local database file.") from e
 
-        temp_file_path = None
-        try:
-            cred = None
-            
-            # 2. Determine Credential Source (ONLY checking FIREBASE_CONFIG, as requested)
-            if firebase_config_str:
-                with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
-                    tmp_file.write(firebase_config_str)
-                    temp_file_path = tmp_file.name 
-                cred = credentials.Certificate(temp_file_path)
-                logger.info("Using FIREBASE_CONFIG JSON string via temporary file.")
-            
-            # 3. Handle missing configuration
-            if cred is None:
-                logger.error("FIREBASE_CONFIG is not set or is empty. Cannot connect to Firebase.")
-                raise ValueError("Firebase configuration is missing. Please set the FIREBASE_CONFIG environment variable.")
-
-            # 4. Initialize Firebase App
-            try:
-                APP_INSTANCE = get_app(APP_ID)
-                logger.info(f"Reusing existing Firebase App instance: {APP_ID}")
-            except ValueError:
-                APP_INSTANCE = initialize_app(cred, name=APP_ID)
-                logger.info(f"Initialized new Firebase App instance: {APP_ID}")
-            
-            # 5. Get Firestore Client (ASYNCHRONOUS)
-            # FIX: Use the app instance's client factory method for correct async initialization
-            db = APP_INSTANCE.client(client_type='async') 
-            logger.info("Firebase Firestore ASYNC client initialized successfully via APP_INSTANCE.")
-            
-        except Exception as e:
-            if isinstance(e, json.JSONDecodeError):
-                logger.error(f"Error initializing Firebase or Firestore: The content of FIREBASE_CONFIG is not valid JSON. Detail: {e}")
-            else:
-                logger.error(f"Error initializing Firebase or Firestore: {e}")
-            raise RuntimeError("Database connection failure.") from e
-        finally:
-            # 6. Clean up the temp file
-            if temp_file_path and os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                    logger.debug(f"Cleaned up temporary credential file at {temp_file_path}")
-                except Exception as cleanup_e:
-                    logger.warning(f"Failed to clean up temporary credential file: {cleanup_e}")
-
-    return db
-
+# --- Database Initialization ---
 
 def init_db():
     """
-    Explicitly initializes the database connection.
-    Called by the application's lifespan event.
+    Explicitly initializes the local database file.
+    Ensures the shortlinks.json file exists.
     """
-    get_db_connection()
+    if not os.path.exists(LOCAL_DB_FILE):
+        _write_db_file({}) # Create an empty JSON file
+        logger.info(f"Initialized new local database file: {LOCAL_DB_FILE}")
+    else:
+        logger.info(f"Local database file already exists: {LOCAL_DB_FILE}")
 
+# No longer needed for local file system
+# def get_db_connection():
+#     """This function is no longer relevant for a local JSON file."""
+#     pass
 
-def get_collection_ref(collection_name: str) -> firestore.AsyncCollectionReference:
-    """Returns the AsyncCollectionReference for a public collection."""
-    if not APP_ID:
-        raise ValueError("APP_ID is not set. Cannot construct collection path.")
-    
-    path = f"artifacts/{APP_ID}/public/data/{collection_name}"
-    return get_db_connection().collection(path)
+# No longer needed for local file system
+# def get_collection_ref(collection_name: str):
+#     """This function is no longer relevant for a local JSON file."""
+#     raise NotImplementedError("get_collection_ref is not implemented for local file database.")
 
 
 # --- Internal Short Code Generation Logic (Async) ---
@@ -143,11 +105,9 @@ def _generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     return ''.join(random.choice(characters) for _ in range(length))
 
 async def _is_short_code_unique(short_code: str) -> bool:
-    """Checks the database asynchronously to see if a short code already exists."""
-    get_db_connection()
-    doc_ref = get_collection_ref("links").document(short_code)
-    doc = await doc_ref.get() # <-- Await
-    return not doc.exists
+    """Checks the local database asynchronously to see if a short code already exists."""
+    db_data = await asyncio.to_thread(_read_db_file)
+    return short_code not in db_data
 
 async def generate_unique_short_code() -> str:
     """
@@ -181,69 +141,49 @@ async def create_link(
     Returns: The unique/chosen short code.
     Raises: ValueError if the provided short_code is already in use.
     """
-    db_client = get_db_connection()
-    
     # --- 1. Prepare Data ---
     hashed_token = _hash_token(deletion_token)
     
     data = {
         "long_url": long_url,
         "deletion_token": hashed_token, # <-- Store the HASH, not the token
-        "created_at": datetime.now(tz=timezone.utc),
+        "created_at": datetime.now(tz=timezone.utc).isoformat(), # Store as ISO string
         # Use a far-future date for "never expires" to simplify queries
-        "expires_at": expires_at if expires_at else FAR_FUTURE_EXPIRY
+        "expires_at": (expires_at if expires_at else FAR_FUTURE_EXPIRY).isoformat() # Store as ISO string
     }
     
+    db_data = await asyncio.to_thread(_read_db_file)
+
     if short_code:
-        # --- 2a. Custom Code Path (High-Risk for Race Condition) ---
+        # --- 2a. Custom Code Path ---
         if not short_code.isalnum(): 
             raise ValueError("Invalid short code format: custom code must be alphanumeric.")
         
         final_code = short_code
-        doc_ref = get_collection_ref("links").document(final_code)
-        
-        # Use a transaction to check-and-set atomically
-        @firestore.transactional
-        async def _create_in_transaction(transaction: Transaction, ref, data_to_set):
-            doc_snapshot = await ref.get(transaction=transaction)
-            if doc_snapshot.exists:
-                raise ValueError(f"Custom short code '{ref.id}' is already in use.")
-            # Set the data within the transaction
-            transaction.set(ref, data_to_set)
-        
-        try:
-            await _create_in_transaction(db_client.transaction(), doc_ref, data)
-        except ValueError as e:
-            raise e # Re-raise the "already in use" error
+        if final_code in db_data:
+            raise ValueError(f"Custom short code '{final_code}' is already in use.")
     
     else:
-        # --- 2b. Random Generation Path (Low-Risk) ---
+        # --- 2b. Random Generation Path ---
         final_code = await generate_unique_short_code()
-        doc_ref = get_collection_ref("links").document(final_code)
-        
-        try:
-            # Use .create() for an atomic "create if not exists" operation.
-            # This is faster than a full transaction.
-            await doc_ref.create(data)
-        except exceptions.AlreadyExists:
-            # This should rarely happen given our uniqueness check,
-            # but it securely handles the race condition if it does.
-            logger.error(f"Critical collision on 'create' for {final_code}. This should not happen.")
-            raise RuntimeError(
-                f"Failed to create link for {final_code} due to a rare collision."
-            )
+        # Double-check in case generate_unique_short_code had a very rare race condition
+        if final_code in db_data:
+            logger.error(f"Critical collision on 'create' for {final_code}. This should not happen with generate_unique_short_code.")
+            raise RuntimeError(f"Failed to create link for {final_code} due to a rare collision.")
     
+    db_data[final_code] = data
+    await asyncio.to_thread(_write_db_file, db_data)
     return final_code
 
 
 async def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
     """Retrieves a link record by its short code (Document ID) asynchronously."""
-    doc_ref = get_collection_ref("links").document(short_code)
-    doc = await doc_ref.get() # <-- Await
+    db_data = await asyncio.to_thread(_read_db_file)
+    link_data = db_data.get(short_code)
     
-    if doc.exists:
-        data = doc.to_dict()
-        data['id'] = doc.id 
+    if link_data:
+        data = link_data
+        data['id'] = short_code # Add ID for consistency with Firestore doc.id
         return data
     return None
 
@@ -252,13 +192,15 @@ async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
     try:
         # This efficient query relies on "never expires" links
         # having a far-future 'expires_at' date.
-        # NOTE: This query requires a Firestore Index on 'expires_at'.
-        query = get_collection_ref("links").where('expires_at', '>', now).stream() 
+        db_data = await asyncio.to_thread(_read_db_file)
         
         links = []
-        async for doc in query: # <-- Use async for
-            data = doc.to_dict()
-            links.append({'id': doc.id, **data})
+        for doc_id, data in db_data.items():
+            expires_at_str = data.get('expires_at')
+            if expires_at_str:
+                expires_at = datetime.fromisoformat(expires_at_str)
+                if expires_at > now:
+                    links.append({'id': doc_id, **data})
         return links
     except Exception as e:
         logger.error(f"Failed to fetch active links for sitemap: {e}")
@@ -266,17 +208,16 @@ async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
 
 @firestore.transactional
 async def delete_link_with_token_check(
-    transaction: Transaction, 
+    # Removed transaction argument as it's not applicable to local files
     short_code: str, 
     token: str
 ) -> bool:
     """
-    Atomically retrieves a doc, checks the deletion token, and deletes it.
+    Retrieves a link, checks the deletion token, and deletes it from the local file.
     
     Returns: True on success, False on failure (bad token/not found).
     """
-    doc_ref = get_collection_ref("links").document(short_code)
-    doc_snapshot = await doc_ref.get(transaction=transaction)
+    db_data = await asyncio.to_thread(_read_db_file)
 
     if not doc_snapshot.exists:
         logger.warning(f"Deletion attempt failed: Link '{short_code}' not found.")
@@ -292,44 +233,35 @@ async def delete_link_with_token_check(
         # Raise ValueError for clear API error handling
         raise ValueError("Invalid deletion token.")
         
-    # Token is valid, proceed with deletion
-    transaction.delete(doc_ref)
+    del db_data[short_code]
+    await asyncio.to_thread(_write_db_file, db_data)
     logger.info(f"Successfully deleted link '{short_code}'.")
     return True
 
 async def cleanup_expired_links(now: datetime):
     """
-    Deletes all short link documents that have passed their expiration time
-    using efficient Batched Writes (Async).
+    Deletes all short link entries from the local file that have passed their expiration time.
     """
     logger.info("Starting cleanup of expired links...")
-    links_ref = get_collection_ref("links")
-    db_client = get_db_connection()
+    db_data = await asyncio.to_thread(_read_db_file)
     
-    # NOTE: This query requires a Firestore Index on 'expires_at'
-    expired_query = links_ref.where('expires_at', '<=', now).stream()
-    
+    updated_db_data = {}
     deleted_count = 0
-    batch = db_client.batch()
-    batch_count = 0
-    
-    async for doc in expired_query: # <-- Use async for
-        batch.delete(doc.reference)
-        batch_count += 1
-        deleted_count += 1
-        
-        # Firestore batches are limited to 500 operations
-        if batch_count >= 499:
-            await batch.commit() # <-- Await
-            logger.info(f"Committed batch of {batch_count} deletions.")
-            # Start a new batch
-            batch = db_client.batch()
-            batch_count = 0
 
-    # Commit any remaining docs in the last batch
-    if batch_count > 0:
-        await batch.commit() # <-- Await
-        logger.info(f"Committed final batch of {batch_count} deletions.")
+    for short_code, data in db_data.items():
+        expires_at_str = data.get('expires_at')
+        if expires_at_str:
+            expires_at = datetime.fromisoformat(expires_at_str)
+            if expires_at <= now:
+                deleted_count += 1
+            else:
+                updated_db_data[short_code] = data
+        else: # Should not happen if create_link always sets expires_at
+            updated_db_data[short_code] = data
 
-    logger.info(f"Cleanup finished. Deleted {deleted_count} total expired links.")
+    if deleted_count > 0:
+        await asyncio.to_thread(_write_db_file, updated_db_data)
+        logger.info(f"Cleanup finished. Deleted {deleted_count} total expired links.")
+    else:
+        logger.info("Cleanup finished. No expired links found.")
     return deleted_count

@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultDiv = document.getElementById('result');
     const shortLinkResultInput = document.getElementById('short-link-result');
     const copyButton = document.getElementById('copy-button');
+    const shortenButton = document.getElementById('shorten-button');
     const longUrlInput = document.getElementById('long_url');
 
     // --- 1. Utility Function to Fetch Translations ---
@@ -42,6 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resultDiv.classList.add('hidden');
         resultDiv.style.opacity = '0'; // For smooth CSS transition
 
+        // Disable button and show loading state
+        const originalButtonText = shortenButton.innerHTML;
+        shortenButton.disabled = true;
+        shortenButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${_('js_creating_link')}`;
+
         // --- Prepare Payload ---
         const payload = {
             long_url: longUrl,
@@ -76,6 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Network or Server Error:', error);
             alert(_('js_error_server'));
+        } finally {
+            // Re-enable button and restore text
+            shortenButton.disabled = false;
+            shortenButton.innerHTML = originalButtonText;
         }
     });
 
@@ -86,20 +96,23 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function displaySuccess(data) {
         // --- 1. Update Links ---
-        const baseShortUrl = data.short_url.replace('/r/', '/'); // Use the preview URL for display
+        // The stats_url contains the correct base preview URL structure.
+        const previewUrl = data.stats_url.replace('/stats/', '/preview/');
+        shortLinkResultInput.value = previewUrl;
 
-        shortLinkResultInput.value = baseShortUrl;
-
-        // --- 2. Update Stats and Delete Links ---
+        // --- 2. Update Stats, Delete, and QR Code elements ---
         // Find existing elements or create them if they don't exist
         let statsLink = document.getElementById('stats-link');
         let deleteLink = document.getElementById('delete-link');
         let saveText = document.getElementById('save-text');
+        let qrCodeImage = document.getElementById('qr-code-image');
+        let qrCodeDownloadLink = document.getElementById('qr-code-download');
         
         if (!statsLink) {
             statsLink = document.createElement('a');
             statsLink.id = 'stats-link';
-            statsLink.classList.add('btn-secondary', 'mt-3');
+            statsLink.target = '_blank'; // Open in new tab
+            statsLink.classList.add('btn', 'btn-outline-secondary', 'mt-3');
             statsLink.textContent = _('result_view_clicks');
             resultDiv.appendChild(statsLink);
         }
@@ -108,26 +121,51 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!deleteLink) {
             deleteLink = document.createElement('a');
             deleteLink.id = 'delete-link';
-            deleteLink.classList.add('btn-secondary', 'mt-3', 'ml-2');
-            deleteLink.textContent = '🗑️ ' + _('delete_success'); // Using the word 'delete' for the button for clarity
+            deleteLink.target = '_blank'; // Open in new tab
+            deleteLink.classList.add('btn', 'btn-outline-danger', 'mt-3', 'ms-2');
+            deleteLink.innerHTML = '🗑️ ' + _('result_delete_link');
             resultDiv.appendChild(deleteLink);
         }
         deleteLink.href = data.delete_url;
 
         if (!saveText) {
-             saveText = document.createElement('p');
-             saveText.id = 'save-text';
-             saveText.classList.add('small-text', 'mt-3', 'text-muted');
-             saveText.innerHTML = `<strong>${_('result_save_link_strong')}</strong> ${_('result_save_link_text')}`;
-             resultDiv.appendChild(saveText);
+            saveText = document.createElement('p');
+            saveText.id = 'save-text';
+            saveText.classList.add('small-text', 'mt-3', 'text-muted');
+            saveText.innerHTML = `<strong>${_('result_save_link_strong')}</strong> ${_('result_save_link_text')}`;
+            resultDiv.appendChild(saveText);
         }
-        
-        // --- 3. Show Result Div with Animation ---
+
+        // --- 3. Handle QR Code ---
+        if (data.qr_code_data) {
+            if (!qrCodeImage) {
+                qrCodeImage = document.createElement('img');
+                qrCodeImage.id = 'qr-code-image';
+                qrCodeImage.classList.add('qr-code', 'mt-3');
+                resultDiv.appendChild(qrCodeImage);
+            }
+            qrCodeImage.src = data.qr_code_data;
+            qrCodeImage.alt = _('qr_code_alt');
+
+            if (!qrCodeDownloadLink) {
+                qrCodeDownloadLink = document.createElement('a');
+                qrCodeDownloadLink.id = 'qr-code-download';
+                qrCodeDownloadLink.classList.add('btn', 'btn-sm', 'btn-link', 'mt-1');
+                qrCodeDownloadLink.textContent = _('qr_code_download');
+                resultDiv.appendChild(qrCodeDownloadLink);
+            }
+            qrCodeDownloadLink.href = data.qr_code_data;
+            // Extract short code from URL to create a filename
+            const shortCode = data.stats_url.split('/').pop();
+            qrCodeDownloadLink.download = `qr-code-${shortCode}.png`;
+        }
+
+        // --- 4. Show Result Div with Animation ---
         resultDiv.classList.remove('hidden');
         // Simple JS fade in if no CSS animation is used:
         setTimeout(() => {
             resultDiv.style.opacity = '1';
-        }, 10); 
+        }, 10);
     }
 
 

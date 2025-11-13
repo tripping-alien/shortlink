@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const shortenForm = document.getElementById('shorten-form');
-    const advancedToggleButton = document.getElementById('advanced-toggle');
-    const advancedOptions = document.getElementById('advanced-options');
-    const resultDiv = document.getElementById('result');
-    const shortLinkResultInput = document.getElementById('short-link-result');
+    const advancedToggleButton = document.querySelector('[data-bs-target="#advanced-options"]');
+    const advancedOptions = document.getElementById('advanced-options'); // This is correct
+    const resultCard = document.getElementById('result-card'); // FIX: Changed from 'result' to 'result-card'
+    const shortLinkHref = document.getElementById('short-link-href'); // FIX: Changed from 'short-link-result' input
     const copyButton = document.getElementById('copy-button');
     const shortenButton = document.getElementById('shorten-button');
     const longUrlInput = document.getElementById('long_url');
@@ -14,13 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // or embedded JSON, or passed via Jinja2 context).
     const _ = window._ || ((key) => key); 
 
-    /**
-     * Toggles the visibility of the advanced options panel.
-     */
-    advancedToggleButton.addEventListener('click', () => {
-        const isHidden = advancedOptions.classList.toggle('hidden');
-        advancedToggleButton.textContent = isHidden ? _('advanced_options_button') : '▲ Hide Options';
-    });
 
 
     /**
@@ -40,8 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const ttl = document.getElementById('ttl').value;
         
         // Hide previous result and error messages
-        resultDiv.classList.add('hidden');
-        resultDiv.style.opacity = '0'; // For smooth CSS transition
+        resultCard.classList.add('d-none'); // FIX: Use 'd-none' for Bootstrap
+        resultCard.style.opacity = '0'; // For smooth CSS transition
 
         // Disable button and show loading state
         const originalButtonText = shortenButton.innerHTML;
@@ -95,76 +88,35 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {Object} data - The response data from the API.
      */
     function displaySuccess(data) {
-        // --- 1. Update Links ---
-        // The stats_url contains the correct base preview URL structure.
+        // --- 1. Get all the elements in the result card ---
+        const qrCodeImage = document.getElementById('qr-code-image');
+        const statsLink = document.getElementById('stats-link');
+        const deleteLink = document.getElementById('delete-link');
+
+        // --- 2. Populate the data ---
+        // The preview URL is the user-facing "short link"
         const previewUrl = data.stats_url.replace('/stats/', '/preview/');
-        shortLinkResultInput.value = previewUrl;
+        shortLinkHref.href = previewUrl;
+        shortLinkHref.textContent = previewUrl.replace(/^https?:\/\//, ''); // Display without protocol
 
-        // --- 2. Update Stats, Delete, and QR Code elements ---
-        // Find existing elements or create them if they don't exist
-        let statsLink = document.getElementById('stats-link');
-        let deleteLink = document.getElementById('delete-link');
-        let saveText = document.getElementById('save-text');
-        let qrCodeImage = document.getElementById('qr-code-image');
-        let qrCodeDownloadLink = document.getElementById('qr-code-download');
-        
-        if (!statsLink) {
-            statsLink = document.createElement('a');
-            statsLink.id = 'stats-link';
-            statsLink.target = '_blank'; // Open in new tab
-            statsLink.classList.add('btn', 'btn-outline-secondary', 'mt-3');
-            statsLink.textContent = _('result_view_clicks');
-            resultDiv.appendChild(statsLink);
-        }
+        // Set the stats and delete links
         statsLink.href = data.stats_url;
-
-        if (!deleteLink) {
-            deleteLink = document.createElement('a');
-            deleteLink.id = 'delete-link';
-            deleteLink.target = '_blank'; // Open in new tab
-            deleteLink.classList.add('btn', 'btn-outline-danger', 'mt-3', 'ms-2');
-            deleteLink.innerHTML = '🗑️ ' + _('result_delete_link');
-            resultDiv.appendChild(deleteLink);
-        }
         deleteLink.href = data.delete_url;
 
-        if (!saveText) {
-            saveText = document.createElement('p');
-            saveText.id = 'save-text';
-            saveText.classList.add('small-text', 'mt-3', 'text-muted');
-            saveText.innerHTML = `<strong>${_('result_save_link_strong')}</strong> ${_('result_save_link_text')}`;
-            resultDiv.appendChild(saveText);
-        }
-
-        // --- 3. Handle QR Code ---
+        // Set the QR code
         if (data.qr_code_data) {
-            if (!qrCodeImage) {
-                qrCodeImage = document.createElement('img');
-                qrCodeImage.id = 'qr-code-image';
-                qrCodeImage.classList.add('qr-code', 'mt-3');
-                resultDiv.appendChild(qrCodeImage);
-            }
             qrCodeImage.src = data.qr_code_data;
             qrCodeImage.alt = _('qr_code_alt');
-
-            if (!qrCodeDownloadLink) {
-                qrCodeDownloadLink = document.createElement('a');
-                qrCodeDownloadLink.id = 'qr-code-download';
-                qrCodeDownloadLink.classList.add('btn', 'btn-sm', 'btn-link', 'mt-1');
-                qrCodeDownloadLink.textContent = _('qr_code_download');
-                resultDiv.appendChild(qrCodeDownloadLink);
-            }
-            qrCodeDownloadLink.href = data.qr_code_data;
-            // Extract short code from URL to create a filename
-            const shortCode = data.stats_url.split('/').pop();
-            qrCodeDownloadLink.download = `qr-code-${shortCode}.png`;
+            qrCodeImage.parentElement.classList.remove('d-none');
+        } else {
+            qrCodeImage.parentElement.classList.add('d-none');
         }
 
         // --- 4. Show Result Div with Animation ---
-        resultDiv.classList.remove('hidden');
+        resultCard.classList.remove('d-none');
         // Simple JS fade in if no CSS animation is used:
         setTimeout(() => {
-            resultDiv.style.opacity = '1';
+            resultCard.style.opacity = '1';
         }, 10);
     }
 
@@ -173,11 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * Handles the copy to clipboard action.
      */
     copyButton.addEventListener('click', () => {
-        shortLinkResultInput.select();
-        shortLinkResultInput.setSelectionRange(0, 99999); // For mobile devices
+        const textToCopy = shortLinkHref.href;
 
         try {
-            navigator.clipboard.writeText(shortLinkResultInput.value);
+            // Use the Clipboard API for modern, secure copying
+            navigator.clipboard.writeText(textToCopy);
             copyButton.textContent = _('js_copied');
             copyButton.style.backgroundColor = 'var(--color-primary-dark)';
         } catch (err) {

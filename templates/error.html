@@ -1,82 +1,42 @@
-<!DOCTYPE html>
-<html lang="{{ locale }}" dir="{{ 'rtl' if locale in RTL_LOCALES else 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>{{ status_code }} | {{ _("app_title") }}</title>
-    <meta name="robots" content="noindex, nofollow">
-    
-    {{ BOOTSTRAP_CDN|safe }}
-    
-    <style>
-        body {
-            background-color: #121212;
-            color: #f8f9fa;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-        .error-card {
-            background-color: #2a2a2a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 40px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            max-width: 500px;
-            text-align: center;
-        }
-        .error-code {
-            font-size: 4rem;
-            font-weight: 700;
-            color: #ffc107; /* Warning color */
-            margin-bottom: 10px;
-        }
-        .error-message {
-            font-size: 1.25rem;
-            margin-bottom: 20px;
-        }
-        .error-card a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        .error-card a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <div class="error-card">
-        {% if status_code == 404 %}
-            <div class="error-code">404 🚫</div>
-            <h1 class="error-message">{{ _("link_not_found") }}</h1>
-            <p><strong>{{ message | default("The requested resource was not found.") }}</strong></p>
-            <p class="text-muted">The short link you followed does not exist on our system.</p>
-        {% elif status_code == 410 %}
-            <div class="error-code">410 💀</div>
-            <h1 class="error-message">{{ _("link_expired") }}</h1>
-            <p><strong>{{ message | default("The link has passed its expiration date.") }}</strong></p>
-            <p class="text-muted">This link was intentionally set to expire and can no longer be used.</p>
-        {% else %}
-            <div class="error-code">{{ status_code }} ⚠️</div>
-            <h1 class="error-message">{{ message | default("An unexpected error occurred.") }}</h1>
-        {% endif %}
-        
-        <hr class="text-secondary my-4">
-        
-        <p><a href="{{ url_for('localized:index', locale=locale) }}" class="btn btn-primary btn-lg">
-            {{ _("nav_home") }}
-        </a></p>
-    </div>
+{% extends "base.html" %}
 
-    <footer class="text-muted small mt-4">
-        &copy; {{ current_year }} Shortlinks.art
-    </footer>
-    
-    {{ BOOTSTRAP_JS|safe }}
-</body>
-</html>
+{% block title %}{{ status_code }} | {{ message | default(_('generic_error_message')) }}{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <meta name="robots" content="noindex, nofollow">
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            
+            <div class="error-icon-wrapper mb-4">
+                {% if status_code == 404 %}
+                    <i class="bi bi-compass display-1 text-warning"></i>
+                {% elif status_code == 410 %}
+                    <i class="bi bi-hourglass-split display-1 text-info"></i>
+                {% else %}
+                    <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
+                {% endif %}
+            </div>
+
+            <h1 class="display-4 fw-bold">{{ status_code }}</h1>
+            <p class="lead text-danger fw-bold">{{ message | default(_('generic_error_message')) }}</p>
+            
+            <p class="text-muted mt-3">
+                {% if status_code == 404 %}
+                    {{ _('link_not_found') }}
+                {% elif status_code == 410 %}
+                    {{ _('link_expired') }}
+                {% endif %}
+            </p>
+
+            <a href="{{ url_for('localized:index', locale=locale) }}" class="btn btn-primary btn-lg mt-4 shadow">
+                <i class="bi bi-house-door me-2"></i> {{ _('nav_home') }}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

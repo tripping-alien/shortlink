@@ -15,6 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const _ = window._ || ((key) => key); 
 
     /**
+     * Reads a cookie by name.
+     * @param {string} name - The name of the cookie.
+     * @returns {string|null} The cookie value or null if not found.
+     */
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    /**
      * Shows a Bootstrap toast notification.
      * @param {string} message - The message to display.
      * @param {string} level - 'success' or 'danger'.
@@ -70,8 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ttl: ttl,
             custom_code: customCode || null,
             utm_tags: utmTags || null,
-            // owner_id should be handled securely, likely fetched from a cookie or session
-            owner_id: null 
+            owner_id: getCookie('owner_id')
         };
 
         try {

@@ -175,10 +175,17 @@ i18n_router = APIRouter()
 @web_router.get("/", include_in_schema=False)
 async def root_redirect(request: Request):
     """Redirect to localized homepage"""
-    locale = get_browser_locale(request)
-    response = RedirectResponse(url=f"/{locale}", status_code=status.HTTP_302_FOUND)
-    response.set_cookie("lang", locale, max_age=365*24*60*60, samesite="lax")
-    return response
+    locale = get_browser_locale(request) 
+    response = RedirectResponse(url=f"/{locale}", status_code=status.HTTP_302_FOUND) 
+    
+    # Set owner_id cookie if it doesn't exist
+    if "owner_id" not in request.cookies:
+        new_owner_id = f"user_{secrets.token_hex(16)}"
+        # Set cookie for 2 years, secure, and samesite=lax
+        response.set_cookie("owner_id", new_owner_id, max_age=63072000, samesite="lax", secure=True, httponly=True)
+    
+    response.set_cookie("lang", locale, max_age=365*24*60*60, samesite="lax") 
+    return response 
 
 @web_router.get("/health")
 async def health_check():

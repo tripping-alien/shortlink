@@ -6,23 +6,6 @@
 <div class="container py-5">
     <h2 class="mb-2">{{ _('nav_dashboard') }}</h2>
     <p class="lead text-muted">{{ _('dashboard_tagline') }}</p>
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h5 class="card-title text-danger mb-3"><i class="bi bi-key me-2"></i> {{ _('login_required') }}</h5>
-            <p class="text-muted">{{ _('enter_owner_id_prompt') }}</p>
-            
-            <div class="input-group">
-                <input type="text" id="owner-id-input" class="form-control" 
-                       placeholder="{{ _('owner_id_placeholder') }}" 
-                       aria-label="{{ _('owner_id_placeholder') }}">
-                
-                <button class="btn btn-primary" id="fetch-links-button">
-                    <i class="bi bi-arrow-clockwise me-2"></i> {{ _('load_links_button') }}
-                </button>
-            </div>
-        </div>
-    </div>
     
     <hr class="my-4">
     
@@ -51,8 +34,6 @@
     const linksContainer = document.getElementById('links-container');
     const loadingDashboard = document.getElementById('loading-dashboard');
     const noLinksMessage = document.getElementById('no-links-message');
-    const fetchButton = document.getElementById('fetch-links-button');
-    const ownerIdInput = document.getElementById('owner-id-input');
     const linkCountBadge = document.getElementById('link-count-badge');
 
     function showLoading() {
@@ -106,10 +87,17 @@
         `;
     }
 
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
     async function fetchLinks() {
-        const ownerId = ownerIdInput.value.trim();
+        const ownerId = getCookie('owner_id');
         if (!ownerId) {
-            alert('{{ _('enter_owner_id_prompt') }}');
+            noLinksMessage.classList.remove('d-none');
             return;
         }
 
@@ -125,7 +113,7 @@
             await new Promise(resolve => setTimeout(resolve, 800)); 
             
             const links = [
-                { id: 'ab1c3d', long_url: 'https://www.google.com/search?q=fastapi+jinja2+bootstrap', clicks: 452, created_at: new Date().toISOString(), ttl_key: 'never', expires_at: '{{ datetime.strftime(timezone.localize(datetime(3000, 1, 1)), "%Y-%m-%dT%H:%M:%S%z") }}' },
+                { id: 'ab1c3d', long_url: 'https://www.google.com/search?q=fastapi+jinja2+bootstrap', clicks: 452, created_at: new Date().toISOString(), ttl_key: 'never', expires_at: '{{ datetime(3000, 1, 1, tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z") }}' },
                 { id: 'x5y6z7', long_url: 'https://github.com/fastapi/fastapi/issues/5225', clicks: 12, created_at: new Date(Date.now() - 86400000).toISOString(), ttl_key: '24h', expires_at: new Date(Date.now() + 86400000).toISOString() },
                 { id: 'h9i0j1', long_url: 'https://news.ycombinator.com/', clicks: 88, created_at: new Date(Date.now() - 172800000).toISOString(), ttl_key: '1w', expires_at: new Date(Date.now() + 604800000).toISOString() }
             ].filter(link => ownerId.startsWith('MOCKED_OWNER')); // Only show dummy links if a mocked ID is used
@@ -151,9 +139,7 @@
         }
     }
 
-    fetchButton.addEventListener('click', fetchLinks);
-
-    // Optional: Load links if a default owner ID is already set (e.g., from cookie/local storage)
-    // window.addEventListener('load', fetchLinks);
+    // Automatically load links for the user when the page loads.
+    window.addEventListener('load', fetchLinks);
 </script>
 {% endblock %}

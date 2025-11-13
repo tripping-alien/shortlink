@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ttl: ttl,
             custom_code: customCode || null,
             utm_tags: utmTags || null,
-            owner_id: getCookie('owner_id')
+            // FIX: owner_id is now handled by the server from the secure cookie
+            // owner_id: getCookie('owner_id')
         };
 
         try {

@@ -21,7 +21,8 @@ import config
 from db_manager import (
     init_db, create_link as db_create_link, get_link_by_id as db_get_link, 
     delete_link_by_id_and_token as db_delete_link, get_db_connection,
-    update_link_metadata as db_update_link_metadata,
+    update_link_metadata as db_update_link_metadata, 
+    get_links_by_owner_id as db_get_links_by_owner_id,
     increment_click_count as db_increment_click_count
 )
 
@@ -107,6 +108,8 @@ async def api_create_link(
     try:
         deletion_token = secrets.token_urlsafe(32)
         long_url = await URLValidator.validate_and_sanitize(payload.long_url)
+        # FIX: Get owner_id from the secure httponly cookie on the server-side
+        owner_id = request.cookies.get("owner_id")
         
         if payload.utm_tags:
             cleaned_tags = payload.utm_tags.lstrip("?&")
@@ -119,7 +122,7 @@ async def api_create_link(
             ttl=payload.ttl,
             deletion_token=deletion_token,
             custom_code=payload.custom_code,
-            owner_id=payload.owner_id,
+            owner_id=owner_id,
             utm_tags=payload.utm_tags
         )
         
@@ -160,11 +163,11 @@ async def api_get_my_links(
     owner_id: str,
     translator: Callable = Depends(get_api_translator),
 ):
-    """Get all links for an owner (MOCKED)"""
+    """Get all links for a given owner_id."""
     if not owner_id:
         raise ValidationException(translator("owner_id_required"))
     
-    links = [] 
+    links = await db_get_links_by_owner_id(owner_id)
     return {"links": links, "count": len(links)}
 
 # --- ROUTERS DEFINITION (WEB PAGES) ---
@@ -180,7 +183,8 @@ async def root_redirect(request: Request):
     
     # Set owner_id cookie if it doesn't exist
     if "owner_id" not in request.cookies:
-        new_owner_id = f"user_{secrets.token_hex(16)}"
+        # Generate a longer, more hash-like token (64 hex characters from 32 bytes of entropy)
+        new_owner_id = secrets.token_hex(32)
         # Set cookie for 2 years, secure, and samesite=lax
         response.set_cookie("owner_id", new_owner_id, max_age=63072000, samesite="lax", secure=True, httponly=True)
     
@@ -329,7 +333,10 @@ async def dashboard(
     common_context: Dict = Depends(get_common_context)
 ):
     """Dashboard page"""
-    return templates.TemplateResponse("dashboard.html", common_context)
+    # FIX: Pass the owner_id from the cookie into the template context
+    owner_id = common_context["request"].cookies.get("owner_id")
+    context = {**common_context, "owner_id": owner_id}
+    return templates.TemplateResponse("dashboard.html", context)
 
 @i18n_router.get("/about", response_class=HTMLResponse)
 async def about(

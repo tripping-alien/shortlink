@@ -87,15 +87,9 @@
         `;
     }
 
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-
     async function fetchLinks() {
-        const ownerId = getCookie('owner_id');
+        // FIX: Read owner_id directly from the context passed by the server
+        const ownerId = "{{ owner_id }}";
         if (!ownerId) {
             noLinksMessage.classList.remove('d-none');
             return;
@@ -104,21 +98,12 @@
         showLoading();
 
         try {
-            // MOCKED RESPONSE LOGIC:
-            // This section should be replaced with:
-            // const response = await fetch(`/api/v1/my-links?owner_id=${ownerId}`);
-            // const data = await response.json();
-            // const links = data.links;
-            
-            await new Promise(resolve => setTimeout(resolve, 800)); 
-            
-            const links = [
-                { id: 'ab1c3d', long_url: 'https://www.google.com/search?q=fastapi+jinja2+bootstrap', clicks: 452, created_at: new Date().toISOString(), ttl_key: 'never', expires_at: '{{ datetime(3000, 1, 1, tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z") }}' },
-                { id: 'x5y6z7', long_url: 'https://github.com/fastapi/fastapi/issues/5225', clicks: 12, created_at: new Date(Date.now() - 86400000).toISOString(), ttl_key: '24h', expires_at: new Date(Date.now() + 86400000).toISOString() },
-                { id: 'h9i0j1', long_url: 'https://news.ycombinator.com/', clicks: 88, created_at: new Date(Date.now() - 172800000).toISOString(), ttl_key: '1w', expires_at: new Date(Date.now() + 604800000).toISOString() }
-            ].filter(link => ownerId.startsWith('MOCKED_OWNER')); // Only show dummy links if a mocked ID is used
-
-            // END MOCKED RESPONSE LOGIC
+            const response = await fetch(`/api/v1/my-links?owner_id=${encodeURIComponent(ownerId)}`);
+            if (!response.ok) {
+                throw new Error(`{{ _('network_error_message') }} (Status: ${response.status})`);
+            }
+            const data = await response.json();
+            const links = data.links;
 
             if (links.length === 0) {
                 noLinksMessage.classList.remove('d-none');

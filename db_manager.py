@@ -188,6 +188,32 @@ async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
             return [dict(row) for row in cursor.fetchall()]
     return await loop.run_in_executor(None, db_fetch_all)
 
+async def get_links_by_owner_id(owner_id: str) -> List[Dict[str, Any]]:
+    """Fetches all links for a given owner_id, ordered by creation date."""
+    loop = asyncio.get_running_loop()
+    def db_fetch():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM links WHERE owner_id = ? ORDER BY created_at DESC", (owner_id,))
+            rows = cursor.fetchall()
+            
+            links_list = []
+            for row in rows:
+                link_dict = dict(row)
+                # Consistently convert timestamp strings to datetime objects
+                for key in ['created_at', 'expires_at']:
+                    if isinstance(link_dict.get(key), str):
+                        try:
+                            dt_obj = datetime.fromisoformat(link_dict[key])
+                            if dt_obj.tzinfo is None:
+                                dt_obj = dt_obj.replace(tzinfo=timezone.utc)
+                            link_dict[key] = dt_obj
+                        except (ValueError, TypeError):
+                            link_dict[key] = None
+                links_list.append(link_dict)
+            return links_list
+    return await loop.run_in_executor(None, db_fetch)
+
 async def increment_click_count(short_code: str):
     """Atomically increments the click count for a given short code."""
     loop = asyncio.get_running_loop()

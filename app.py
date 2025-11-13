@@ -214,7 +214,7 @@ async def redirect_short_code(short_code: str, request: Request, translator: Cal
         if not short_code.isalnum() or len(short_code) < 4:
             raise ValidationException(translator("invalid_short_code"))
         
-        locale = get_browser_locale(request) 
+        locale = 'en'
         preview_url = f"/{locale}/preview/{short_code}"
         full_redirect_url = f"{config.BASE_URL}{preview_url}"
         

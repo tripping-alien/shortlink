@@ -208,22 +208,29 @@ async def health_check():
             content={"status": "unhealthy", "database": "error", "error": error_detail})
 
 @web_router.get("/r/{short_code}")
-async def redirect_short_code(short_code: str, request: Request, translator: Callable = Depends(get_translator)):
+async def redirect_short_code(short_code: str, request: Request):
     """Redirect short code to preview page"""
     try:
         if not short_code.isalnum() or len(short_code) < 4:
-            raise ValidationException(translator("invalid_short_code"))
+            # Get locale for error message
+            locale = request.cookies.get("lang") or get_browser_locale(request)
+            error_msg = get_translation(locale, "invalid_short_code")
+            raise HTTPException(status_code=400, detail=error_msg)
         
-        preview_url = f"/en/preview/{short_code}"
+        # Get user's preferred locale from cookie or browser, with fallback
+        locale = request.cookies.get("lang") or get_browser_locale(request)
+        
+        preview_url = f"/{locale}/preview/{short_code}"
         full_redirect_url = f"{config.BASE_URL}{preview_url}"
         
         return RedirectResponse(url=full_redirect_url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
-    except ValidationException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error redirecting {short_code}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("redirect_error"))
-
+        locale = request.cookies.get("lang") or get_browser_locale(request)
+        error_msg = get_translation(locale, "redirect_error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
 @web_router.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
     """Robots.txt for SEO"""

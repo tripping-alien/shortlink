@@ -1,5 +1,6 @@
 {
     "hi": {
+        "qr_code_alt": "क्यूआर कोड",
         "lang_arr": "समुद्री डाकू",
         "error_invalid_url": "अमान्य URL प्रारूप। कृपया एक वैध वेब पता दर्ज करें।",
         "error_field_required": "यह फ़ील्ड आवश्यक है।",
@@ -69,6 +70,7 @@
         "generic_error_message": "एक अप्रत्याशित त्रुटि हुई।",
         "network_error_message": "एक कनेक्शन त्रुटि हुई। कृपया पुन: प्रयास करें।",
         "error_creating_link": "🚨 लिंक बनाने में विफल। कृपया अपना URL जांचें।",
+        "invalid_payload": "अमान्य पेलोड। कृपया अपना इनपुट जांचें।",
         "link_not_found": "लिंक नहीं मिला 🔍",
         "link_expired": "लिंक समाप्त हो गया ⏳",
         "preview_header": "आप पुनर्निर्देशित होने वाले हैं",
@@ -96,7 +98,8 @@
         "contact_email_placeholder": "ईमेल",
         "about_mission_text_placeholder": "हम मानते हैं कि लिंक प्रबंधन शक्तिशाली, सुरक्षित और सभी के लिए सुलभ होना चाहिए। Shortlinks.art लिंक को सरल, तेज़ और अधिक पारदर्शी बनाता है。",
         "js_enter_url": "कृपया एक URL दर्ज करें।",
-        "js_copied": "कॉपी किया गया!"
+        "js_copied": "कॉपी किया गया!",
+        "js_copy_failed": "कॉपी करने में विफल"
     },
     "he": {
         "error_invalid_url": "פורמט URL לא חוקי. אנא הכנס כתובת אתר חוקית.",
@@ -106,6 +109,7 @@
         "error_invalid_chars": "מכיל תווים לא חוקיים. מותרות רק אותיות ומספרים.",
         "error_validation_failed": "האימות נכשל. אנא בדוק את הקלט שלך.",
         "my_links_button": "הקישורים שלי 🔗",
+        "qr_code_alt": "קוד QR",
         "tagline": "שירות קיצורי URL מאובטח, מהיר ועתיר תכונות. ⚡",
         "long_url_placeholder": "הדבק את כתובת ה-URL הארוכה שלך כאן...",
         "ttl_1h": "שעה ⏱️",
@@ -168,6 +172,7 @@
         "generic_error_message": "אירעה שגיאה בלתי צפויה.",
         "network_error_message": "אירעה שגיאת חיבור. אנא נסה שוב.",
         "error_creating_link": "🚨 יצירת הקישור נכשלה. אנא בדוק את כתובת ה-URL שלך.",
+        "invalid_payload": "מטען לא חוקי. אנא בדוק את הקלט שלך.",
         "link_not_found": "קישור לא נמצא 🔍",
         "link_expired": "הקישור פג תוקף ⏳",
         "preview_header": "אתה עומד להיות מופנה",
@@ -195,9 +200,11 @@
         "contact_email_placeholder": "אימייל",
         "about_mission_text_placeholder": "אנו מאמינים שניהול קישורים צריך להיות חזק, מאובטח ונגיש לכולם. Shortlinks.art הופך קישורים לפשוטים יותר, מהירים יותר ושקופים יותר.",
         "js_enter_url": "אנא הזן כתובת URL.",
-        "js_copied": "הועתק!"
+        "js_copied": "הועתק!",
+        "js_copy_failed": "ההעתקה נכשלה"
     },
     "en": {
+        "qr_code_alt": "QR Code",
         "error_invalid_url": "Invalid URL format. Please enter a valid web address.",
         "error_field_required": "This field is required.",
         "error_length_min": "Must be at least {limit_value} characters long.",
@@ -267,6 +274,7 @@
         "generic_error_message": "An unexpected error occurred.",
         "network_error_message": "A connection error occurred. Please try again.",
         "error_creating_link": "🚨 Failed to create link. Please check your URL.",
+        "invalid_payload": "Invalid payload. Please check your input.",
         "link_not_found": "Link Not Found 🔍",
         "link_expired": "Link Expired ⏳",
         "preview_header": "You are about to be redirected",
@@ -294,9 +302,11 @@
         "contact_email_placeholder": "Email",
         "about_mission_text_placeholder": "We believe link management should be powerful, secure, and accessible to everyone. Shortlinks.art makes links simpler, faster, and more transparent.",
         "js_enter_url": "Please enter a URL.",
-        "js_copied": "Copied!"
+        "js_copied": "Copied!",
+        "js_copy_failed": "Copy failed"
     },
     "es": {
+        "qr_code_alt": "Código QR",
         "error_invalid_url": "Formato de URL no válido. Por favor ingrese una dirección web válida.",
         "error_field_required": "Este campo es obligatorio.",
         "error_length_min": "Debe tener al menos {limit_value} caracteres.",
@@ -366,6 +376,7 @@
         "generic_error_message": "Ocurrió un error inesperado.",
         "network_error_message": "Ocurrió un error de conexión. Por favor, inténtalo de nuevo.",
         "error_creating_link": "🚨 Error al crear el enlace. Por favor, comprueba tu URL.",
+        "invalid_payload": "Carga útil no válida. Por favor, compruebe su entrada.",
         "link_not_found": "Enlace No Encontrado 🔍",
         "link_expired": "Enlace Caducado ⏳",
         "preview_header": "Estás a punto de ser redirigido",
@@ -393,9 +404,11 @@
         "contact_email_placeholder": "Correo electrónico",
         "about_mission_text_placeholder": "Creemos que la gestión de enlaces debe ser potente, segura y accesible para todos. Shortlinks.art hace que los enlaces sean más sencillos, más rápidos y más transparentes.",
         "js_enter_url": "Por favor, introduzca una URL.",
-        "js_copied": "¡Copiado!"
+        "js_copied": "¡Copiado!",
+        "js_copy_failed": "Copia fallida"
     },
     "fr": {
+        "qr_code_alt": "Code QR",
         "error_invalid_url": "Format d'URL invalide. Veuillez entrer une adresse web valide.",
         "error_field_required": "Ce champ est requis.",
         "error_length_min": "Doit contenir au moins {limit_value} caractères.",
@@ -465,6 +478,7 @@
         "generic_error_message": "Une erreur inattendue est survenue.",
         "network_error_message": "Une erreur de connexion est survenue. Veuillez réessayer.",
         "error_creating_link": "🚨 Échec de la création du lien. Veuillez vérifier votre URL.",
+        "invalid_payload": "Charge utile non valide. Veuillez vérifier votre saisie.",
         "link_not_found": "Lien Non Trouvé 🔍",
         "link_expired": "Lien Expiré ⏳",
         "preview_header": "Vous êtes sur le point d'être redirigé",
@@ -492,9 +506,11 @@
         "contact_email_placeholder": "Email",
         "about_mission_text_placeholder": "Nous pensons que la gestion des liens doit être puissante, sécurisée et accessible à tous. Shortlinks.art rend les liens plus simples, plus rapides et plus transparents.",
         "js_enter_url": "Veuillez entrer une URL.",
-        "js_copied": "Copié !"
+        "js_copied": "Copié !",
+        "js_copy_failed": "La copie a échoué"
     },
     "de": {
+        "qr_code_alt": "QR-Code",
         "error_invalid_url": "Ungültiges URL-Format. Bitte geben Sie eine gültige Webadresse ein.",
         "error_field_required": "Dieses Feld ist erforderlich.",
         "error_length_min": "Muss mindestens {limit_value} Zeichen lang sein.",
@@ -564,6 +580,7 @@
         "generic_error_message": "Ein unerwarteter Fehler ist aufgetreten.",
         "network_error_message": "Ein Verbindungsfehler ist aufgetreten. Bitte versuchen Sie es erneut.",
         "error_creating_link": "🚨 Fehler beim Erstellen des Links. Bitte überprüfen Sie Ihre URL.",
+        "invalid_payload": "Ungültige Nutzlast. Bitte überprüfen Sie Ihre Eingabe.",
         "link_not_found": "Link nicht gefunden 🔍",
         "link_expired": "Link abgelaufen ⏳",
         "preview_header": "Sie werden gleich weitergeleitet",
@@ -591,9 +608,11 @@
         "contact_email_placeholder": "E-Mail",
         "about_mission_text_placeholder": "Wir glauben, dass Link-Management leistungsstark, sicher und für jeden zugänglich sein sollte. Shortlinks.art macht Links einfacher, schneller und transparenter.",
         "js_enter_url": "Bitte geben Sie eine URL ein.",
-        "js_copied": "Kopiert!"
+        "js_copied": "Kopiert!",
+        "js_copy_failed": "Kopieren fehlgeschlagen"
     },
     "it": {
+        "qr_code_alt": "Codice QR",
         "error_invalid_url": "Formato URL non valido. Si prega di inserire un indirizzo web valido.",
         "error_field_required": "Questo campo è obbligatorio.",
         "error_length_min": "Deve essere lungo almeno {limit_value} caratteri.",
@@ -663,6 +682,7 @@
         "generic_error_message": "Si è verificato un errore imprevisto.",
         "network_error_message": "Si è verificato un errore di connessione. Riprova.",
         "error_creating_link": "🚨 Impossibile creare il link. Controlla la tua URL.",
+        "invalid_payload": "Payload non valido. Controlla il tuo input.",
         "link_not_found": "Link Non Trovato 🔍",
         "link_expired": "Link Scaduto ⏳",
         "preview_header": "Stai per essere reindirizzato",
@@ -690,9 +710,11 @@
         "contact_email_placeholder": "Email",
         "about_mission_text_placeholder": "Riteniamo che la gestione dei link debba essere potente, sicura e accessibile a tutti. Shortlinks.art rende i link più semplici, veloci e trasparenti.",
         "js_enter_url": "Inserisci un URL.",
-        "js_copied": "Copiato!"
+        "js_copied": "Copiato!",
+        "js_copy_failed": "Copia fallita"
     },
     "pt": {
+        "qr_code_alt": "Código QR",
         "error_invalid_url": "Formato de URL inválido. Por favor, insira um endereço da web válido.",
         "error_field_required": "Este campo é obrigatório.",
         "error_length_min": "Deve ter pelo menos {limit_value} caracteres.",
@@ -762,6 +784,7 @@
         "generic_error_message": "Ocorreu um erro inesperado.",
         "network_error_message": "Ocorreu um erro de conexão. Tente novamente.",
         "error_creating_link": "🚨 Falha ao criar o link. Por favor, verifique sua URL.",
+        "invalid_payload": "Carga útil inválida. Por favor, verifique sua entrada.",
         "link_not_found": "Link Não Encontrado 🔍",
         "link_expired": "Link Expirado ⏳",
         "preview_header": "Você está prestes a ser redirecionado",
@@ -789,9 +812,11 @@
         "contact_email_placeholder": "Email",
         "about_mission_text_placeholder": "Acreditamos que o gerenciamento de links deve ser poderoso, seguro e acessível a todos. Shortlinks.art torna os links mais simples, rápidos e transparentes.",
         "js_enter_url": "Por favor, insira um URL.",
-        "js_copied": "Copiado!"
+        "js_copied": "Copiado!",
+        "js_copy_failed": "A cópia falhou"
     },
     "ja": {
+        "qr_code_alt": "QRコード",
         "error_invalid_url": "無効なURL形式です。有効なWebアドレスを入力してください。",
         "error_field_required": "このフィールドは必須です。",
         "error_length_min": "少なくとも{limit_value}文字である必要があります。",
@@ -861,6 +886,7 @@
         "generic_error_message": "予期せぬエラーが発生しました。",
         "network_error_message": "接続エラーが発生しました。もう一度お試しください。",
         "error_creating_link": "🚨 リンクの作成に失敗しました。URLを確認してください。",
+        "invalid_payload": "無効なペイロードです。入力を確認してください。",
         "link_not_found": "リンクが見つかりません 🔍",
         "link_expired": "リンク期限切れ ⏳",
         "preview_header": "リダイレクトしようとしています",
@@ -888,9 +914,11 @@
         "contact_email_placeholder": "メール",
         "about_mission_text_placeholder": "私たちは、リンク管理が強力で安全、そして誰にでもアクセス可能であるべきだと信じています。Shortlinks.artは、リンクをよりシンプル、迅速、かつ透明にします。",
         "js_enter_url": "URLを入力してください。",
-        "js_copied": "コピーしました！"
+        "js_copied": "コピーしました！",
+        "js_copy_failed": "コピーに失敗しました"
     },
     "zh": {
+        "qr_code_alt": "二维码",
         "error_invalid_url": "无效的URL格式。请输入有效的网址。",
         "error_field_required": "此字段为必填项。",
         "error_length_min": "必须至少为{limit_value}个字符。",
@@ -960,6 +988,7 @@
         "generic_error_message": "发生了一个意外错误。",
         "network_error_message": "发生连接错误。请重试。",
         "error_creating_link": "🚨 创建链接失败。请检查您的URL。",
+        "invalid_payload": "无效的有效载荷。请检查您的输入。",
         "link_not_found": "未找到链接 🔍",
         "link_expired": "链接已过期 ⏳",
         "preview_header": "您即将被重定向",
@@ -987,9 +1016,11 @@
         "contact_email_placeholder": "邮箱",
         "about_mission_text_placeholder": "我们相信链接管理应该是强大的、安全的，并且对每个人都可访问。Shortlinks.art 使链接更简单、更快速、更透明。",
         "js_enter_url": "请输入一个URL。",
-        "js_copied": "已复制！"
+        "js_copied": "已复制！",
+        "js_copy_failed": "复制失败"
     },
     "ar": {
+        "qr_code_alt": "رمز الاستجابة السريعة",
         "error_invalid_url": "تنسيق URL غير صالح. يرجى إدخال عنوان ويب صالح.",
         "error_field_required": "هذا الحقل مطلوب.",
         "error_length_min": "يجب أن يكون على الأقل {limit_value} حرفًا.",
@@ -1059,6 +1090,7 @@
         "generic_error_message": "حدث خطأ غير متوقع.",
         "network_error_message": "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.",
         "error_creating_link": "🚨 فشل إنشاء الرابط. يرجى التحقق من عنوان URL الخاص بك.",
+        "invalid_payload": "حمولة غير صالحة. يرجى التحقق من إدخالك.",
         "link_not_found": "لم يتم العثور على الرابط 🔍",
         "link_expired": "انتهت صلاحية الرابط ⏳",
         "preview_header": "أنت على وشك أن يتم إعادة توجيهك",
@@ -1086,9 +1118,11 @@
         "contact_email_placeholder": "البريد الإلكتروني",
         "about_mission_text_placeholder": "نحن نؤمن بأن إدارة الروابط يجب أن تكون قوية وآمنة ومتاحة للجميع. Shortlinks.art يجعل الروابط أبسط وأسرع وأكثر شفافية.",
         "js_enter_url": "الرجاء إدخال عنوان URL.",
-        "js_copied": "تم النسخ!"
+        "js_copied": "تم النسخ!",
+        "js_copy_failed": "فشل النسخ"
     },
     "ru": {
+        "qr_code_alt": "QR-код",
         "error_invalid_url": "Неверный формат URL. Пожалуйста, введите действительный веб-адрес.",
         "error_field_required": "Это поле обязательно.",
         "error_length_min": "Должно быть не менее {limit_value} символов.",
@@ -1158,6 +1192,7 @@
         "generic_error_message": "Произошла непредвиденная ошибка.",
         "network_error_message": "Произошла ошибка подключения. Попробуйте снова.",
         "error_creating_link": "🚨 Не удалось создать ссылку. Проверьте ваш URL.",
+        "invalid_payload": "Недопустимая полезная нагрузка. Пожалуйста, проверьте введенные данные.",
         "link_not_found": "Ссылка не найдена 🔍",
         "link_expired": "Срок действия ссылки истек ⏳",
         "preview_header": "Вы будете перенаправлены",
@@ -1185,9 +1220,11 @@
         "contact_email_placeholder": "Электронная почта",
         "about_mission_text_placeholder": "Мы считаем, что управление ссылками должно быть мощным, безопасным и доступным для всех. Shortlinks.art делает ссылки проще, быстрее и прозрачнее.",
         "js_enter_url": "Пожалуйста, введите URL.",
-        "js_copied": "Скопировано!"
+        "js_copied": "Скопировано!",
+        "js_copy_failed": "Копирование не удалось"
     },
     "arr": {
+        "qr_code_alt": "QR Treasure Map",
         "error_invalid_url": "That URL be cursed! Enter a proper one, ye scallywag.",
         "error_field_required": "This field be mandatory, savvy?",
         "error_length_min": "Must be at least {limit_value} characters, or walk the plank!",
@@ -1257,6 +1294,7 @@
         "generic_error_message": "A giant squid grabbed yer request!",
         "network_error_message": "A storm hit our masts! Try again.",
         "error_creating_link": "🚨 Shiver me timbers! That URL be leaky.",
+        "invalid_payload": "That treasure map be empty! Check yer input.",
         "link_not_found": "A treasure not found! 🗺️",
         "link_expired": "The grog has run out! 💀",
         "preview_header": "Ye be about to set sail",
@@ -1284,6 +1322,7 @@
         "contact_email_placeholder": "Message in a Bottle",
         "about_mission_text_placeholder": "We reckon' link management should be strong, safe, and accessible to every pirate. Shortlinks.art makes yer voyages simpler, faster, and clearer than the sea in the tropics.",
         "js_enter_url": "Ye must enter a map (URL)!",
-        "js_copied": "Swabbed!"
+        "js_copied": "Swabbed!",
+        "js_copy_failed": "Swabbing failed!"
     }
 }

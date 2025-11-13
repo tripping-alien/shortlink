@@ -85,7 +85,7 @@
                                 <a href="${shortUrl}" target="_blank" class="text-decoration-none">${shortUrl}</a>
                             </h5>
                             <span class="badge bg-secondary-subtle text-secondary ms-3">
-                                ${linkData.ttl_key ? '{{ _('ttl_' + linkData.ttl_key) }}' : '{{ _('ttl_never') }}'}
+                                ${linkData.ttl_key ? '{{ _('ttl_') }}' + linkData.ttl_key : '{{ _('ttl_never') }}'}
                             </span>
                         </div>
                         <p class="card-text text-muted small mb-3 text-truncate">${linkData.long_url}</p>

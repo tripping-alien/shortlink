@@ -308,6 +308,9 @@ def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) ->
         logger.error(f"Failed to generate QR code: {e}")
         raise
 
+# Create an instance to be used by other classes in this module
+metadata_fetcher = MetadataFetcher()
+
 # --- METADATA FETCHER (Uses fixed module constants) ---
 class MetadataFetcher:
     """Fetch and parse webpage metadata"""

@@ -21,9 +21,9 @@ import config
 from db_manager import (
     init_db, create_link as db_create_link, get_link_by_id as db_get_link, 
     delete_link_by_id_and_token as db_delete_link, get_db_connection,
-    update_link_metadata as db_update_link_metadata
+    update_link_metadata as db_update_link_metadata,
+    increment_click_count as db_increment_click_count
 )
-from models import LinkResponse, LinkCreatePayload
 
 # Import core_logic functions/classes
 from core_logic import (
@@ -35,6 +35,8 @@ from core_logic import (
     BOOTSTRAP_CDN, BOOTSTRAP_JS,
     AISummarizer, MetadataFetcher, generate_qr_code_data_uri 
 )
+# FIX: Import models from the dedicated models.py file
+from models import LinkResponse, LinkCreatePayload
 
 # --- GLOBAL INSTANCES ---
 worker_instance: CleanupWorker = None
@@ -391,6 +393,10 @@ async def continue_to_link(
         link = await db_get_link(short_code)
         if not link:
             raise ResourceNotFoundException(translator("link_not_found"))
+        
+        # Increment the click count in the background
+        background_tasks.add_task(db_increment_click_count, short_code)
+        
         long_url = link["long_url"]
         
         if not long_url.startswith(("http://", "https://")):

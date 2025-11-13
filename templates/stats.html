@@ -30,16 +30,16 @@
                         
                         <dt class="col-sm-4 text-muted">{{ _('created_at_placeholder') }}</dt>
                         <dd class="col-sm-8">
-                            {{ datetime.strftime(link.created_at, "%Y-%m-%d %H:%M %Z") }}
+                            {{ link.created_at.strftime("%Y-%m-%d %H:%M %Z") }}
                         </dd>
 
                         <dt class="col-sm-4 text-muted">{{ _('expires') }}</dt>
                         <dd class="col-sm-8">
                             {# The 'FAR_FUTURE_EXPIRY' value is not available in common_context, so we rely on the config import via app.py #}
-                            {% if link.expires_at and datetime.strftime(link.expires_at, "%Y-%m-%d") == "3000-01-01" %}
+                            {% if link.expires_at and link.expires_at.year == 3000 %}
                                 {{ _('ttl_never') }}
                             {% else %}
-                                {{ datetime.strftime(link.expires_at, "%Y-%m-%d %H:%M %Z") }}
+                                {{ link.expires_at.strftime("%Y-%m-%d %H:%M %Z") }}
                             {% endif %}
                         </dd>
                     </dl>

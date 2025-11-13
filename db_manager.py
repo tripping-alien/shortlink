@@ -141,15 +141,22 @@ async def get_link_by_id(short_code: str) -> Optional[Dict[str, Any]]:
             cursor.execute("SELECT * FROM links WHERE id = ?", (short_code,))
             row = cursor.fetchone()
             if row:
-                # Check for expiration
-                expires_at = row['expires_at']
-                if isinstance(expires_at, str):
-                    expires_at = datetime.fromisoformat(expires_at)
-                if expires_at.tzinfo is None:
-                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                link_dict = dict(row)
+                
+                # --- FIX: Consistently convert timestamp strings to datetime objects ---
+                for key in ['created_at', 'expires_at']:
+                    if isinstance(link_dict.get(key), str):
+                        try:
+                            dt_obj = datetime.fromisoformat(link_dict[key])
+                            if dt_obj.tzinfo is None:
+                                dt_obj = dt_obj.replace(tzinfo=timezone.utc)
+                            link_dict[key] = dt_obj
+                        except (ValueError, TypeError):
+                            logger.warning(f"Could not parse timestamp '{link_dict[key]}' for {key} on link {short_code}")
+                            link_dict[key] = None # Or a default datetime
 
-                if expires_at > datetime.now(timezone.utc):
-                    return dict(row)
+                if link_dict.get('expires_at') and link_dict['expires_at'] > datetime.now(timezone.utc):
+                    return link_dict
             return None
     return await loop.run_in_executor(None, db_fetch)
 
@@ -180,6 +187,23 @@ async def get_all_active_links(now: datetime) -> List[Dict[str, Any]]:
             cursor.execute("SELECT * FROM links WHERE expires_at > ?", (now,))
             return [dict(row) for row in cursor.fetchall()]
     return await loop.run_in_executor(None, db_fetch_all)
+
+async def increment_click_count(short_code: str):
+    """Atomically increments the click count for a given short code."""
+    loop = asyncio.get_running_loop()
+    def db_increment():
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE links SET clicks = clicks + 1 WHERE id = ?",
+                    (short_code,)
+                )
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to increment click count for {short_code}: {e}")
+    
+    await loop.run_in_executor(None, db_increment)
 
 async def cleanup_expired_links(now: datetime):
     loop = asyncio.get_running_loop()

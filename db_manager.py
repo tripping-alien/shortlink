@@ -194,7 +194,9 @@ async def get_links_by_owner_id(owner_id: str) -> List[Dict[str, Any]]:
     def db_fetch():
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM links WHERE owner_id = ? ORDER BY created_at DESC", (owner_id,))
+            # FIX: The parameter for the query was missing. The (owner_id,) tuple is required.
+            # Also, explicitly select columns to ensure deletion_token is available.
+            cursor.execute("SELECT id, long_url, clicks, created_at, expires_at, deletion_token FROM links WHERE owner_id = ? ORDER BY created_at DESC", (owner_id,))
             rows = cursor.fetchall()
             
             links_list = []

@@ -135,8 +135,8 @@ async def api_create_link(
         
         return LinkResponse(
             short_url=f"{config.BASE_URL}/r/{short_code}",
-            stats_url=f"{config.BASE_URL}/{locale}/stats/{short_code}",
-            delete_url=f"{config.BASE_URL}/{locale}/delete/{short_code}?token={deletion_token}",
+            stats_url=f"{config.BASE_URL}/{locale}/info/{short_code}",
+            delete_url=f"{config.BASE_URL}/{locale}/remove/{short_code}?token={deletion_token}",
             qr_code_data=qr_code_data
         )
     
@@ -421,7 +421,7 @@ async def continue_to_link(
         logger.error(f"Error redirecting {short_code}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("redirect_error"))
 
-@i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
+@i18n_router.get("/info/{short_code}", response_class=HTMLResponse, name="info")
 @limiter.limit(config.RATE_LIMIT_STATS)
 async def stats(
     request: Request, # REQUIRED (Note: Request is often treated as required and usually placed first)
@@ -454,7 +454,7 @@ async def terms_of_service(
     return templates.TemplateResponse("terms.html", common_context)
 
 
-@i18n_router.get("/delete/{short_code}", response_class=HTMLResponse)
+@i18n_router.get("/remove/{short_code}", response_class=HTMLResponse, name="remove")
 async def delete_link(
     short_code: str, # REQUIRED
     locale: str = Path(..., description="The language code"), # OPTIONAL/DEFAULTED

@@ -9,81 +9,104 @@
     
     <hr class="my-4">
     
-    <h4 class="mb-4">{{ _('your_links') }} <span id="link-count-badge" class="badge bg-secondary ms-2 d-none"></span></h4>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">{{ _('your_links') }}</h4>
+        <span id="link-count-badge" class="badge bg-primary rounded-pill fs-6"></span>
+    </div>
 
-    <div id="links-container" class="row row-cols-1 g-4">
-        <div id="loading-dashboard" class="col text-center py-5 d-none">
+    <div class="card shadow-sm">
+        <div id="loading-dashboard" class="text-center py-5 d-none">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">{{ _('processing_request') }}</span>
             </div>
             <p class="mt-2 text-muted">{{ _('processing_request') }}</p>
         </div>
-        
-        <div id="no-links-message" class="col text-center py-5">
-            <i class="bi bi-link-45deg display-4 text-muted"></i>
-            <h5 class="mt-3 text-muted">{{ _('dashboard_no_links') }}</h5>
-            <p><a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('create_link_now') }}</a></p>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">{{ _('short_url_label') }}</th>
+                        <th scope="col">{{ _('original_url') }}</th>
+                        <th scope="col" class="text-center">{{ _('clicks') }}</th>
+                        <th scope="col">{{ _('expires') }}</th>
+                        <th scope="col" class="text-end">{{ _('actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="links-tbody">
+                    <!-- Rows will be inserted here by JavaScript -->
+                </tbody>
+            </table>
         </div>
-        
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const linksContainer = document.getElementById('links-container');
+    const linksTableBody = document.getElementById('links-tbody');
     const loadingDashboard = document.getElementById('loading-dashboard');
-    const noLinksMessage = document.getElementById('no-links-message');
     const linkCountBadge = document.getElementById('link-count-badge');
 
     function showLoading() {
         loadingDashboard.classList.remove('d-none');
-        noLinksMessage.classList.add('d-none');
-        linksContainer.innerHTML = '';
+        linksTableBody.innerHTML = '';
         linkCountBadge.classList.add('d-none');
     }
 
     function hideLoading() {
         loadingDashboard.classList.add('d-none');
     }
+    
+    function createNoLinksRow() {
+        return `
+            <tr>
+                <td colspan="5" class="text-center text-muted py-5">
+                    <i class="bi bi-link-45deg display-4"></i>
+                    <h5 class="mt-3">{{ _('dashboard_no_links') }}</h5>
+                    <p><a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('create_link_now') }}</a></p>
+                </td>
+            </tr>
+        `;
+    }
 
-    function createLinkCard(linkData) {
-        // MOCK data structure: id, long_url, created_at, clicks, expires_at, ttl_key
+    function createLinkRow(linkData) {
         const shortUrl = `{{ config.BASE_URL }}/r/${linkData.id}`;
-        const statsUrl = `{{ url_for('localized', locale=locale, path='stats') }}/${linkData.id}`;
-        // NOTE: Deletion link requires token, which would ideally be stored client-side securely
-        const deleteUrl = `{{ url_for('localized', locale=locale, path='delete') }}/${linkData.id}`; 
-        
-        // Use translation for date formats in a real app, but for JS demo:
-        const createdAt = new Date(linkData.created_at || new Date()).toLocaleDateString();
+        // FIX: Use the new neutral route names 'info' and 'remove'
+        const statsUrl = `{{ url_for('localized:info', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id);
+        const deleteUrl = `{{ url_for('localized:remove', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id) + `?token=${linkData.deletion_token}`;
+
+        let expiresText;
+        if (linkData.expires_at) {
+            const expiresDate = new Date(linkData.expires_at);
+            if (expiresDate.getUTCFullYear() === 3000) {
+                expiresText = '{{ _('ttl_never') }}';
+            } else {
+                expiresText = expiresDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+        } else {
+            expiresText = '{{ _('ttl_never') }}';
+        }
 
         return `
-            <div class="col">
-                <div class="card shadow-sm link-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <h5 class="card-title text-primary text-truncate mb-1">
-                                <a href="${shortUrl}" target="_blank" class="text-decoration-none">${shortUrl}</a>
-                            </h5>
-                            <span class="badge bg-secondary-subtle text-secondary ms-3">
-                                ${linkData.ttl_key ? '{{ _('ttl_') }}' + linkData.ttl_key : '{{ _('ttl_never') }}'}
-                            </span>
-                        </div>
-                        <p class="card-text text-muted small mb-3 text-truncate">${linkData.long_url}</p>
-                        
-                        <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                            <div>
-                                <span class="text-success fw-bold me-3"><i class="bi bi-mouse me-1"></i> ${linkData.clicks || 0} {{ _('clicks') }}</span>
-                                <span class="text-secondary small d-block d-md-inline-block">{{ _('expires') }}: ${linkData.expires_at ? new Date(linkData.expires_at).toLocaleDateString() : '{{ _('ttl_never') }}'}</span>
-                            </div>
-                            <div>
-                                <a href="${statsUrl}" class="btn btn-sm btn-outline-info me-2" title="{{ _('stats_link') }}"><i class="bi bi-bar-chart"></i></a>
-                                <a href="${deleteUrl}" class="btn btn-sm btn-outline-danger" title="{{ _('delete_link') }}"><i class="bi bi-trash"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <tr>
+                <td class="align-middle">
+                    <a href="${shortUrl}" target="_blank" class="fw-bold text-decoration-none text-primary">${shortUrl.replace(/^https?:\/\//, '')}</a>
+                </td>
+                <td class="align-middle text-muted text-truncate" style="max-width: 300px;">
+                    ${linkData.long_url}
+                </td>
+                <td class="align-middle text-center fw-bold">
+                    ${linkData.clicks || 0}
+                </td>
+                <td class="align-middle text-muted">
+                    ${expiresText}
+                </td>
+                <td class="text-end align-middle">
+                    <a href="${statsUrl}" class="btn btn-sm btn-outline-secondary me-2" title="{{ _('stats_link') }}"><i class="bi bi-bar-chart-line-fill"></i></a>
+                    <a href="${deleteUrl}" class="btn btn-sm btn-outline-danger" title="{{ _('delete_link') }}"><i class="bi bi-trash-fill"></i></a>
+                </td>
+            </tr>
         `;
     }
 
@@ -91,7 +114,7 @@
         // FIX: Read owner_id directly from the context passed by the server
         const ownerId = "{{ owner_id }}";
         if (!ownerId) {
-            noLinksMessage.classList.remove('d-none');
+            linksTableBody.innerHTML = createNoLinksRow();
             return;
         }
 
@@ -106,19 +129,19 @@
             const links = data.links;
 
             if (links.length === 0) {
-                noLinksMessage.classList.remove('d-none');
+                linksTableBody.innerHTML = createNoLinksRow();
                 linkCountBadge.textContent = '0';
             } else {
                 links.forEach(link => {
-                    linksContainer.insertAdjacentHTML('beforeend', createLinkCard(link));
+                    linksTableBody.insertAdjacentHTML('beforeend', createLinkRow(link));
                 });
                 linkCountBadge.textContent = links.length;
-                linkCountBadge.classList.remove('d-none');
             }
+            linkCountBadge.classList.remove('d-none');
 
         } catch (error) {
             console.error('Error fetching links:', error);
-            linksContainer.innerHTML = `<div class="col"><div class="alert alert-danger">${error.message || '{{ _('network_error_message') }}'}</div></div>`;
+            linksTableBody.innerHTML = `<tr><td colspan="5"><div class="alert alert-danger m-3">${error.message || '{{ _('network_error_message') }}'}</div></td></tr>`;
         } finally {
             hideLoading();
         }

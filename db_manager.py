@@ -103,14 +103,14 @@ async def generate_unique_short_code() -> str:
 
 async def create_link(
     long_url: str,
-    ttl_key: str,
+    ttl: str,
     deletion_token: str,
     custom_code: Optional[str] = None,
     owner_id: Optional[str] = None,
     utm_tags: Optional[str] = None
 ) -> str:
     hashed_token = _hash_token(deletion_token)
-    delta = TTL_MAP.get(ttl_key)
+    delta = TTL_MAP.get(ttl)
     expires_at = (datetime.now(timezone.utc) + delta) if delta else FAR_FUTURE_EXPIRY
 
     final_code = custom_code or await generate_unique_short_code()
@@ -192,3 +192,50 @@ async def cleanup_expired_links(now: datetime):
     deleted_count = await loop.run_in_executor(None, db_cleanup)
     logger.info(f"Cleanup finished. Deleted {deleted_count} total expired links.")
     return deleted_count
+
+async def update_link_metadata(
+    short_code: str,
+    meta_title: Optional[str] = None,
+    meta_description: Optional[str] = None,
+    meta_image: Optional[str] = None
+):
+    """Updates the metadata fields for a given short code."""
+    loop = asyncio.get_running_loop()
+    def db_update():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE links
+                SET meta_title = ?, meta_description = ?, meta_image = ?
+                WHERE id = ?
+                """,
+                (meta_title, meta_description, meta_image, short_code)
+            )
+            conn.commit()
+    await loop.run_in_executor(None, db_update)
+
+async def update_link_summary(
+    short_code: str,
+    status: str,
+    summary_text: Optional[str] = None,
+    meta_title: Optional[str] = None,
+    meta_description: Optional[str] = None,
+    meta_image: Optional[str] = None
+):
+    """Updates the summary and metadata fields for a given short code."""
+    loop = asyncio.get_running_loop()
+    def db_update():
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE links
+                SET summary_status = ?, summary_text = ?, meta_title = ?, meta_description = ?, meta_image = ?
+                WHERE id = ?
+                """,
+                (status, summary_text, meta_title, meta_description, meta_image, short_code)
+            )
+            conn.commit()
+    await loop.run_in_executor(None, db_update)
+    logger.info(f"Updated summary/metadata for {short_code} with status '{status}'")

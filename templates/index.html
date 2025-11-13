@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('nav_home') }}{% endblock %}
+{% block head %}
+    {{ super() }}
+    <title>{{ _('nav_home') }}</title>
+    <!-- FIX: Add Bootstrap Icons CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
 
 {% block content %}
     <div class="container py-5">
@@ -54,6 +59,9 @@
                     {{ _('create_button') }}
                 </button>
 
+                <!-- Placeholder for Toast Notifications -->
+                <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11"></div>
+
             </form>
         </div>
         <div id="result-card" class="card result-card mt-5 d-none form-card">
@@ -75,8 +83,8 @@
                         </div>
                         
                         <small class="d-block mt-3 border-top pt-2">
-                            <a href="#" id="stats-link" class="me-3">📊 {{ _('stats_link') }}</a>
-                            <a href="#" id="delete-link">🗑️ {{ _('delete_link') }}</a>
+                            <a href="#" id="stats-link" class="me-3 text-decoration-none"><i class="bi bi-bar-chart-line-fill"></i> {{ _('stats_link') }}</a>
+                            <a href="#" id="delete-link" class="text-decoration-none text-danger"><i class="bi bi-trash-fill"></i> {{ _('delete_link') }}</a>
                         </small>
                     </div>
                 </div>

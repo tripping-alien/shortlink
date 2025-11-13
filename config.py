@@ -1,7 +1,5 @@
 import os
 from datetime import timedelta 
-from typing import Optional, List, Dict, Tuple
-from functools import lru_cache
 
 # ============================================================================
 # CONFIGURATION CLASS
@@ -17,8 +15,8 @@ class Config:
     
     # Security
     MAX_URL_LENGTH: int = 2048 
-    ALLOWED_SCHEMES: Tuple[str, ...] = ("http", "https")
-    BLOCKED_DOMAINS: set = {"localhost", "127.0.0.1", "0.0.0.0"}
+    ALLOWED_SCHEMES: tuple[str, ...] = ("http", "https")
+    BLOCKED_DOMAINS: set[str] = {"localhost", "127.0.0.1", "0.0.0.0"}
     
     # Rate limiting
     RATE_LIMIT_CREATE: str = os.getenv("RATE_LIMIT_CREATE", "10/minute")
@@ -29,7 +27,7 @@ class Config:
     CLEANUP_BATCH_SIZE: int = 100
     
     # External APIs
-    HUGGINGFACE_API_KEY: Optional[str] = os.getenv("HUGGINGFACE_API_KEY")
+    HUGGINGFACE_API_KEY: str | None = os.getenv("HUGGINGFACE_API_KEY")
     SUMMARIZATION_MODEL: str = "facebook/bart-large-cnn"
     SUMMARY_MAX_LENGTH: int = 2000
     
@@ -39,9 +37,9 @@ class Config:
     SUMMARY_TIMEOUT: float = 15.0
     
     # Localization
-    SUPPORTED_LOCALES: List[str] = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he", "arr"]
+    SUPPORTED_LOCALES: list[str] = ["en", "es", "zh", "hi", "pt", "fr", "de", "ar", "ru", "he", "arr"]
     DEFAULT_LOCALE: str = "en"
-    RTL_LOCALES: List[str] = ["ar", "he"]
+    RTL_LOCALES: list[str] = ["ar", "he"]
     
     # Google AdSense
     ADSENSE_CLIENT_ID: str = os.getenv("ADSENSE_CLIENT_ID", "pub-6170587092427912")
@@ -57,27 +55,17 @@ class Config:
             raise ValueError("SHORT_CODE_LENGTH must be between 4 and 20")
 
 # ============================================================================
-# MODULE LEVEL CONSTANTS (Exported for imports)
+# SINGLETON INSTANCE & DERIVED CONSTANTS
 # ============================================================================
 
-# Initialize the config instance
 config = Config()
 
-# --- Expose class attributes as module constants ---
-SHORT_CODE_LENGTH = config.SHORT_CODE_LENGTH
-MAX_ID_RETRIES = config.MAX_ID_RETRIES 
-MAX_URL_LENGTH = config.MAX_URL_LENGTH 
-RATE_LIMIT_CREATE = config.RATE_LIMIT_CREATE
-RATE_LIMIT_STATS = config.RATE_LIMIT_STATS
-
-# 🟢 FIX: Expose Timeouts (to resolve core_logic.py AttributeError when using from config import *)
-HTTP_TIMEOUT = config.HTTP_TIMEOUT
-METADATA_FETCH_TIMEOUT = config.METADATA_FETCH_TIMEOUT
-SUMMARY_TIMEOUT = config.SUMMARY_TIMEOUT
-
+# --- Expose class attributes as module constants for convenience ---
+for attr in [a for a in dir(config) if not a.startswith('__') and not callable(getattr(config, a))]:
+    globals()[attr] = getattr(config, attr)
 
 # Time-To-Live Mapping (timedelta objects)
-TTL_MAP: Dict[str, Optional[timedelta]] = {
+TTL_MAP: dict[str, timedelta | None] = {
     "1h": timedelta(hours=1),
     "24h": timedelta(days=1),
     "1w": timedelta(weeks=1),
@@ -87,16 +75,12 @@ TTL_MAP: Dict[str, Optional[timedelta]] = {
 # AdSense Script (uses the client ID from Config)
 ADSENSE_SCRIPT: str = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={config.ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>'
 
-# 📌 FIX 1: Attach AdSense script to config object
-setattr(config, 'ADSENSE_SCRIPT', ADSENSE_SCRIPT)
-
-
 # ============================================================================
 # LOCALIZATION CONSTANTS
 # ============================================================================
 
 # Maps locale code (en) to two-letter country code (gb)
-LOCALE_TO_FLAG_CODE: Dict[str, str] = {
+LOCALE_TO_FLAG_CODE: dict[str, str] = {
     "en": "gb", "es": "es", "zh": "cn", 
     "hi": "in", "pt": "br", "fr": "fr", "de": "de", "ar": "sa", "ru": "ru", 
     "he": "il", 
@@ -104,7 +88,7 @@ LOCALE_TO_FLAG_CODE: Dict[str, str] = {
 }
 
 # Mapping of country codes to actual Unicode flag emojis
-FLAG_CODE_TO_EMOJI: Dict[str, str] = {
+FLAG_CODE_TO_EMOJI: dict[str, str] = {
     "gb": "🇬🇧", "es": "🇪🇸", "cn": "🇨🇳", 
     "in": "🇮🇳", "br": "🇧🇷", "fr": "🇫🇷", "de": "🇩🇪", "sa": "🇸🇦", "ru": "🇷🇺", 
     "il": "🇮🇱",  
@@ -113,12 +97,14 @@ FLAG_CODE_TO_EMOJI: Dict[str, str] = {
 }
 
 # Final, ready-to-use map: Locale Code -> Flag Emoji
-LOCALE_TO_EMOJI: Dict[str, str] = {
+LOCALE_TO_EMOJI: dict[str, str] = {
     locale: FLAG_CODE_TO_EMOJI.get(code, FLAG_CODE_TO_EMOJI["default"])
     for locale, code in LOCALE_TO_FLAG_CODE.items()
 }
 
-# 📌 FIX 2: Attach localization constants to the config object
-setattr(config, 'LOCALE_TO_FLAG_CODE', LOCALE_TO_FLAG_CODE)
-setattr(config, 'FLAG_CODE_TO_EMOJI', FLAG_CODE_TO_EMOJI)
-setattr(config, 'LOCALE_TO_EMOJI', LOCALE_TO_EMOJI)
+# Attach derived constants to the config object for unified access
+config.TTL_MAP = TTL_MAP
+config.ADSENSE_SCRIPT = ADSENSE_SCRIPT
+config.LOCALE_TO_FLAG_CODE = LOCALE_TO_FLAG_CODE
+config.FLAG_CODE_TO_EMOJI = FLAG_CODE_TO_EMOJI
+config.LOCALE_TO_EMOJI = LOCALE_TO_EMOJI # FIX: Ensure this is attached correctly

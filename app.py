@@ -15,13 +15,15 @@ from fastapi.staticfiles import StaticFiles
 
 from slowapi import Limiter, _rate_limit_exceeded_handler, errors
 from slowapi.util import get_remote_address
-from pydantic import BaseModel, Field, validator, constr
 
 # Import core modules
 import config
-# CRITICAL FIX: Import global constants directly into this module's scope
-from config import MAX_URL_LENGTH, RATE_LIMIT_CREATE, RATE_LIMIT_STATS
-from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection
+from db_manager import (
+    init_db, create_link as db_create_link, get_link_by_id as db_get_link, 
+    delete_link_by_id_and_token as db_delete_link, get_db_connection,
+    update_link_metadata as db_update_link_metadata
+)
+from models import LinkResponse, LinkCreatePayload
 
 # Import core_logic functions/classes
 from core_logic import (
@@ -40,36 +42,6 @@ limiter = Limiter(key_func=get_remote_address)
 templates = Jinja2Templates(directory="templates")
 summarizer = AISummarizer()
 metadata_fetcher = MetadataFetcher()
-
-# Define the models required for API routes 
-class LinkResponse(BaseModel):
-    short_url: str
-    stats_url: str
-    delete_url: str
-    qr_code_data: str
-
-class LinkCreatePayload(BaseModel):
-    """Request model for creating links"""
-    # CRITICAL FIX: Use the global constant directly
-    long_url: str = Field(..., min_length=1, max_length=MAX_URL_LENGTH) 
-    ttl: Literal["1h", "24h", "1w", "never"] = "24h"
-    custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
-    utm_tags: Optional[str] = Field(None, max_length=500)
-    owner_id: Optional[str] = Field(None, max_length=100)
-    
-    @validator('long_url')
-    def validate_url(cls, v):
-        if not v or not v.strip():
-            raise ValueError("URL cannot be empty")
-        return v.strip()
-    
-    @validator('utm_tags')
-    def validate_utm_tags(cls, v):
-        if v:
-            v = v.strip()
-            if v and not v.startswith(('utm_', '?utm_', '&utm_')):
-                pass 
-        return v
 
 # --- LIFESPAN AND APP SETUP ---
 
@@ -122,10 +94,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 api_router = APIRouter(prefix="/api/v1", tags=["API"])
 
 @api_router.post("/links", response_model=LinkResponse)
-@limiter.limit(RATE_LIMIT_CREATE) 
+@limiter.limit(config.RATE_LIMIT_CREATE) 
 async def api_create_link(
     request: Request,
     payload: LinkCreatePayload,
+    background_tasks: BackgroundTasks,
     translator: Callable = Depends(get_api_translator),
 ):
     """Create a new shortened link"""
@@ -141,7 +114,7 @@ async def api_create_link(
         
         short_code = await db_create_link(
             long_url=long_url,
-            ttl_key=payload.ttl,
+            ttl=payload.ttl,
             deletion_token=deletion_token,
             custom_code=payload.custom_code,
             owner_id=payload.owner_id,
@@ -149,19 +122,25 @@ async def api_create_link(
         )
         
         locale = get_browser_locale(request)
-        localized_preview_url = f"{config.config.BASE_URL}/{locale}/preview/{short_code}"
+        localized_preview_url = f"{config.BASE_URL}/{locale}/preview/{short_code}"
         qr_code_data = generate_qr_code_data_uri(localized_preview_url)
         
+        # Add background task to fetch metadata
+        background_tasks.add_task(summarizer.summarize_in_background, short_code, long_url)
+        
         return LinkResponse(
-            short_url=f"{config.config.BASE_URL}/r/{short_code}",
-            stats_url=f"{config.config.BASE_URL}/{locale}/stats/{short_code}",
-            delete_url=f"{config.config.BASE_URL}/{locale}/delete/{short_code}?token={deletion_token}",
+            short_url=f"{config.BASE_URL}/r/{short_code}",
+            stats_url=f"{config.BASE_URL}/{locale}/stats/{short_code}",
+            delete_url=f"{config.BASE_URL}/{locale}/delete/{short_code}?token={deletion_token}",
             qr_code_data=qr_code_data
         )
     
-    except ValueError as e:
+    except ValueError as e: # This is specifically for db_manager's "already in use" error
+        if "already in use" in str(e):
+            logger.warning(f"Custom code conflict: {e}")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
         logger.error(f"Link creation validation failed (ValueError): {e}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=translator("invalid_payload"))
     except (ValidationException, SecurityException) as e:
         logger.error(f"Link creation validation failed (Security/Validation): {e.detail}")
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -173,7 +152,7 @@ async def api_create_link(
         )
 
 @api_router.get("/my-links")
-@limiter.limit(RATE_LIMIT_STATS)
+@limiter.limit(config.RATE_LIMIT_STATS)
 async def api_get_my_links(
     request: Request,
     owner_id: str,
@@ -202,7 +181,7 @@ async def root_redirect(request: Request):
 @web_router.get("/health")
 async def health_check():
     """Health check endpoint"""
-    translator = lambda key: get_translation(config.config.DEFAULT_LOCALE, key)
+    translator = lambda key: get_translation(config.DEFAULT_LOCALE, key)
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -224,7 +203,7 @@ async def redirect_short_code(short_code: str, request: Request, translator: Cal
         
         locale = get_browser_locale(request) 
         preview_url = f"/{locale}/preview/{short_code}"
-        full_redirect_url = f"{config.config.BASE_URL}{preview_url}"
+        full_redirect_url = f"{config.BASE_URL}{preview_url}"
         
         return RedirectResponse(url=full_redirect_url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
     except ValidationException as e:
@@ -236,16 +215,16 @@ async def redirect_short_code(short_code: str, request: Request, translator: Cal
 @web_router.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
     """Robots.txt for SEO"""
-    return f"""User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /r/\nDisallow: /health\nDisallow: /*/delete/\nSitemap: {config.config.BASE_URL}/sitemap.xml\n"""
+    return f"""User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /r/\nDisallow: /health\nDisallow: /*/delete/\nSitemap: {config.BASE_URL}/sitemap.xml\n"""
 
 @web_router.get("/sitemap.xml", response_class=Response)
 async def sitemap():
     """Generate sitemap for SEO"""
     last_mod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     urls = []
-    for locale in config.config.SUPPORTED_LOCALES:
+    for locale in config.SUPPORTED_LOCALES:
         for page in ["", "/about", "/dashboard"]:
-            urls.append(f"""  <url>\n    <loc>{config.config.BASE_URL}/{locale}{page}</loc>\n    <lastmod>{last_mod}</lastmod>\n    <priority>{1.0 if not page else 0.8}</priority>\n  </url>""")
+            urls.append(f"""  <url>\n    <loc>{config.BASE_URL}/{locale}{page}</loc>\n    <lastmod>{last_mod}</lastmod>\n    <priority>{1.0 if not page else 0.8}</priority>\n  </url>""")
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{chr(10).join(urls)}\n</urlset>"""
     return Response(content=xml, media_type="application/xml")
 
@@ -261,7 +240,7 @@ def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale
     
     base_path = current_path.replace(f"/{locale}", "", 1) or "/"
     
-    for lang in config.config.SUPPORTED_LOCALES:
+    for lang in config.SUPPORTED_LOCALES:
         lang_path = f"/{lang}{base_path}".replace("//", "/")
         tags.append({
             "rel": "alternate",
@@ -269,7 +248,7 @@ def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale
             "href": str(request.url.replace(path=lang_path))
         })
     
-    default_path = f"/{config.config.DEFAULT_LOCALE}{base_path}".replace("//", "/")
+    default_path = f"/{config.DEFAULT_LOCALE}{base_path}".replace("//", "/")
     tags.append({
         "rel": "alternate",
         "hreflang": "x-default",
@@ -287,17 +266,16 @@ async def get_common_context(
     """Get common template context"""
     return {
         "request": request,
-        "ADSENSE_SCRIPT": config.config.ADSENSE_SCRIPT, 
+        "ADSENSE_SCRIPT": config.ADSENSE_SCRIPT, 
         "_": translator,
         "locale": locale,
         "hreflang_tags": hreflang_tags,
         "current_year": datetime.now(timezone.utc).year,
-        "RTL_LOCALES": config.config.RTL_LOCALES,
-        "LOCALE_TO_FLAG_CODE": config.config.LOCALE_TO_FLAG_CODE,
-        "FLAG_EMOJIS": config.config.LOCALE_TO_EMOJI,
+        "RTL_LOCALES": config.RTL_LOCALES,
+        "LOCALE_TO_FLAG_CODE": config.LOCALE_TO_FLAG_CODE,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        "config": config.config, 
+        "config": config, 
     }
 
 # --- LOCALIZED ROUTES (i18n_router) ---
@@ -401,7 +379,7 @@ async def continue_to_link(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("redirect_error"))
 
 @i18n_router.get("/stats/{short_code}", response_class=HTMLResponse)
-@limiter.limit(RATE_LIMIT_STATS)
+@limiter.limit(config.RATE_LIMIT_STATS)
 async def stats(
     request: Request, # REQUIRED (Note: Request is often treated as required and usually placed first)
     short_code: str, # REQUIRED
@@ -474,16 +452,16 @@ def is_localized_route(path: str) -> bool:
     if not path.startswith('/'): return False
     segments = path.split('/')
     if len(segments) < 2: return False
-    return segments[1] in config.config.SUPPORTED_LOCALES 
+    return segments[1] in config.SUPPORTED_LOCALES 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     if exc.status_code in [status.HTTP_404_NOT_FOUND, status.HTTP_410_GONE] and is_localized_route(request.url.path):
         try:
             locale = request.url.path.split('/')[1]
-            if locale not in config.config.SUPPORTED_LOCALES: locale = config.config.DEFAULT_LOCALE
+            if locale not in config.SUPPORTED_LOCALES: locale = config.DEFAULT_LOCALE
         except:
-            locale = config.config.DEFAULT_LOCALE
+            locale = config.DEFAULT_LOCALE
             
         translator = lambda key: get_translation(locale, key)
         
@@ -491,7 +469,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         context = {"request": request, "status_code": exc.status_code, "message": translator(exc.detail), 
                    "_": translator, "locale": locale, "BOOTSTRAP_CDN": BOOTSTRAP_CDN, "BOOTSTRAP_JS": BOOTSTRAP_JS,
                    "current_year": datetime.now(timezone.utc).year, 
-                   "RTL_LOCALES": config.config.RTL_LOCALES,
+                   "RTL_LOCALES": config.RTL_LOCALES,
                    "datetime": datetime,
                    "timezone": timezone}
         

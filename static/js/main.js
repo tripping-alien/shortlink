@@ -14,7 +14,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // or embedded JSON, or passed via Jinja2 context).
     const _ = window._ || ((key) => key); 
 
-
+    /**
+     * Shows a Bootstrap toast notification.
+     * @param {string} message - The message to display.
+     * @param {string} level - 'success' or 'danger'.
+     */
+    function showToast(message, level = 'danger') {
+        const toastContainer = document.getElementById('toast-container');
+        const toastId = `toast-${Date.now()}`;
+        const toastHTML = `
+            <div id="${toastId}" class="toast align-items-center text-white bg-${level} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+        toast.show();
+    }
 
     /**
      * Handles the form submission to create the short link.
@@ -24,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const longUrl = longUrlInput.value.trim();
         if (!longUrl) {
-            alert(_('js_enter_url'));
+            showToast(_('js_enter_url'));
             return;
         }
 
@@ -67,14 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 displaySuccess(data);
             } else {
                 // Handle API errors (e.g., 409 Custom code exists, 400 Invalid URL)
-                const errorMessage = data.detail || _('js_error_creating');
-                alert(`Error: ${errorMessage}`);
+                const errorMessage = data.detail || _('js_error_creating_link');
+                showToast(errorMessage);
                 console.error('API Error:', data);
             }
-
         } catch (error) {
             console.error('Network or Server Error:', error);
-            alert(_('js_error_server'));
+            showToast(_('js_error_server'));
         } finally {
             // Re-enable button and restore text
             shortenButton.disabled = false;
@@ -129,19 +151,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Use the Clipboard API for modern, secure copying
-            navigator.clipboard.writeText(textToCopy);
-            copyButton.textContent = _('js_copied');
-            copyButton.style.backgroundColor = 'var(--color-primary-dark)';
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                copyButton.innerHTML = `<i class="bi bi-check-lg"></i> ${_('js_copied')}`;
+                copyButton.classList.remove('btn-outline-secondary');
+                copyButton.classList.add('btn-success');
+            });
         } catch (err) {
-            copyButton.textContent = _('js_copy_failed');
-            copyButton.style.backgroundColor = 'red';
+            copyButton.innerHTML = `<i class="bi bi-x-lg"></i> ${_('js_copy_failed')}`;
+            copyButton.classList.remove('btn-outline-secondary');
+            copyButton.classList.add('btn-danger');
             console.error('Failed to copy text: ', err);
         }
         
         // Reset button text after a short delay
         setTimeout(() => {
-            copyButton.textContent = _('copy_button');
-            copyButton.style.backgroundColor = 'var(--color-success)';
+            // FIX: Restore the icon along with the text
+            copyButton.innerHTML = `<i class="bi bi-clipboard"></i> ${_('copy_button')}`;
+            copyButton.classList.remove('btn-success', 'btn-danger');
+            copyButton.classList.add('btn-outline-secondary');
         }, 3000);
     });
 

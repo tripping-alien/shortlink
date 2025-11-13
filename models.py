@@ -1,47 +1,32 @@
-from datetime import datetime
+from typing import Optional, Literal
+from pydantic import BaseModel, Field, validator, constr
 
-from pydantic import BaseModel, HttpUrl, field_validator, Field
-from config import TTL
-
-
-# --- Pydantic Models ---
-class LinkBase(BaseModel):
-    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi",
-                              description="The original, long URL to be shortened.")
-    ttl: TTL = Field(TTL.ONE_DAY, description="Time-to-live for the link. Determines when it will expire.")
-
-    @field_validator('long_url', mode='before')
-    @classmethod
-    def prepend_scheme_if_missing(cls, v: str):
-        """
-        Prepends 'https://' to the URL if no scheme (http:// or https://) is present.
-        """
-        if not isinstance(v, str):
-            return v  # It's already a Pydantic object, do nothing
-        if '.' not in v:
-            raise ValueError("Invalid URL: must contain a domain name.")
-        if not v.startswith(('http://', 'https://')):
-            return 'https://' + v
-        return v
-
-
-class HateoasLink(BaseModel):
-    """A HATEOAS-compliant link object."""
-    rel: str = Field(..., description="The relationship of the link to the resource (e.g., 'self').")
-    href: HttpUrl = Field(..., description="The URL of the related resource.")
-    method: str = Field(..., description="The HTTP method to use for the action (e.g., 'GET', 'DELETE').")
-
+import config
 
 class LinkResponse(BaseModel):
-    """The response model for a successfully created or retrieved link."""
-    short_url: HttpUrl = Field(..., example="https://shortlinks.art/11", description="The generated short URL.")
-    long_url: HttpUrl = Field(..., example="https://github.com/fastapi/fastapi", description="The original long URL.")
-    expires_at: datetime | None = Field(..., example="2023-10-27T10:00:00Z",
-                                        description="The UTC timestamp when the link will expire. `null` if it never expires.")
-    deletion_token: str = Field(..., example="Kq_y_d_M5a..._x_s", description="The secret token required to delete this link.")
-    links: list[HateoasLink] = Field(..., description="HATEOAS links for related actions.")
+    """Response model for a successfully created link."""
+    short_url: str
+    stats_url: str
+    delete_url: str
+    qr_code_data: str
 
-
-class ErrorResponse(BaseModel):
-    """A standardized error response model."""
-    detail: str
+class LinkCreatePayload(BaseModel):
+    """Request model for creating links."""
+    long_url: str = Field(..., min_length=1, max_length=config.MAX_URL_LENGTH) 
+    ttl: Literal["1h", "24h", "1w", "never"] = "24h"
+    custom_code: Optional[constr(pattern=r'^[a-zA-Z0-9]{4,20}$')] = None
+    utm_tags: Optional[str] = Field(None, max_length=500)
+    owner_id: Optional[str] = Field(None, max_length=100)
+    
+    @validator('long_url')
+    def validate_url(cls, v):
+        if not v or not v.strip():
+            raise ValueError("URL cannot be empty")
+        return v.strip()
+    
+    @validator('utm_tags')
+    def validate_utm_tags(cls, v):
+        if v:
+            v = v.strip()
+            # Basic validation, can be expanded
+        return v

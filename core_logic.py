@@ -15,17 +15,9 @@ from functools import lru_cache
 import validators
 from fastapi import Request, Depends, Path, HTTPException, status
 from pydantic import BaseModel, Field, validator, constr
-
-# Import local modules/constants
-# core_logic.py (around lines 19-21)
-
-# Import local modules/constants
 import config
-# CRITICAL FIX: Split the two imports onto separate lines
-from config import * 
 import db_manager
-from db_manager import cleanup_expired_links as db_cleanup_expired_links 
-# NOTE: The wildcard import '*' is used here to get all constants (e.g., METADATA_FETCH_TIMEOUT)
+from db_manager import cleanup_expired_links as db_cleanup_expired_links, update_link_summary
 
 # Import core_logic functions/classes
 # ... rest of the file ...
@@ -89,7 +81,7 @@ class CleanupWorker:
     
     # NOTE: Relies on CLEANUP_INTERVAL_SECONDS imported via from config import *
     def __init__(self, interval: int = config.CLEANUP_INTERVAL_SECONDS):
-        self.interval = interval
+        self.interval = interval or 1800
         self.running = False
         self.thread: Optional[threading.Thread] = None
     
@@ -179,23 +171,6 @@ def get_browser_locale(request: Request) -> str:
     
     return config.DEFAULT_LOCALE
 
-def get_current_locale(request: Request) -> str:
-    lang_cookie = request.cookies.get("lang")
-    if lang_cookie and lang_cookie in config.SUPPORTED_LOCALES:
-        return lang_cookie
-    
-    try:
-        lang_header = request.headers.get("accept-language", "")
-        if lang_header:
-            primary_lang = lang_header.split(',')[0].split('-')[0].lower()
-            if primary_lang in config.SUPPORTED_LOCALES:
-                return primary_lang
-    except Exception:
-        pass
-    
-    return config.DEFAULT_LOCALE
-
-
 def get_translator_and_locale(
     request: Request, 
     locale: str = Path(..., description="The language code")
@@ -210,7 +185,7 @@ def get_translator_and_locale(
 def get_translator(tr: Tuple = Depends(get_translator_and_locale)) -> Callable[[str], str]:
     return tr[0]
 
-def get_current_locale(tr: Tuple = Depends(get_translator_and_locale)) -> str:
+def get_current_locale(tr: Tuple = Depends(get_translator_and_locale)) -> str: # This is the correct one to keep
     return tr[1]
 
 def get_api_translator(request: Request) -> Callable[[str], str]:
@@ -337,8 +312,7 @@ def generate_qr_code_data_uri(text: str, box_size: int = 10, border: int = 2) ->
 class MetadataFetcher:
     """Fetch and parse webpage metadata"""
     
-    # NOTE: Uses the METADATA_FETCH_TIMEOUT module constant
-    def __init__(self, timeout: float = METADATA_FETCH_TIMEOUT):
+    def __init__(self, timeout: float = config.METADATA_FETCH_TIMEOUT):
         self.timeout = timeout
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -398,12 +372,11 @@ class MetadataFetcher:
 class AISummarizer:
     """AI-powered content summarization using Hugging Face"""
     
-    # NOTE: Uses SUMMARY_TIMEOUT module constant
     def __init__(self, model: str = config.SUMMARIZATION_MODEL, api_url_base: str = "https://api-inference.huggingface.co/models/"):
         self.api_key = config.HUGGINGFACE_API_KEY
         self.model = model
         self.api_url = f"{api_url_base}{self.model}"
-        self.timeout = SUMMARY_TIMEOUT # Use module constant
+        self.timeout = config.SUMMARY_TIMEOUT
         self.enabled = bool(self.api_key)
         
         if not self.enabled:
@@ -415,7 +388,7 @@ class AISummarizer:
         try:
             import httpx
             headers = {"Authorization": f"Bearer {self.api_key}"}
-            payload = {"inputs": text[:config.SUMMARIZATION_MODEL],
+            payload = {"inputs": text[:config.SUMMARY_MAX_LENGTH],
                        "parameters": {"max_length": max_length, "min_length": min_length}}
             
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -445,8 +418,7 @@ class AISummarizer:
             import httpx
             from bs4 import BeautifulSoup
             
-            # NOTE: Uses HTTP_TIMEOUT module constant
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client: 
+            async with httpx.AsyncClient(timeout=config.HTTP_TIMEOUT) as client: 
                 headers = {"User-Agent": "Mozilla/5.0"}
                 response = await client.get(url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
@@ -466,20 +438,25 @@ class AISummarizer:
             logger.error(f"Failed to fetch and summarize {url}: {e}")
             return None
     
-    async def summarize_in_background(self, doc_ref, url: str) -> None:
-        if not self.enabled:
-            return
-        
+    async def summarize_in_background(self, short_code: str, url: str) -> None:
+        """Fetches metadata and summary, then updates the database."""
         try:
+            await db_manager.update_link_summary(short_code, status="in_progress")
+            
+            metadata = await metadata_fetcher.fetch(url)
             summary = await self.fetch_and_summarize(url)
             
-            if summary:
-                # Placeholder for Async DB Update
-                pass
-            
+            await db_manager.update_link_summary(
+                short_code=short_code,
+                status="complete" if (summary or metadata.get("description")) else "failed",
+                summary_text=summary,
+                meta_title=metadata.get("title"),
+                meta_description=metadata.get("description"),
+                meta_image=metadata.get("image")
+            )
         except Exception as e:
-            logger.error(f"Summary generation failed for {doc_ref.id if hasattr(doc_ref, 'id') else 'link'}: {e}")
-            pass
+            logger.error(f"Background summary/metadata task failed for {short_code}: {e}")
+            await db_manager.update_link_summary(short_code, status="failed")
 
 # --- TEMPLATE CONTEXT DEPENDENCY (Unchanged) ---
 # ... (get_hreflang_tags, get_common_context remain the same) ...
@@ -524,13 +501,12 @@ async def get_common_context(
         "locale": locale,
         "hreflang_tags": hreflang_tags,
         "current_year": datetime.now(timezone.utc).year,
-        "RTL_LOCALES": config.RTL_LOCALES,
-        "LOCALE_TO_FLAG_CODE": config.LOCALE_TO_FLAG_CODE,
-        "FLAG_EMOJIS": config.LOCALE_TO_EMOJI,
+        "RTL_LOCALES": config.config.RTL_LOCALES,
+        "LOCALE_TO_FLAG_CODE": config.config.LOCALE_TO_FLAG_CODE,
+        "FLAG_EMOJIS": config.config.LOCALE_TO_EMOJI,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        "config": config, 
+        "config": config.config, 
         "datetime": datetime, 
         "timezone": timezone,
     }
-

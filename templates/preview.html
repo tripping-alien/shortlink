@@ -48,7 +48,7 @@
                     </p>
 
                     <div class="d-grid mt-4">
-                        <a href="{{ url_for('localized', locale=locale, path='preview') }}/{{ short_code }}/redirect" class="btn btn-success btn-lg fw-bold shadow-sm">
+                        <a href="{{ url_for('localized:continue_to_link', locale=locale, short_code=short_code) }}" class="btn btn-success btn-lg fw-bold shadow-sm">
                             <i class="bi bi-chevron-double-right me-2"></i> {{ _('stats_go_to_link_placeholder') }} 
                         </a>
                     </div>

@@ -297,7 +297,9 @@ async def get_common_context(
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
         "config": config,
-        "get_lang_url": get_lang_url_generator(request, locale) # FIX: Add the URL generator function to the context
+        "get_lang_url": get_lang_url_generator(request, locale),
+        "datetime": datetime, # FIX: Pass datetime module to context
+        "timezone": timezone  # FIX: Pass timezone module to context
     }
 
 # --- LOCALIZED ROUTES (i18n_router) ---

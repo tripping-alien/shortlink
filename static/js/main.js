@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             navigator.clipboard.writeText(textToCopy).then(() => {
                 copyButton.innerHTML = `<i class="bi bi-check-lg"></i> ${_('js_copied')}`;
                 copyButton.classList.remove('btn-outline-secondary');
-                copyButton.classList.add('btn-success');
+                return copyButton.classList.add('btn-success');
             });
         } catch (err) {
             copyButton.innerHTML = `<i class="bi bi-x-lg"></i> ${_('js_copy_failed')}`;

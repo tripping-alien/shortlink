@@ -92,6 +92,26 @@ h1, h2, h3 {
     border-radius: 8px;
 }
 
+/* Language switcher dropdown refinement */
+.navbar .dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 4px 15px var(--color-shadow);
+    border: 1px solid #e9ecef;
+}
+.navbar .dropdown-item {
+    transition: background-color 0.2s ease-in-out;
+    padding: 0.5rem 1rem;
+}
+
+.navbar .dropdown-flag {
+    transition: background-color 0.2s ease-in-out;
+}
+
+.navbar .dropdown-item.active, .navbar .dropdown-item:active {
+    background-color: var(--color-primary);
+    color: white;
+}
+
 /*
 =============================================================================
 3. RESULT CARD STYLING

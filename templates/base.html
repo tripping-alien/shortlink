@@ -29,8 +29,6 @@
     <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
     
     {% block head %}{% endblock %}
-
-    {{ config.ADSENSE_SCRIPT | safe }}
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm fixed-top">
@@ -54,15 +52,15 @@
                     </a>
 
                     <div class="dropdown">
-                        <a class="btn btn-sm btn-outline-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             {{ config.LOCALE_TO_EMOJI[locale] }} {{ locale.upper() }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             {% for lang in config.SUPPORTED_LOCALES %}
                             <li>
-                                <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ get_lang_url(lang) }}">
-                                    {{ config.LOCALE_TO_EMOJI[lang] }} 
-                                    <span class="ms-2 text-uppercase">{{ lang }}</span>
+                                <a class="dropdown-item d-flex justify-content-between align-items-center {% if lang == locale %}active{% endif %}" href="{{ get_lang_url(lang) }}">
+                                    <span>{{ config.LOCALE_TO_EMOJI[lang] }} {{ config.NATIVE_LANGUAGE_NAMES[lang] }}</span>
+                                    <span class="text-uppercase text-muted small">{{ lang }}</span>
                                 </a>
                             </li>
                             {% endfor %}

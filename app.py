@@ -296,7 +296,6 @@ async def get_common_context(
     """Get common template context"""
     return {
         "request": request,
-        "ADSENSE_SCRIPT": config.ADSENSE_SCRIPT, 
         "_": translator,
         "locale": locale,
         "hreflang_tags": hreflang_tags,

@@ -257,6 +257,27 @@ def get_hreflang_tags(request: Request, locale: str = Depends(get_current_locale
     
     return tags
 
+def get_lang_url_generator(request: Request, locale: str) -> Callable[[str], str]:
+    """
+    Returns a function that can generate a URL for a different language,
+    preserving the current page path. This is passed to the template context.
+    """
+    # Get the path without the current locale prefix (e.g., /en/about -> /about)
+    base_path = request.url.path.replace(f"/{locale}", "", 1) or "/"
+    if not base_path.startswith("/"):
+        base_path = "/" + base_path
+
+    def get_lang_url(new_locale: str) -> str:
+        """
+        Constructs the full URL for the given new_locale.
+        This is the actual function that will be called from the Jinja2 template.
+        """
+        # Reconstruct the path for the new locale (e.g., /fr/about)
+        new_path = f"/{new_locale}{base_path}".replace("//", "/")
+        return str(request.url.replace(path=new_path))
+
+    return get_lang_url
+
 async def get_common_context(
     request: Request,
     translator: Callable = Depends(get_translator),
@@ -275,7 +296,8 @@ async def get_common_context(
         "LOCALE_TO_FLAG_CODE": config.LOCALE_TO_FLAG_CODE,
         "BOOTSTRAP_CDN": BOOTSTRAP_CDN,
         "BOOTSTRAP_JS": BOOTSTRAP_JS,
-        "config": config, 
+        "config": config,
+        "get_lang_url": get_lang_url_generator(request, locale) # FIX: Add the URL generator function to the context
     }
 
 # --- LOCALIZED ROUTES (i18n_router) ---

@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 2. Populate the data ---
         // The preview URL is the user-facing "short link"
-        const previewUrl = data.stats_url.replace('/stats/', '/preview/');
+        const previewUrl = data.stats_url.replace('/info/', '/preview/');
         shortLinkHref.href = previewUrl;
         shortLinkHref.textContent = previewUrl.replace(/^https?:\/\//, ''); // Display without protocol
 

@@ -509,11 +509,18 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             
         translator = lambda key: get_translation(locale, key)
         
-        # 🟢 FIX: Explicitly pass datetime/timezone to the error handler context
-        context = {"request": request, "status_code": exc.status_code, "message": exc.detail, 
+        # FIX: Build a complete context for the error page to ensure base.html renders correctly.
+        # This includes the config object, hreflang tags, and the language URL generator.
+        hreflang_tags = get_hreflang_tags(request, locale)
+        lang_url_generator = get_lang_url_generator(request, locale)
+
+        context = {"request": request, "status_code": exc.status_code, "message": exc.detail,
                    "_": translator, "locale": locale, "BOOTSTRAP_CDN": BOOTSTRAP_CDN, "BOOTSTRAP_JS": BOOTSTRAP_JS,
                    "current_year": datetime.now(timezone.utc).year, 
                    "RTL_LOCALES": config.RTL_LOCALES,
+                   "config": config,
+                   "hreflang_tags": hreflang_tags,
+                   "get_lang_url": lang_url_generator,
                    "datetime": datetime,
                    "timezone": timezone}
         

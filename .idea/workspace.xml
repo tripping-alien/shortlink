@@ -6,7 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="041aec52-6752-4a8f-bd19-f5ada036a11e" name="Changes" comment="local vps db">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/js/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/preview.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/preview.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -236,7 +237,7 @@
       <updated>1762992233406</updated>
       <workItem from="1762992235371" duration="236000" />
       <workItem from="1762992495433" duration="53000" />
-      <workItem from="1762992568855" duration="7540000" />
+      <workItem from="1762992568855" duration="8407000" />
     </task>
     <task id="LOCAL-00001" summary="local vps db">
       <option name="closed" value="true" />
@@ -366,7 +367,15 @@
       <option name="project" value="LOCAL" />
       <updated>1762999809351</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="local vps db">
+      <option name="closed" value="true" />
+      <created>1763000267394</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1763000267394</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

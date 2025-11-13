@@ -395,13 +395,14 @@ async def preview(
         logger.error(f"Error in preview for {short_code}: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=translator("preview_error"))
 
-@i18n_router.get("/preview/{short_code}/redirect", response_class=RedirectResponse)
-async def continue_to_link(
+@i18n_router.get("/redirect/{short_code}", response_class=RedirectResponse, name="redirect")
+async def perform_redirect(
     short_code: str, # REQUIRED
+    background_tasks: BackgroundTasks, # REQUIRED
     locale: str = Path(..., description="The language code"), # OPTIONAL/DEFAULTED
     translator: Callable = Depends(get_translator) # OPTIONAL/DEFAULTED
 ):
-    """Continue to final destination (Click increment logic requires refactoring)"""
+    """Performs the final redirection to the long URL and increments the click count."""
     try:
         link = await db_get_link(short_code)
         if not link:

@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field, validator, constr
 import config
 # CRITICAL FIX: Import global constants directly into this module's scope
 from config import MAX_URL_LENGTH, RATE_LIMIT_CREATE, RATE_LIMIT_STATS
-from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection, get_collection_ref
+from db_manager import init_db, create_link as db_create_link, get_link_by_id as db_get_link, delete_link_by_id_and_token as db_delete_link, get_db_connection
 
 # Import core_logic functions/classes
 from core_logic import (
@@ -203,24 +203,15 @@ async def root_redirect(request: Request):
 async def health_check():
     """Health check endpoint"""
     translator = lambda key: get_translation(config.config.DEFAULT_LOCALE, key)
-
     try:
-        db_client = get_db_connection()
-        test_doc = db_client.collection("_health").document("test")
-        
-        # FIX: Wrap the synchronous .set() call in asyncio.to_thread
-        await asyncio.to_thread(
-            test_doc.set, 
-            {"timestamp": datetime.now(timezone.utc)}
-        )
-        
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
         return {"status": "healthy", "database": "connected", "timestamp": datetime.now(timezone.utc).isoformat()}
-    
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        
-        error_detail = translator("db_connection_error") if 'db_connection_error' in getattr(config.config, 'TRANSLATIONS', {}).get(config.config.DEFAULT_LOCALE, {}) else str(e)
-        
+        error_detail = translator("db_connection_error")
         return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"status": "unhealthy", "database": "error", "error": error_detail})
 

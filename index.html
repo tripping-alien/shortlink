@@ -142,7 +142,6 @@ shortenBtn.addEventListener("click", async () => {
     const longUrl = document.getElementById("longUrl").value.trim();
     const ttl = document.getElementById("ttl").value;
     const customCode = document.getElementById("customCode").value.trim() || undefined;
-    if (!longUrl) { alert("Please enter a URL."); return; }
 
     try {
         const res = await fetch("/api/v1/links", {

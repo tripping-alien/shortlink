@@ -16,7 +16,7 @@
                     
                     <span class="input-group-text d-none d-sm-flex text-muted" id="https-prefix" style="background-color: #e9ecef; border-right: none;">https://</span>
                     
-                    <input type="url" id="long_url" class="form-control" 
+                    <input id="long_url" class="form-control"
                            placeholder="{{ _('long_url_placeholder') }}" required 
                            aria-label="{{ _('long_url_placeholder') }}"
                            onfocus="if (this.placeholder == '{{ _('long_url_placeholder') }}') this.placeholder = 'example.com/long/path';"
@@ -51,7 +51,7 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-lg w-100 shadow" id="create-button">
-                    <span id="loading-spinner" class="spinner-border spinner-border-sm spinner" role="status" aria-hidden="true"></span>
+<!--                    <span id="loading-spinner" class="spinner-border spinner-border-sm spinner" role="status" aria-hidden="true"></span>-->
                     <span id="button-text">{{ _('create_button') }}</span>
                 </button>
 
@@ -148,8 +148,7 @@
         resultCard.classList.add('d-none'); 
         
         // Hide advanced options if they were open
-        const collapseElement = document.getElementById('advanced-options');
-        if (collapseElement && collapseElement.classList.contains('show') && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+        if (advancedOptions && advancedOptions.classList.contains('show') && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
              const collapseInstance = bootstrap.Collapse.getInstance(collapseElement) || new bootstrap.Collapse(collapseElement, { toggle: false });
              collapseInstance.hide();
         }

@@ -4,10 +4,6 @@ uvicorn[standard]
 pydantic
 pydantic-settings
 
-# Database (Firebase)
-firebase-admin
-google-cloud-firestore
-
 # Templating
 jinja2
 

@@ -2,43 +2,141 @@
 
 {% block title %}{{ _('nav_dashboard') }}{% endblock %}
 
+{% block head %}
+    {{ super() }}
+    <style>
+        /* Reusing the aesthetic variables */
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+        }
+
+        /* Table Specifics */
+        .table-custom thead th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #6c757d;
+            border-bottom: 2px solid #f8f9fa;
+            padding-bottom: 1rem;
+        }
+        
+        .table-custom tbody td {
+            padding: 1rem 0.75rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .table-custom tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-custom tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .url-cell {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Stats Badge */
+        .stats-badge {
+            background: rgba(13, 110, 253, 0.1);
+            color: #0d6efd;
+            padding: 0.5rem 1rem;
+            border-radius: 50rem;
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
-    <h2 class="mb-2">{{ _('nav_dashboard') }}</h2>
-    <p class="lead text-muted">{{ _('dashboard_tagline') }}</p>
     
-    <hr class="my-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bold mb-1">{{ _('nav_dashboard') }}</h2>
+            <p class="text-muted mb-0">{{ _('dashboard_tagline') }}</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+             <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-primary shadow-sm rounded-pill px-4">
+                <i class="bi bi-plus-lg me-2"></i>{{ _('create_link_now') }}
+            </a>
+        </div>
+    </div>
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">{{ _('your_links') }}</h4>
-        <span id="link-count-badge" class="badge bg-primary rounded-pill fs-6"></span>
+    <div class="row mb-4 g-3">
+        <div class="col-md-12">
+            <div class="glass-card p-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary me-3">
+                        <i class="bi bi-link-45deg fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted text-uppercase small fw-bold mb-0">{{ _('your_links') }}</h6>
+                        <h3 class="fw-bold mb-0" id="total-links-count">-</h3>
+                    </div>
+                </div>
+                <button class="btn btn-light btn-sm rounded-circle" onclick="fetchLinks()" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="card shadow-sm">
-        <div id="loading-dashboard" class="text-center py-5 d-none">
+    <div class="glass-card overflow-hidden">
+        
+        <div id="loading-dashboard" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">{{ _('processing_request') }}</span>
             </div>
-            <p class="mt-2 text-muted">{{ _('processing_request') }}</p>
+            <p class="mt-3 text-muted small">{{ _('processing_request') }}</p>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover table-borderless mb-0">
-                <thead class="table-light">
+        <div class="table-responsive d-none" id="dashboard-content">
+            <table class="table table-custom mb-0 text-nowrap">
+                <thead class="bg-white">
                     <tr>
-                        <th scope="col">{{ _('short_url_label') }}</th>
+                        <th scope="col" class="ps-4">{{ _('short_url_label') }}</th>
                         <th scope="col">{{ _('original_url') }}</th>
                         <th scope="col" class="text-center">{{ _('clicks') }}</th>
                         <th scope="col">{{ _('expires') }}</th>
-                        <th scope="col" class="text-end">{{ _('actions') }}</th>
+                        <th scope="col" class="text-end pe-4">{{ _('actions') }}</th>
                     </tr>
                 </thead>
                 <tbody id="links-tbody">
-                    <!-- Rows will be inserted here by JavaScript -->
-                </tbody>
+                    </tbody>
             </table>
         </div>
+        
+        <div id="empty-state" class="text-center py-5 d-none">
+            <div class="mb-3 text-muted opacity-25">
+                <i class="bi bi-inbox-fill display-1"></i>
+            </div>
+            <h5 class="fw-bold text-secondary">{{ _('dashboard_no_links') }}</h5>
+            <p class="text-muted mb-4">{{ _('dashboard_no_links_desc') }}</p>
+            <a href="{{ url_for('localized', locale=locale, path='') }}" class="btn btn-outline-primary rounded-pill">
+                {{ _('create_link_now') }}
+            </a>
+        </div>
     </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="copyToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-check-circle me-2"></i> {{ _('link_copied_to_clipboard') }}
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -46,66 +144,165 @@
 <script>
     const linksTableBody = document.getElementById('links-tbody');
     const loadingDashboard = document.getElementById('loading-dashboard');
-    const linkCountBadge = document.getElementById('link-count-badge');
+    const dashboardContent = document.getElementById('dashboard-content');
+    const emptyState = document.getElementById('empty-state');
+    const totalLinksCount = document.getElementById('total-links-count');
+
+    // Helper to safely escape HTML to prevent XSS from malicious long URLs
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 
     function showLoading() {
         loadingDashboard.classList.remove('d-none');
-        linksTableBody.innerHTML = '';
-        linkCountBadge.classList.add('d-none');
+        dashboardContent.classList.add('d-none');
+        emptyState.classList.add('d-none');
     }
 
-    function hideLoading() {
+    function showContent(hasLinks) {
         loadingDashboard.classList.add('d-none');
+        if (hasLinks) {
+            dashboardContent.classList.remove('d-none');
+            emptyState.classList.add('d-none');
+        } else {
+            dashboardContent.classList.add('d-none');
+            emptyState.classList.remove('d-none');
+        }
     }
-    
-    function createNoLinksRow() {
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            const toastEl = document.getElementById('copyToast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
+
+    function createLinkRow(linkData) {
+        const shortUrl = `{{ config.BASE_URL }}/r/${linkData.id}`;
+        // Using url_for patterns as requested
+        const statsUrl = `{{ url_for('localized:info', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id);
+        const deleteUrl = `{{ url_for('localized:remove', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id) + `?token=${linkData.deletion_token}`;
+
+        // Date Formatting
+        let expiresText = '{{ _('ttl_never') }}';
+        let expiresClass = 'text-success badge bg-success bg-opacity-10';
+        
+        if (linkData.expires_at) {
+            const expiresDate = new Date(linkData.expires_at);
+            if (expiresDate.getUTCFullYear() !== 3000) {
+                // Check if expired
+                if (expiresDate < new Date()) {
+                    expiresText = '{{ _('expired') }}';
+                    expiresClass = 'text-danger badge bg-danger bg-opacity-10';
+                } else {
+                    expiresText = expiresDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    expiresClass = 'text-muted';
+                }
+            }
+        }
+
+        const safeLongUrl = escapeHtml(linkData.long_url);
+        const displayShortUrl = shortUrl.replace(/^https?:\/\//, '');
+
         return `
             <tr>
-                <td colspan="5" class="text-center text-muted py-5">
-                    <i class="bi bi-link-45deg display-4"></i>
-                    <h5 class="mt-3">{{ _('dashboard_no_links') }}</h5>
-                    <p><a href="{{ url_for('localized', locale=locale, path='') }}">{{ _('create_link_now') }}</a></p>
+                <td class="ps-4">
+                    <div class="d-flex align-items-center">
+                        <a href="${shortUrl}" target="_blank" class="fw-bold text-decoration-none text-primary me-2">${displayShortUrl}</a>
+                        <button class="btn btn-link btn-sm p-0 text-muted" onclick="copyToClipboard('${shortUrl}')" title="{{ _('copy_button') }}">
+                            <i class="bi bi-copy"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>
+                    <div class="url-cell text-muted" title="${safeLongUrl}">
+                        ${safeLongUrl}
+                    </div>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3">${linkData.clicks || 0}</span>
+                </td>
+                <td>
+                    <span class="${expiresClass}">${expiresText}</span>
+                </td>
+                <td class="text-end pe-4">
+                    <div class="btn-group" role="group">
+                        <a href="${statsUrl}" class="btn btn-sm btn-light text-secondary" title="{{ _('stats_link') }}">
+                            <i class="bi bi-bar-chart-line-fill"></i>
+                        </a>
+                        <a href="${deleteUrl}" class="btn btn-sm btn-light text-danger" 
+                           onclick="return confirm('{{ _('confirm_delete_message') }}')"
+                           title="{{ _('delete_link') }}">
+                            <i class="bi bi-trash-fill"></i>
+                        </a>
+                    </div>
                 </td>
             </tr>
         `;
     }
 
-    function createLinkRow(linkData) {
-        const shortUrl = `{{ config.BASE_URL }}/r/${linkData.id}`;
-        // FIX: Use the new neutral route names 'info' and 'remove'
-        const statsUrl = `{{ url_for('localized:info', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id);
-        const deleteUrl = `{{ url_for('localized:remove', locale=locale, short_code='__ID__') }}`.replace('__ID__', linkData.id) + `?token=${linkData.deletion_token}`;
-
-        let expiresText;
-        if (linkData.expires_at) {
-            const expiresDate = new Date(linkData.expires_at);
-            if (expiresDate.getUTCFullYear() === 3000) {
-                expiresText = '{{ _('ttl_never') }}';
-            } else {
-                expiresText = expiresDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-            }
-        } else {
-            expiresText = '{{ _('ttl_never') }}';
+    async function fetchLinks() {
+        const ownerId = "{{ owner_id }}";
+        
+        // Update header count immediately if possible, or wait
+        if (!ownerId || ownerId === "None") {
+            totalLinksCount.textContent = "0";
+            showContent(false);
+            return;
         }
 
-        return `
-            <tr>
-                <td class="align-middle">
-                    <a href="${shortUrl}" target="_blank" class="fw-bold text-decoration-none text-primary">${shortUrl.replace(/^https?:\/\//, '')}</a>
-                </td>
-                <td class="align-middle text-muted text-truncate" style="max-width: 300px;">
-                    ${linkData.long_url}
-                </td>
-                <td class="align-middle text-center fw-bold">
-                    ${linkData.clicks || 0}
-                </td>
-                <td class="align-middle text-muted">
-                    ${expiresText}
-                </td>
-                <td class="text-end align-middle">
-                    <a href="${statsUrl}" class="btn btn-sm btn-outline-secondary me-2" title="{{ _('stats_link') }}"><i class="bi bi-bar-chart-line-fill"></i></a>
-                    <a href="${deleteUrl}" class="btn btn-sm btn-outline-danger" title="{{ _('delete_link') }}"><i class="bi bi-trash-fill"></i></a>
-                </td>
+        showLoading();
+
+        try {
+            const response = await fetch(`/api/v1/my-links?owner_id=${encodeURIComponent(ownerId)}`);
+            if (!response.ok) {
+                throw new Error(`{{ _('network_error_message') }} (Status: ${response.status})`);
+            }
+            const data = await response.json();
+            const links = data.links;
+            
+            linksTableBody.innerHTML = ''; // Clear existing
+
+            if (links.length === 0) {
+                totalLinksCount.textContent = "0";
+                showContent(false);
+            } else {
+                totalLinksCount.textContent = links.length;
+                links.forEach(link => {
+                    linksTableBody.insertAdjacentHTML('beforeend', createLinkRow(link));
+                });
+                showContent(true);
+            }
+
+        } catch (error) {
+            console.error('Error fetching links:', error);
+            dashboardContent.classList.remove('d-none'); // Show container to hold error
+            linksTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <div class="alert alert-danger d-inline-block m-0">
+                            <i class="bi bi-exclamation-triangle me-2"></i> ${error.message || '{{ _('network_error_message') }}'}
+                        </div>
+                    </td>
+                </tr>
+            `;
+            loadingDashboard.classList.add('d-none');
+        }
+    }
+
+    // Load on start
+    window.addEventListener('load', fetchLinks);
+</script>
+{% endblock %}                </td>
             </tr>
         `;
     }
